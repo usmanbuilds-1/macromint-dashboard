@@ -1,0 +1,41 @@
+{
+  "version": "7",
+  "dialect": "postgresql",
+  "entries": [
+    {
+      "idx": 0,
+      "version": "7",
+      "when": 1793628406223,
+      "tag": "0000_macromint_0001_schema",
+      "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1793628421389,
+      "tag": "0001_macromint_0002_functions_triggers",
+      "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1793628438951,
+      "tag": "0002_macromint_0003_rls",
+      "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "7",
+      "when": 1793628460308,
+      "tag": "0003_macromint_0004_seed_foods",
+      "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "7",
+      "when": 1793628474959,
+      "tag": "0004_macromint_0005_scan_events",
+      "breakpoints": true
+    }
+  ]
+}
