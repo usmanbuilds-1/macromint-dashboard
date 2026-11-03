@@ -128,7 +128,7 @@ export function Settings() {
         </section>
       )}
 
-      <section className="rounded-xl border bg-card p-5" aria-label="Profile">
+      <section className="border-b pb-6" aria-label="Profile">
         <h2 className="text-sm font-semibold">Profile</h2>
         <div className="mt-4 grid gap-4 sm:grid-cols-3">
           <div className="grid gap-1.5">
@@ -149,7 +149,7 @@ export function Settings() {
         </div>
       </section>
 
-      <section className="rounded-xl border bg-card p-5" aria-label="Units">
+      <section className="border-b pb-6" aria-label="Units">
         <h2 className="text-sm font-semibold">Measurement system</h2>
         <p className="mt-1 text-xs text-muted-foreground">Changing units converts your profile values; history stays accurate.</p>
         <div className="mt-4 flex gap-2">
@@ -161,39 +161,39 @@ export function Settings() {
         </div>
       </section>
 
-      <section className="rounded-xl border bg-card p-5" aria-label="Privacy">
+      <section className="border-b pb-6" aria-label="Privacy">
         <h2 className="text-sm font-semibold">Privacy</h2>
         <div className="mt-4 flex flex-col gap-4">
           <ConsentRow
             title="Analytics"
-            description="Anonymous product usage that helps improve Macromint. Never sold, never shared."
+            description="Optional product usage analytics. Review the privacy policy for what is collected and how it is handled."
             checked={prefs.analyticsConsent}
             onChange={(v) => void setConsent("analytics", v)}
           />
           <ConsentRow
             title="Personalised advertising"
-            description="Allow ad partners to personalise the advertising that funds the free tier. Off keeps ads non-personalised."
+            description="Advertising preferences are saved here. Rewarded ads and personalised advertising are not currently enabled."
             checked={prefs.adConsent}
             onChange={(v) => void setConsent("advertising", v)}
           />
         </div>
       </section>
 
-      <section className="rounded-xl border bg-card p-5" aria-label="Account">
+      <section className="border-b pb-6" aria-label="Account">
         <h2 className="text-sm font-semibold">Account</h2>
         <div className="mt-4 flex flex-col gap-3">
-          <Button variant="outline" className="justify-start gap-2" onClick={exportData}>
+          <Button variant="outline" className="min-h-11 justify-start gap-2" onClick={exportData}>
             <Download className="h-4 w-4" /> Export my data (JSON)
           </Button>
           {isAdmin && (
-            <Button variant="outline" className="justify-start gap-2" onClick={() => navigate("/admin")}>
+            <Button variant="outline" className="min-h-11 justify-start gap-2" onClick={() => navigate("/admin")}>
               <ShieldCheck className="h-4 w-4" /> Open admin panel
             </Button>
           )}
           <Separator />
           <AlertDialog>
             <AlertDialogTrigger asChild>
-              <Button variant="ghost" className="justify-start gap-2 self-start text-destructive hover:text-destructive">
+              <Button variant="ghost" className="min-h-11 justify-start gap-2 self-start text-destructive hover:text-destructive">
                 <Trash2 className="h-4 w-4" /> Delete account and all data
               </Button>
             </AlertDialogTrigger>
