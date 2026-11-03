@@ -7,9 +7,9 @@ import { INVITE_REGISTRATION_ENABLED } from "@/lib/beta/config";
 /* All numbers in this public demonstration are intentionally illustrative. */
 // Optimized high-resolution licensed photographs. The previous bundled
 // 170px image was being stretched across desktop and mobile layouts.
-const HERO_PHOTO = "/images/meal-hero-hq.jpg";
-const MEAL_PHOTO = "/images/meal-review-hq.jpg";
-const BREAKFAST_PHOTO = "/images/breakfast-hero-hq.jpg";
+const HERO_PHOTO = "/images/meal-hero-hq.webp";
+const MEAL_PHOTO = "/images/meal-review-hq.webp";
+const BREAKFAST_PHOTO = "/images/breakfast-hero-hq.webp";
 
 const SAMPLE = {
   goal: 2100,
