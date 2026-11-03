@@ -60,6 +60,24 @@ for (const [width, height] of sizes) {
     const registerSize = await page.evaluate(() => ({ viewport: window.innerWidth, doc: document.documentElement.scrollWidth }));
     if (registerSize.doc > registerSize.viewport + 1) throw new Error("Signup horizontally overflows " + JSON.stringify(registerSize));
     await page.screenshot({ path: `mobile-audit/signup-${width}.png`, fullPage: true });
+    if (width === 390 && !process.env.VITE_SUPABASE_URL) {
+      // The smoke environment is the isolated demo adapter, never a live account.
+      await page.goto(url + "/login", { waitUntil: "networkidle" });
+      await page.locator("#email").fill("mobile-preview@example.test");
+      await page.locator("#password").fill("demo-password-only");
+      await page.getByRole("button", { name: /^Sign in$/ }).click();
+      await page.waitForURL(/\\/(today|onboarding)(?:[?#]|$)/, { timeout: 15000 });
+      if (page.url().includes("/onboarding")) {
+        await page.getByRole("button", { name: /Skip for now/ }).click();
+        await page.waitForURL(/\\/today(?:[?#]|$)/, { timeout: 15000 });
+      }
+      await page.getByRole("heading", { name: "Today", exact: true }).waitFor({ timeout: 15000 });
+      await page.locator(".mm-today-arc").waitFor({ timeout: 10000 });
+      const todayOverflow = await page.evaluate(() => document.documentElement.scrollWidth - window.innerWidth);
+      if (todayOverflow > 1) throw new Error("Today screen horizontal overflow: " + todayOverflow);
+      await page.screenshot({ path: "mobile-audit/today-390.png", fullPage: true });
+      console.log("PASS actual mobile Today", width);
+    }
     if (problems.length) throw new Error("Runtime errors: " + problems.join("; "));
     console.log("PASS registration release state", width);
   } catch (error) {
