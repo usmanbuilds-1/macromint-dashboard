@@ -5,4 +5,4 @@
  * The flag does NOT secure the API. Invitation enforcement always belongs to
  * the Supabase auth BEFORE INSERT trigger after migration 0006 is applied.
  */
-export const INVITE_REGISTRATION_ENABLED = import.meta.env.VITE_BETA_INVITES_ENABLED === "true";
+export const INVITE_REGISTRATION_ENABLED = import.meta.env['VITE_BETA_INVITES_ENABLED'] === "true";
