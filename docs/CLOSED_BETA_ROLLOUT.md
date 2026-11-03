@@ -37,5 +37,5 @@ The Supabase Auth BEFORE INSERT database trigger requires an invitation for all 
 - The admin invitation function stores a SHA-256 verifier and shows the raw 160-bit random code only once. Configure rate limits to limit automated attempts.
 - Remember me stores session tokens, not passwords; confirm actual browser persistence on mobile and in Lovable preview.
 - Existing purchase and rewarded-ad integrations are nonfunctional, and are visibly disabled. Configure billing separately only after approval.
-- Food photography is not yet committed as optimized assets. The landing currently demonstrates nutrition with live React controls and explicitly labeled sample figures; never claim static mockups are real screenshots.
+- One optimized, AI-generated food bowl thumbnail is now committed at public/images/food-bowl.webp and displayed with the landing's interactive React portion demo. It is illustrative only, not a real scan result or a true product screenshot; larger editorial image assets could still improve the hero.
 - No real browser screenshot or end-to-end live signup verification has been completed in this coding pass. Do not merge until staging proves the enrollment flow and RLS.
