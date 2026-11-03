@@ -21,6 +21,8 @@ import {
 import { useSession } from "@/context/Session";
 import { backend, bumpData, IS_DEMO } from "@/lib/backend";
 import type { Units } from "@/types";
+import { LIMITS, validateNumeric } from "@/lib/validation/limits";
+import { estimateWeightTimeline } from "@/lib/weight/timeline";
 
 export function Settings() {
   const { profile, isAdmin, refresh, setAuthUser } = useSession();
@@ -28,6 +30,7 @@ export function Settings() {
   const [name, setName] = useState("");
   const [heightCm, setHeightCm] = useState("");
   const [weightKg, setWeightKg] = useState("");
+  const [targetWeightKg, setTargetWeightKg] = useState("");
   const [busy, setBusy] = useState(false);
   const [prefs, setPrefs] = useState({ adConsent: false, analyticsConsent: false });
 
@@ -36,6 +39,7 @@ export function Settings() {
       setName(profile.name);
       setHeightCm(profile.heightCm ? String(profile.heightCm) : "");
       setWeightKg(profile.weightKg ? String(profile.weightKg) : "");
+      setTargetWeightKg(profile.targetWeightKg ? String(profile.targetWeightKg) : "");
     }
     void backend.getPreferences().then((p) => {
       setPrefs({ adConsent: p.adConsent, analyticsConsent: p.analyticsConsent });
@@ -45,9 +49,31 @@ export function Settings() {
   const saveProfile = async () => {
     setBusy(true);
     try {
-      const patch: Record<string, unknown> = { name: name.trim() };
-      if (heightCm) patch["heightCm"] = Number(heightCm);
-      if (weightKg) patch["weightKg"] = Number(weightKg);
+      const patch: Record<string, unknown> = { name: name.trim().slice(0, 100) };
+      for (const [raw, key, label] of [
+        [heightCm, "heightCm", "Height"],
+        [weightKg, "weightKg", "Current weight"],
+        [targetWeightKg, "weightKg", "Target weight"],
+      ] as const) {
+        if (!raw.trim()) continue;
+        const result = validateNumeric(raw, key, label);
+        if ("error" in result) { toast.error(result.error); return; }
+      }
+      if (heightCm.trim()) patch["heightCm"] = Number(heightCm);
+      if (weightKg.trim()) patch["weightKg"] = Number(weightKg);
+      patch["targetWeightKg"] = targetWeightKg.trim() ? Number(targetWeightKg) : null;
+      if (profile?.objective && profile.heightCm != null && profile.weightKg != null &&
+          targetWeightKg.trim()) {
+        const assessment = estimateWeightTimeline({
+          currentKg: weightKg.trim() ? Number(weightKg) : profile.weightKg,
+          targetKg: Number(targetWeightKg),
+          heightCm: heightCm.trim() ? Number(heightCm) : profile.heightCm,
+          objective: profile.objective,
+        });
+        if (["review_target", "objective_mismatch", "invalid_input"].includes(assessment.status)) {
+          toast.error(assessment.note); return;
+        }
+      }
       await backend.updateProfile(patch);
       await refresh();
       bumpData();
@@ -133,15 +159,21 @@ export function Settings() {
         <div className="mt-4 grid gap-4 sm:grid-cols-3">
           <div className="grid gap-1.5">
             <Label htmlFor="s-name">Name</Label>
-            <Input id="s-name" value={name} onChange={(e) => setName(e.target.value)} />
+            <Input id="s-name" maxLength={100} value={name} onChange={(e) => setName(e.target.value)} />
           </div>
           <div className="grid gap-1.5">
             <Label htmlFor="s-height">Height (cm)</Label>
-            <Input id="s-height" inputMode="decimal" value={heightCm} onChange={(e) => setHeightCm(e.target.value)} />
+            <Input id="s-height" type="number" min={LIMITS.heightCm.min} max={LIMITS.heightCm.max} step="any" inputMode="decimal" value={heightCm} onChange={(e) => setHeightCm(e.target.value)} />
           </div>
           <div className="grid gap-1.5">
             <Label htmlFor="s-weight">Current weight (kg)</Label>
-            <Input id="s-weight" inputMode="decimal" value={weightKg} onChange={(e) => setWeightKg(e.target.value)} />
+            <Input id="s-weight" type="number" min={LIMITS.weightKg.min} max={LIMITS.weightKg.max} step="any" inputMode="decimal" value={weightKg} onChange={(e) => setWeightKg(e.target.value)} />
+          </div>
+                    <div className="grid gap-1.5">
+            <Label htmlFor="s-target-weight">Target weight (kg, optional)</Label>
+            <Input id="s-target-weight" type="number" min={LIMITS.weightKg.min} max={LIMITS.weightKg.max}
+              step="any" inputMode="decimal" value={targetWeightKg}
+              onChange={(e) => setTargetWeightKg(e.target.value)} placeholder="Your goal" />
           </div>
         </div>
         <div className="mt-4">
