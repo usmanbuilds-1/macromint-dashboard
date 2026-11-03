@@ -63,9 +63,12 @@ for (const [width, height] of sizes) {
     if (width === 390 && !process.env.VITE_SUPABASE_URL) {
       // The smoke environment is the isolated demo adapter, never a live account.
       await page.goto(url + "/login", { waitUntil: "networkidle" });
-      await page.locator("#email").fill("mobile-preview@example.test");
+      await page.locator("#email").fill("demo@macromint.app");
       await page.locator("#password").fill("demo-password-only");
       await page.getByRole("button", { name: /^Sign in$/ }).click();
+      await page.waitForTimeout(300);
+      console.log("Demo login route", page.url());
+      console.log("Demo login state", (await page.locator("body").innerText()).slice(0, 500));
       await page.waitForURL((u) => u.pathname === "/today" || u.pathname === "/onboarding", { timeout: 15000 });
       if (page.url().includes("/onboarding")) {
         await page.getByRole("button", { name: /Skip for now/ }).click();
