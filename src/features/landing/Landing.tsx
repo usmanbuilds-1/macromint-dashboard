@@ -5,6 +5,12 @@ import { Logo } from "@/components/app/AppLayout";
 import { INVITE_REGISTRATION_ENABLED } from "@/lib/beta/config";
 
 /* All numbers in this public demonstration are intentionally illustrative. */
+// Optimized high-resolution licensed photographs. The previous bundled
+// 170px image was being stretched across desktop and mobile layouts.
+const HERO_PHOTO = "https://images.unsplash.com/photo-1546069901-ba9599a7e63c?auto=format&fit=crop&w=1200&q=85";
+const MEAL_PHOTO = "https://images.unsplash.com/photo-1762631383628-77f92d18b184?auto=format&fit=crop&w=1100&q=82";
+const BREAKFAST_PHOTO = "https://images.unsplash.com/photo-1517673400267-0251440c45dc?auto=format&fit=crop&w=1100&q=82";
+
 const SAMPLE = {
   goal: 2100,
   total: 1430,
@@ -110,7 +116,7 @@ function Walkthrough() {
                 <p className="mint2-preview-label">FOOD SEARCH · EXAMPLE</p>
                 <div className="mint2-searchbox"><Search size={17} aria-hidden="true" /><span>chicken rice bowl</span></div>
                 <button className="mint2-found-food" type="button" onClick={() => choose("scan")}>
-                  <img src="/images/meal-hero-hq.webp" alt="" width="86" height="100" loading="lazy" />
+                  <img src={MEAL_PHOTO} alt="" width="86" height="100" loading="lazy" />
                   <span><strong>Grilled chicken rice bowl</strong><small>300 g · 480 kcal</small></span>
                   <ArrowRight size={18} aria-hidden="true" />
                 </button>
@@ -121,7 +127,7 @@ function Walkthrough() {
               <div className="mint2-step-content">
                 <p className="mint2-preview-label">PHOTO REVIEW · EXAMPLE</p>
                 <div className="mint2-scan-preview">
-                  <img src="/images/meal-hero-hq.webp" alt="Example chicken and rice meal" width="600" height="750" loading="lazy" />
+                  <img src={MEAL_PHOTO} alt="Example chicken and rice meal" width="600" height="750" loading="lazy" />
                   <div><Camera size={17} aria-hidden="true" /><span>Meal photo</span></div>
                 </div>
                 <div className="mint2-step-review-row"><strong>Grilled chicken rice bowl</strong><span>1 item found</span></div>
@@ -185,7 +191,7 @@ export function Landing() {
           </div>
           <div className="mint2-hero-visual">
             <picture className="mint2-hero-photo">
-              <img src="/images/meal-hero-hq.webp" alt="Grilled chicken with rice and fresh vegetables in a ceramic bowl" width={600} height={750} fetchPriority="high" decoding="async" />
+              <img src={HERO_PHOTO} alt="Fresh vegetables, grains and greens arranged in a vibrant bowl" width={1200} height={900} fetchPriority="high" decoding="async" />
             </picture>
             <DailyPreview />
           </div>
@@ -210,7 +216,7 @@ export function Landing() {
         <section className="mint2-feature-photo-section" aria-labelledby="detail-title">
           <div className="mint2-container mint2-detail-layout">
             <div className="mint2-detail-photo">
-              <img src="/images/breakfast-hero-hq.webp" alt="Yogurt breakfast bowl with berries, oats and banana" width={600} height={750} loading="lazy" decoding="async" />
+              <img src={BREAKFAST_PHOTO} alt="Yogurt breakfast bowl with berries, oats and banana" width={600} height={750} loading="lazy" decoding="async" />
             </div>
             <div className="mint2-detail-copy">
               <span className="mint2-eyebrow">THE EVERYDAY DETAILS</span>
@@ -239,7 +245,7 @@ export function Landing() {
       <footer className="mint2-footer">
         <div className="mint2-container mint2-footer-inner">
           <Logo />
-          <p>Photo-based food and portion suggestions are estimates. Review before saving.</p>
+          <p>Photo-based food suggestions are estimates. Photos: <a href="https://unsplash.com/?utm_source=macro_mint&utm_medium=referral" target="_blank" rel="noopener noreferrer">Unsplash</a>.</p>
           <nav aria-label="Legal links">
             <Link to="/privacy">Privacy</Link>
             <Link to="/terms">Terms</Link>
