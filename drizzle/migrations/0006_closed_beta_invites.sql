@@ -13,7 +13,7 @@
 create table if not exists public.beta_invites (
   id uuid primary key default gen_random_uuid(),
   code_hash text not null unique check (length(code_hash) = 64),
-  created_by uuid not null references auth.users(id),
+  created_by uuid references auth.users(id) on delete set null,
   created_at timestamptz not null default now(),
   expires_at timestamptz not null,
   max_uses int not null default 1 check (max_uses between 1 and 100),
