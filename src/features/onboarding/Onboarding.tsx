@@ -93,7 +93,7 @@ export function Onboarding() {
   };
 
   return (
-    <div className="mx-auto flex min-h-screen w-full max-w-lg flex-col px-5 py-10">
+    <div className="mx-auto flex min-h-dvh w-full max-w-lg flex-col px-4 pb-[calc(2rem+env(safe-area-inset-bottom))] pt-8 sm:px-5 sm:pt-12">
       <div className="flex items-center justify-between">
         <Logo />
         <span className="text-xs font-medium tabular-nums text-muted-foreground">
@@ -101,6 +101,7 @@ export function Onboarding() {
         </span>
       </div>
 
+      <p className="sr-only" role="status">Setup progress: {steps[step]}, step {step + 1} of {steps.length}</p>
       <div className="mt-6 flex gap-1.5" aria-hidden="true">
         {steps.map((_, i) => (
           <div key={i} className={cn("h-1 flex-1 rounded-full", i <= step ? "bg-primary" : "bg-secondary")} />
@@ -113,7 +114,7 @@ export function Onboarding() {
             <header>
               <h1 className="text-2xl font-semibold tracking-tight">A few basics</h1>
               <p className="mt-1.5 text-sm text-muted-foreground">
-                Your targets are derived from recognised equations, so accurate numbers matter. Everything is editable later.
+                These details help estimate your starting targets. They are not exact measurements of your daily energy needs, and you can edit them later.
               </p>
             </header>
             <div className="grid gap-4">
@@ -141,7 +142,7 @@ export function Onboarding() {
                   ))}
                 </RadioGroup>
               </div>
-              <div className="grid grid-cols-3 gap-3">
+              <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
                 <div className="grid gap-1.5">
                   <Label htmlFor="ob-age">Age</Label>
                   <Input id="ob-age" inputMode="numeric" value={age} onChange={(e) => setAge(e.target.value.replace(/\D/g, ""))} placeholder="30" />
@@ -150,7 +151,7 @@ export function Onboarding() {
                   <Label htmlFor="ob-height">Height (cm)</Label>
                   <Input id="ob-height" inputMode="decimal" value={heightCm} onChange={(e) => setHeightCm(e.target.value)} placeholder="176" />
                 </div>
-                <div className="grid gap-1.5">
+                <div className="col-span-2 grid gap-1.5 sm:col-span-1">
                   <Label htmlFor="ob-weight">Weight (kg)</Label>
                   <Input id="ob-weight" inputMode="decimal" value={weightKg} onChange={(e) => setWeightKg(e.target.value)} placeholder="78" />
                 </div>
@@ -249,16 +250,16 @@ export function Onboarding() {
         )}
       </div>
 
-      <div className="mt-10 flex items-center justify-between gap-3">
-        <Button variant="ghost" onClick={() => step === 0 ? void skip() : setStep((s) => s - 1)} disabled={busy}>
+      <div className="mt-10 flex items-center justify-between gap-3 border-t pt-5">
+        <Button className="min-h-11" variant="ghost" onClick={() => step === 0 ? void skip() : setStep((s) => s - 1)} disabled={busy}>
           <ArrowLeft className="h-4 w-4" /> {step === 0 ? "Skip for now" : "Back"}
         </Button>
         {step < 3 ? (
-          <Button onClick={() => setStep((s) => s + 1)} disabled={(step === 0 && !personalValid) || (step === 1 && !objective) || (step === 2 && !activityLevel)}>
+          <Button className="min-h-11" onClick={() => setStep((s) => s + 1)} disabled={(step === 0 && !personalValid) || (step === 1 && !objective) || (step === 2 && !activityLevel)}>
             Continue <ArrowRight className="h-4 w-4" />
           </Button>
         ) : (
-          <Button onClick={finish} disabled={!computed || busy}>
+          <Button className="min-h-11" onClick={finish} disabled={!computed || busy}>
             {busy ? "Saving…" : "Start tracking"} <ArrowRight className="h-4 w-4" />
           </Button>
         )}
