@@ -212,7 +212,7 @@ function CustomFoodDialog({ open, onClose, onCreated }: { open: boolean; onClose
     for (const key of optionalKeys) {
       const raw = values[key];
       if (raw === undefined || raw.trim() === "") continue;
-      const result = validateNumeric(raw, key === "sodium" ? "foodKcalPer100g" : "foodMacroPer100g", key);
+      const result = validateNumeric(raw, key === "sodium" ? "foodSodiumMgPer100g" : "foodMacroPer100g", key);
       if ("error" in result) { toast.error(result.error); return; }
     }
     const kcal = kcalResult.value;
@@ -270,7 +270,7 @@ function CustomFoodDialog({ open, onClose, onCreated }: { open: boolean; onClose
                 <Input
                   id={`cf-${m.key}`}
                   type="number" min={0}
-                  max={m.key === "kcal" || m.key === "sodium" ? LIMITS.foodKcalPer100g.max : LIMITS.foodMacroPer100g.max}
+                  max={m.key === "kcal" ? LIMITS.foodKcalPer100g.max : m.key === "sodium" ? LIMITS.foodSodiumMgPer100g.max : LIMITS.foodMacroPer100g.max}
                   step="any" inputMode="decimal"
                   value={values[m.key] ?? ""}
                   onChange={(e) => setValues((v) => ({ ...v, [m.key]: e.target.value }))}
