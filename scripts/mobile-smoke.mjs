@@ -34,17 +34,36 @@ for (const [width, height] of sizes) {
     }));
     if (dims.document > dims.viewport + 1) throw new Error("Horizontal overflow: " + JSON.stringify(dims));
     if (!dims.heading) throw new Error("Missing h1");
+    // Catch low-resolution or broken imagery before a public release.
+    const heroImage = page.locator(".mint2-hero-photo img");
+    await heroImage.waitFor();
+    await heroImage.evaluate((img) => img.decode());
+    const renderedImageWidth = await heroImage.evaluate((img) => img.naturalWidth);
+    if (renderedImageWidth < 600) throw new Error("Hero photo is broken or too small: " + renderedImageWidth + "px");
+    const breakfastImage = page.locator(".mint2-detail-photo img");
+    await breakfastImage.scrollIntoViewIfNeeded();
+    await breakfastImage.evaluate((img) => img.decode());
+    const breakfastImageWidth = await breakfastImage.evaluate((img) => img.naturalWidth);
+    if (breakfastImageWidth < 600) throw new Error("Breakfast photo is broken or too small: " + breakfastImageWidth + "px");
+    await page.locator("#hero-title").scrollIntoViewIfNeeded();
     await page.screenshot({ path: `mobile-audit/landing-${width}.png`, fullPage: true });
     console.log("PASS landing", width, dims.heading);
     if (width === 390) {
+      // The primary CTA must lead to a usable walkthrough, not a decorative anchor.
+      await page.getByRole("link", { name: /See how it works/i }).click();
+      await page.waitForURL((u) => u.hash === "#how-it-works", { timeout: 10000 });
+      await page.getByRole("heading", { name: /From your plate to your diary/i }).waitFor();
+
+      await page.getByRole("button", { name: /Review your meal/i }).click();
+      await page.getByRole("button", { name: /Review portion/i }).click();
       const slider = page.locator("#portion-control");
-      if (!(await slider.count())) throw new Error("Interactive meal portion control missing");
-      await slider.evaluate((input) => {
-        input.value = "400";
-        input.dispatchEvent(new Event("input", { bubbles: true }));
-        input.dispatchEvent(new Event("change", { bubbles: true }));
-      });
+      await slider.waitFor();
+      await slider.fill("400");
+      await page.getByText("640 kcal", { exact: true }).waitFor();
+      await page.getByRole("button", { name: "Add to diary" }).click();
+      await page.getByRole("button", { name: "Added in this example" }).waitFor();
       await page.screenshot({ path: "mobile-audit/portion-390.png", fullPage: true });
+      console.log("PASS interactive 3-step walkthrough", width);
     }
     const reg = await page.goto(url + "/register", { waitUntil: "networkidle", timeout: 30000 });
     if (!reg || reg.status() >= 400) throw new Error("Registration HTTP status " + reg?.status());
@@ -52,7 +71,7 @@ for (const [width, height] of sizes) {
       await page.locator("#invite").waitFor({ timeout: 15000 });
       await page.locator("#name").waitFor({ timeout: 15000 });
     } else {
-      await page.getByRole("heading", { name: /Beta registration is coming soon/i }).waitFor({ timeout: 15000 });
+      await page.getByRole("heading", { name: /Invitation access/i }).waitFor({ timeout: 15000 });
       if (await page.locator("#password").count()) {
         throw new Error("Registration must be disabled until Cloud Auth and invite backend are activated");
       }
