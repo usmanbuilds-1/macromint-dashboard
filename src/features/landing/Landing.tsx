@@ -7,9 +7,9 @@ import { INVITE_REGISTRATION_ENABLED } from "@/lib/beta/config";
 /* All numbers in this public demonstration are intentionally illustrative. */
 // Optimized high-resolution licensed photographs. The previous bundled
 // 170px image was being stretched across desktop and mobile layouts.
-const HERO_PHOTO = "https://images.unsplash.com/photo-1546069901-ba9599a7e63c?auto=format&fit=crop&w=1200&q=85";
-const MEAL_PHOTO = "https://images.unsplash.com/photo-1762631383628-77f92d18b184?auto=format&fit=crop&w=1100&q=82";
-const BREAKFAST_PHOTO = "https://images.unsplash.com/photo-1517673400267-0251440c45dc?auto=format&fit=crop&w=1100&q=82";
+const HERO_PHOTO = "/images/meal-hero-hq.jpg";
+const MEAL_PHOTO = "/images/meal-review-hq.jpg";
+const BREAKFAST_PHOTO = "/images/breakfast-hero-hq.jpg";
 
 const SAMPLE = {
   goal: 2100,
