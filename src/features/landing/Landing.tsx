@@ -3,6 +3,7 @@ import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Logo } from "@/components/app/AppLayout";
 import { IS_DEMO } from "@/lib/backend";
+import { INVITE_REGISTRATION_ENABLED } from "@/lib/beta/config";
 import { formatNumber } from "@/lib/utils";
 
 const SAMPLE = {
@@ -37,7 +38,7 @@ export function Landing() {
           <Logo />
           <nav className="flex items-center gap-2" aria-label="Public site">
             <Link className="inline-flex min-h-11 items-center px-2 text-sm font-medium text-muted-foreground hover:text-foreground" to="/login">Sign in</Link>
-            <Button className="h-11" asChild><Link to="/register">Join beta</Link></Button>
+            <Button className="h-11" asChild><Link to="/register">{INVITE_REGISTRATION_ENABLED || IS_DEMO ? "Join beta" : "Beta status"}</Link></Button>
           </nav>
         </div>
       </header>
@@ -56,7 +57,7 @@ export function Landing() {
             <div className="mt-8 flex flex-wrap items-center gap-3">
               <Button size="lg" className="min-h-12 px-6" asChild>
                 <Link to={IS_DEMO ? "/login" : "/register"}>
-                  {IS_DEMO ? "Open the demo" : "Enter your invitation"}
+                  {IS_DEMO ? "Open the demo" : INVITE_REGISTRATION_ENABLED ? "Enter your invitation" : "Beta opening soon"}
                 </Link>
               </Button>
               <a href="#try-it" className="inline-flex min-h-12 items-center px-3 text-sm font-medium underline underline-offset-4">
@@ -64,7 +65,7 @@ export function Landing() {
               </a>
             </div>
             <p className="mt-4 text-xs leading-relaxed text-muted-foreground">
-              Private beta requires a code. Create a secure account, then start the currently configured free trial.
+              Private beta access is being prepared. Registration will open once secure sign-in and one-time invitations are activated.
               No payment information requested.
             </p>
           </div>
@@ -203,13 +204,13 @@ export function Landing() {
           <div className="mx-auto grid max-w-6xl gap-6 px-4 py-14 sm:px-7 lg:grid-cols-[1fr_auto] lg:items-center">
             <div>
               <p className="text-xs font-semibold tracking-wide text-primary">CURRENT ACCESS</p>
-              <h2 id="access-heading" className="mt-3 text-2xl font-semibold tracking-tight sm:text-3xl">Private beta by invitation.</h2>
+              <h2 id="access-heading" className="mt-3 text-2xl font-semibold tracking-tight sm:text-3xl">{INVITE_REGISTRATION_ENABLED ? "Private beta by invitation." : "Private beta opening soon."}</h2>
               <p className="mt-3 max-w-2xl text-sm leading-6 text-muted-foreground">
-                Use your invitation to create an account. The beta administrator controls access and trial extensions.
+                {INVITE_REGISTRATION_ENABLED ? "Use your invitation to create an account. The beta administrator controls access and trial extensions." : "Registration is not active yet. Existing sign-in and closed-beta invitations require Lovable Cloud authentication and backend setup."}
                 Checkout and rewarded advertising are not configured; no purchase is available on this deployment.
               </p>
             </div>
-            <Button size="lg" className="h-12" asChild><Link to="/register">Join with a code</Link></Button>
+            <Button size="lg" className="h-12" asChild><Link to="/register">{INVITE_REGISTRATION_ENABLED || IS_DEMO ? "Join with a code" : "View beta status"}</Link></Button>
           </div>
         </section>
 
@@ -219,7 +220,7 @@ export function Landing() {
             {[
               {
                 q: "Do I need an invitation?",
-                a: "Yes, new accounts are limited to people who have received a beta invitation from the administrator.",
+                a: "Registration will open once email authentication and secure invitations are enabled. At that point, a personal invitation will be required.",
               },
               {
                 q: "Does a photo produce exact calories?",
