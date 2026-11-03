@@ -46,9 +46,6 @@ function AppShell() {
   if (!profile) return <ShellGate />;
   if (!profile.onboardedAt || !hasAccess) return <ShellGate />;
 
-  return (
-    <AppLayout>
-      <Outlet />
-    </AppLayout>
-  );
+  // AppLayout renders <Outlet /> itself (it was ported as a react-router layout).
+  return <AppLayout />;
 }
