@@ -1,57 +1,62 @@
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 import { Link } from "react-router-dom";
-import { Camera, ChevronRight, Copy, Droplets, Plus } from "lucide-react";
+import { Camera, ChevronDown, ChevronRight, Copy, Droplets, Plus, Search } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
-import { CalorieRing, MacroBar } from "@/components/app/bits";
 import { useSession } from "@/context/Session";
 import { backend, bumpData } from "@/lib/backend";
-import { useDataVersion } from "@/hooks/useData";
+import { useAsyncData, useDataVersion } from "@/hooks/useData";
 import { dailyTotals, sumNutrients } from "@/lib/nutrition/math";
 import { formatDateLong, todayStr, addDaysStr } from "@/lib/nutrition/datetime";
-import { MEAL_LABELS, MEAL_TYPES, type DiaryEntry } from "@/types";
+import { MEAL_LABELS, MEAL_TYPES, type DiaryEntry, type MealType } from "@/types";
 import { useFoodLog } from "@/features/foods/FoodLogProvider";
-import { useAsyncData } from "@/hooks/useData";
 import { formatNumber } from "@/lib/utils";
 import { toast } from "sonner";
 
+function mealForCurrentHour(): MealType {
+  const h = new Date().getHours();
+  return h < 11 ? "breakfast" : h < 15 ? "lunch" : h < 21 ? "dinner" : "snacks";
+}
+
 export function Today() {
-  const { profile, goals } = useSession();
+  const { goals } = useSession();
   const version = useDataVersion();
   const foodLog = useFoodLog();
   const today = todayStr();
+  const [openLog, setOpenLog] = useState(false);
+  const [expandedMeal, setExpandedMeal] = useState<MealType | null>(null);
 
   const diary = useAsyncData(() => backend.getDiary(today), [today, version]);
   const water = useAsyncData(() => backend.getWater(today), [today, version]);
-
   const entries = diary.data ?? [];
   const totals = useMemo(() => dailyTotals(entries), [entries]);
-  const kcal = totals.kcal ?? 0;
-  const target = goals?.calorieTarget ?? 2000;
+  const consumed = totals.kcal ?? 0;
+  const target = goals?.calorieTarget ?? null;
+  const remaining = target === null ? null : target - consumed;
+  const protein = totals.protein ?? 0;
+  const proteinTarget = goals?.proteinG ?? null;
 
   const byMeal = useMemo(() => {
-    const map = new Map<string, DiaryEntry[]>();
-    for (const m of MEAL_TYPES) map.set(m, []);
-    for (const e of entries) map.get(e.mealType)?.push(e);
+    const map = new Map<MealType, DiaryEntry[]>(MEAL_TYPES.map((m) => [m, []]));
+    entries.forEach((entry) => map.get(entry.mealType)?.push(entry));
     return map;
   }, [entries]);
 
-  const waterMl = (water.data ?? []).reduce((s, w) => s + w.amountMl, 0);
-  const waterTarget = goals?.waterMl ?? 2500;
-
-  const hour = new Date().getHours();
-  const greeting = hour < 12 ? "Good morning" : hour < 18 ? "Good afternoon" : "Good evening";
-  const firstName = (profile?.name || "there").split(" ")[0];
+  const waterMl = (water.data ?? []).reduce((total, entry) => total + entry.amountMl, 0);
+  const waterTarget = goals?.waterMl ?? null;
 
   const addWater = async (ml: number) => {
-    await backend.addWater(today, ml);
-    bumpData();
+    try {
+      await backend.addWater(today, ml);
+      bumpData();
+    } catch {
+      toast.error("Water could not be saved. Try again.");
+    }
   };
 
   const copyYesterday = async () => {
-    const yesterday = addDaysStr(today, -1);
     try {
-      const count = await backend.copyDay(yesterday, today);
+      const count = await backend.copyDay(addDaysStr(today, -1), today);
       bumpData();
       toast[count ? "success" : "info"](
         count ? `Copied ${count} items from yesterday` : "Nothing was logged yesterday",
@@ -61,191 +66,159 @@ export function Today() {
     }
   };
 
+  const openSearch = (mealType = mealForCurrentHour()) => {
+    setOpenLog(false);
+    foodLog.open({ entryDate: today, mealType });
+  };
+
+  const openScan = () => {
+    setOpenLog(false);
+    foodLog.openScan({ entryDate: today, mealType: mealForCurrentHour() });
+  };
+
   return (
-    <div className="flex flex-col gap-8">
-      <header>
-        <p className="text-sm text-muted-foreground">{formatDateLong(today)}</p>
-        <h1 className="mt-0.5 text-2xl font-semibold tracking-tight">
-          {greeting}, {firstName}.
-        </h1>
+    <div className="mx-auto flex w-full max-w-2xl flex-col gap-7 pb-2">
+      <header className="flex items-end justify-between gap-3">
+        <div>
+          <p className="text-sm text-muted-foreground">{formatDateLong(today)}</p>
+          <h1 className="mt-1 text-2xl font-semibold tracking-tight">Today</h1>
+        </div>
+        <Link to="/diary" className="inline-flex min-h-11 items-center gap-1 text-sm font-medium text-muted-foreground hover:text-foreground">
+          Diary <ChevronRight className="h-4 w-4" aria-hidden="true" />
+        </Link>
       </header>
 
-      {/* Calorie hero */}
-      <section aria-label="Calorie progress" className="rounded-xl border bg-card">
-        <div className="flex flex-col items-center gap-6 p-6 sm:flex-row sm:items-center sm:gap-8">
-          <CalorieRing consumed={kcal} target={target} />
-          <div className="w-full min-w-0 flex-1">
-            <div className="flex items-baseline justify-between">
-              <p className="text-sm font-medium">Energy</p>
-              <p className="text-sm tabular-nums text-muted-foreground">
-                {formatNumber(kcal)} / {formatNumber(target)} kcal
-              </p>
-            </div>
-            <div className="mt-4 flex flex-col gap-3.5">
-              <MacroBar
-                label="Protein"
-                value={totals.protein ?? 0}
-                target={goals?.proteinG ?? 100}
-                colorClass="bg-macro-protein"
-              />
-              <MacroBar
-                label="Carbohydrates"
-                value={totals.carbs ?? 0}
-                target={goals?.carbsG ?? 200}
-                colorClass="bg-macro-carbs"
-              />
-              <MacroBar
-                label="Fat"
-                value={totals.fat ?? 0}
-                target={goals?.fatG ?? 65}
-                colorClass="bg-macro-fat"
-              />
-            </div>
-            {entries.length === 0 && (
-              <p className="mt-4 text-xs text-muted-foreground">
-                Nothing logged yet today. Scan a meal or add your first item below.
-              </p>
-            )}
+      <section aria-labelledby="energy-heading" className="border-b pb-6">
+        <p id="energy-heading" className="text-sm text-muted-foreground">
+          {remaining === null ? "Energy consumed" : remaining < 0 ? "Over your energy target" : "Energy remaining"}
+        </p>
+        <div className="mt-1 flex items-baseline gap-2 tabular-nums">
+          <strong className="text-[40px] leading-tight font-semibold tracking-tight">
+            {diary.loading && !diary.data ? "—" : formatNumber(remaining === null ? consumed : Math.abs(remaining))}
+          </strong>
+          <span className="text-sm text-muted-foreground">kcal</span>
+        </div>
+        <p className="mt-1 text-sm text-muted-foreground tabular-nums">
+          {formatNumber(consumed)} eaten{target !== null ? ` · ${formatNumber(target)} daily target` : ""}
+        </p>
+        {target === null && <Link className="mt-2 inline-block text-sm font-medium text-primary underline underline-offset-4" to="/goals">Set your nutrition goals</Link>}
+        <div className="mt-5 h-2 w-full overflow-hidden rounded-full bg-secondary" role="progressbar" aria-label="Energy consumed" aria-valuenow={consumed} aria-valuemin={0} aria-valuemax={Math.max(target ?? consumed, 1)}>
+          <div className="h-full rounded-full bg-primary" style={{ width: `${target && target > 0 ? Math.min((consumed / target) * 100, 100) : 0}%` }} />
+        </div>
+        <div className="mt-5 flex items-center justify-between gap-4">
+          <div>
+            <p className="text-xs text-muted-foreground">Protein</p>
+            <p className="mt-0.5 text-sm font-medium tabular-nums">
+              {formatNumber(protein)} g{proteinTarget !== null ? ` / ${formatNumber(proteinTarget)} g` : ""}
+            </p>
+          </div>
+          <div className="h-1.5 w-28 max-w-[38%] overflow-hidden rounded-full bg-secondary" role="progressbar" aria-label="Protein consumed" aria-valuenow={protein} aria-valuemin={0} aria-valuemax={Math.max(proteinTarget ?? protein, 1)}>
+            <div className="h-full rounded-full bg-primary" style={{ width: `${proteinTarget && proteinTarget > 0 ? Math.min((protein / proteinTarget) * 100, 100) : 0}%` }} />
           </div>
         </div>
       </section>
 
-      {/* Quick actions */}
-      <section aria-label="Quick actions" className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+      <section aria-label="Log food" className="relative">
         <Button
           size="lg"
-          variant="outline"
-          className="flex-col gap-1.5 py-4"
-          onClick={() => foodLog.openScan({ entryDate: today, mealType: currentMealType() })}
+          className="h-12 w-full justify-center gap-2 text-sm font-semibold"
+          onClick={() => setOpenLog((current) => !current)}
+          aria-expanded={openLog}
+          aria-controls="log-actions"
         >
-          <Camera className="h-5 w-5 text-primary" />
-          <span className="text-xs font-medium">Scan meal</span>
+          <Plus className="h-5 w-5" aria-hidden="true" /> Log food
         </Button>
-        <Button
-          size="lg"
-          variant="outline"
-          className="flex-col gap-1.5 py-4"
-          onClick={() => foodLog.open({ entryDate: today, mealType: currentMealType() })}
-        >
-          <Plus className="h-5 w-5 text-primary" />
-          <span className="text-xs font-medium">Add food</span>
-        </Button>
-        <Button
-          size="lg"
-          variant="outline"
-          className="flex-col gap-1.5 py-4"
-          onClick={copyYesterday}
-        >
-          <Copy className="h-5 w-5 text-primary" />
-          <span className="text-xs font-medium">Copy yesterday</span>
-        </Button>
-        <Button size="lg" variant="outline" className="flex-col gap-1.5 py-4" asChild>
-          <Link to="/diary">
-            <ChevronRight className="h-5 w-5 text-primary" />
-            <span className="text-xs font-medium">Full diary</span>
-          </Link>
-        </Button>
+        {openLog && (
+          <div id="log-actions" className="mt-2 overflow-hidden rounded-lg border bg-card">
+            <button type="button" className="flex min-h-12 w-full items-center gap-3 px-4 text-left text-sm font-medium hover:bg-accent focus-visible:outline-2 focus-visible:outline-offset-[-2px] focus-visible:outline-primary" onClick={() => openSearch()}>
+              <Search className="h-4 w-4 text-muted-foreground" aria-hidden="true" /> Search or enter a food
+            </button>
+            <button type="button" className="flex min-h-12 w-full items-center gap-3 border-t px-4 text-left text-sm font-medium hover:bg-accent focus-visible:outline-2 focus-visible:outline-offset-[-2px] focus-visible:outline-primary" onClick={openScan}>
+              <Camera className="h-4 w-4 text-muted-foreground" aria-hidden="true" /> Scan a meal photo
+            </button>
+          </div>
+        )}
       </section>
 
-      {/* Water */}
-      <section aria-label="Water intake" className="rounded-xl border bg-card p-5">
-        <div className="flex items-center justify-between gap-4">
-          <div className="flex items-center gap-3">
-            <Droplets className="h-5 w-5 text-primary" />
-            <div>
-              <p className="text-sm font-medium">Water</p>
-              <p className="text-xs text-muted-foreground tabular-nums">
-                {(waterMl / 1000).toFixed(1)} L of {(waterTarget / 1000).toFixed(1)} L
-              </p>
-            </div>
-          </div>
-          <div className="flex gap-2">
-            <Button variant="outline" size="sm" onClick={() => void addWater(250)}>
-              +250 ml
-            </Button>
-            <Button variant="outline" size="sm" onClick={() => void addWater(500)}>
-              +500 ml
-            </Button>
-          </div>
+      <section aria-labelledby="meals-heading">
+        <div className="flex items-center justify-between gap-2">
+          <h2 id="meals-heading" className="text-base font-semibold">Meals</h2>
+          <Link to="/diary" className="inline-flex min-h-11 items-center text-sm text-muted-foreground underline underline-offset-4">View full diary</Link>
         </div>
-        <div className="mt-3 h-1.5 overflow-hidden rounded-full bg-secondary">
-          <div
-            className="h-full rounded-full bg-primary transition-all"
-            style={{ width: `${Math.min((waterMl / waterTarget) * 100, 100)}%` }}
-          />
-        </div>
-      </section>
 
-      {/* Meals */}
-      <section aria-label="Meals">
-        <div className="flex items-center justify-between">
-          <h2 className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">
-            Meals
-          </h2>
-          <Button variant="ghost" size="sm" asChild>
-            <Link to="/diary">Edit diary</Link>
-          </Button>
-        </div>
-        <div className="mt-2 overflow-hidden rounded-xl border">
-          {MEAL_TYPES.map((meal, idx) => {
-            const mealEntries = byMeal.get(meal) ?? [];
-            const mealKcal = sumNutrients(mealEntries.map((e) => e.nutrients)).kcal ?? 0;
-            return (
-              <div
-                key={meal}
-                className={`flex items-center justify-between gap-3 px-4 py-3.5 ${idx > 0 ? "border-t" : ""} hover:bg-accent/40`}
-              >
-                <div className="min-w-0">
-                  <p className="text-sm font-medium">{MEAL_LABELS[meal]}</p>
-                  <p className="text-xs text-muted-foreground">
-                    {mealEntries.length === 0
-                      ? mealSuggestion(meal)
-                      : `${mealEntries.length} item${mealEntries.length === 1 ? "" : "s"}`}
-                  </p>
+        {diary.error && (
+          <div className="my-3 flex items-center justify-between gap-3 rounded-md border border-destructive/40 p-3 text-sm">
+            <span>Meals could not load.</span>
+            <Button size="sm" variant="outline" onClick={diary.reload}>Retry</Button>
+          </div>
+        )}
+
+        {diary.loading && !diary.data ? (
+          <div className="flex flex-col gap-2 py-4">
+            <Skeleton className="h-14 w-full" /><Skeleton className="h-14 w-full" /><Skeleton className="h-14 w-full" />
+          </div>
+        ) : (
+          <div className="mt-1 border-y">
+            {MEAL_TYPES.map((meal, idx) => {
+              const mealEntries = byMeal.get(meal) ?? [];
+              const mealKcal = sumNutrients(mealEntries.map((entry) => entry.nutrients)).kcal ?? 0;
+              const expanded = expandedMeal === meal;
+              return (
+                <div key={meal} className={idx > 0 ? "border-t" : ""}>
+                  <div className="flex min-h-[68px] items-center gap-2">
+                    <button
+                      type="button"
+                      className="flex min-h-12 min-w-0 flex-1 items-center justify-between gap-2 text-left focus-visible:outline-2 focus-visible:outline-primary"
+                      aria-expanded={expanded}
+                      onClick={() => setExpandedMeal(expanded ? null : meal)}
+                    >
+                      <span className="min-w-0">
+                        <span className="block text-sm font-medium">{MEAL_LABELS[meal]}</span>
+                        <span className="block truncate text-xs text-muted-foreground">
+                          {mealEntries.length ? `${mealEntries.length} logged item${mealEntries.length === 1 ? "" : "s"}` : "Nothing logged"}
+                        </span>
+                      </span>
+                      <span className="ml-auto inline-flex shrink-0 items-center gap-2 text-sm tabular-nums">
+                        {mealEntries.length ? `${formatNumber(mealKcal)} kcal` : ""}
+                        <ChevronDown className={`h-4 w-4 text-muted-foreground transition-transform ${expanded ? "rotate-180" : ""}`} aria-hidden="true" />
+                      </span>
+                    </button>
+                    <button type="button" className="inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-md text-primary hover:bg-accent" aria-label={`Add food to ${MEAL_LABELS[meal]}`} onClick={() => openSearch(meal)}>
+                      <Plus className="h-5 w-5" />
+                    </button>
+                  </div>
+                  {expanded && (
+                    <div className="space-y-2 pb-4">
+                      {mealEntries.length === 0 ? (
+                        <p className="px-1 text-sm text-muted-foreground">Add your first item to {MEAL_LABELS[meal].toLowerCase()}.</p>
+                      ) : mealEntries.map((entry) => (
+                        <div key={entry.id} className="flex items-center justify-between gap-3 pl-1 pr-2 text-sm">
+                          <span className="min-w-0 truncate">{entry.name} <span className="text-muted-foreground">· {formatNumber(entry.grams)} g</span></span>
+                          <span className="shrink-0 tabular-nums text-muted-foreground">{entry.nutrients.kcal === null || entry.nutrients.kcal === undefined ? "—" : `${formatNumber(entry.nutrients.kcal)} kcal`}</span>
+                        </div>
+                      ))}
+                      <Link to="/diary" className="inline-block min-h-10 px-1 pt-2 text-sm font-medium text-primary underline underline-offset-4">Edit these entries</Link>
+                    </div>
+                  )}
                 </div>
-                <div className="flex items-center gap-2">
-                  <span className="text-sm tabular-nums text-muted-foreground">
-                    {mealKcal > 0 ? `${formatNumber(mealKcal)} kcal` : ""}
-                  </span>
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    aria-label={`Add to ${MEAL_LABELS[meal]}`}
-                    onClick={() => foodLog.open({ entryDate: today, mealType: meal })}
-                  >
-                    <Plus className="h-4 w-4" />
-                  </Button>
-                </div>
-              </div>
-            );
-          })}
-        </div>
+              );
+            })}
+          </div>
+        )}
       </section>
 
-      {diary.loading && entries.length === 0 && (
-        <div className="flex flex-col gap-2">
-          <Skeleton className="h-12 w-full" />
-          <Skeleton className="h-12 w-full" />
+      <section aria-label="Other quick actions" className="flex flex-col gap-3 border-t pt-4">
+        <div className="flex flex-wrap items-center justify-between gap-2">
+          <p className="inline-flex items-center gap-2 text-sm text-muted-foreground">
+            <Droplets className="h-4 w-4" aria-hidden="true" />
+            Water: {(waterMl / 1000).toFixed(1)} L{waterTarget !== null ? ` / ${(waterTarget / 1000).toFixed(1)} L` : ""}
+          </p>
+          <button type="button" className="min-h-11 px-2 text-sm font-medium text-foreground underline underline-offset-4" onClick={() => void addWater(250)}>Add 250 ml</button>
         </div>
-      )}
+        <button type="button" className="inline-flex min-h-11 items-center gap-2 self-start text-sm text-muted-foreground underline underline-offset-4 hover:text-foreground" onClick={() => void copyYesterday()}>
+          <Copy className="h-4 w-4" aria-hidden="true" /> Copy yesterday's meals
+        </button>
+      </section>
     </div>
   );
-}
-
-function currentMealType(): never {
-  const h = new Date().getHours();
-  if (h < 11) return "breakfast" as never;
-  if (h < 15) return "lunch" as never;
-  if (h < 21) return "dinner" as never;
-  return "snacks" as never;
-}
-
-function mealSuggestion(meal: string): string {
-  const h = new Date().getHours();
-  const missed = (m: string) => m === meal;
-  if (missed("breakfast") && h < 11) return "Time for breakfast?";
-  if (missed("lunch") && h >= 11 && h < 15) return "Time for lunch?";
-  if (missed("dinner") && h >= 15 && h < 21) return "Time for dinner?";
-  if (missed("snacks")) return "Add a snack";
-  return "No items logged";
 }
