@@ -18,6 +18,11 @@ export const LIMITS = {
   waterMl: { min: 500, max: 8000, unit: "ml" },
   foodKcalPer100g: { min: 0, max: 1000, unit: "kcal per 100 g" },
   foodMacroPer100g: { min: 0, max: 100, unit: "g per 100 g" },
+  foodSodiumMgPer100g: { min: 0, max: 40000, unit: "mg per 100 g" },
+  trialDays: { min: 0, max: 90, unit: "days" },
+  rewardHours: { min: 1, max: 168, unit: "hours" },
+  adsPerDay: { min: 0, max: 24, unit: "ads" },
+  inviteExpiryDays: { min: 1, max: 365, unit: "days" },
   recipeServings: { min: 1, max: 1000, unit: "servings" },
 } as const;
 
