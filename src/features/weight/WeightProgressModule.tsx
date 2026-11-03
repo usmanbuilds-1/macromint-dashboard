@@ -9,6 +9,8 @@ import { useAsyncData, useDataVersion } from "@/hooks/useData";
 import { todayStr } from "@/lib/nutrition/datetime";
 import { estimateAdultEnergy, type EnergyAssessment } from "@/lib/weight/energy";
 import { evaluateWeightTrend, type WeightTrendAnalysis } from "@/lib/weight/trends";
+import { estimateWeightTimeline, weightTimelineLabel } from "@/lib/weight/timeline";
+import { LIMITS, validateNumeric } from "@/lib/validation/limits";
 import type { WeightEntry } from "@/types";
 
 /** This is a deliberately UNMOUNTED feature; the owner will decide placement. */
@@ -29,7 +31,7 @@ function isoDateIsValid(s: string): boolean {
  * No schema migration, localStorage or privileged API is introduced here.
  */
 export function WeightProgressModule({ onSaved }: WeightProgressModuleProps) {
-  const { profile } = useSession();
+  const { profile, refresh } = useSession();
   const version = useDataVersion();
   const today = todayStr();
   const weightsState = useAsyncData(() => backend.getWeights(90), [version]);
@@ -41,6 +43,8 @@ export function WeightProgressModule({ onSaved }: WeightProgressModuleProps) {
   const [logDate, setLogDate] = useState(today);
   const [note, setNote] = useState("");
   const [busy, setBusy] = useState(false);
+  const [targetText, setTargetText] = useState("");
+  const [targetBusy, setTargetBusy] = useState(false);
 
   const trend = useMemo<WeightTrendAnalysis | null>(
     () => profile?.objective ? evaluateWeightTrend(weights, profile.objective, today) : null,
@@ -63,17 +67,47 @@ export function WeightProgressModule({ onSaved }: WeightProgressModuleProps) {
     }
   }, [profile, weights]);
 
+  const latestKg = [...weights].sort((a, b) => b.entryDate.localeCompare(a.entryDate))[0]?.weightKg ?? profile?.weightKg ?? null;
+  const timeline = useMemo(() => {
+    if (!profile?.objective || profile.heightCm === null || latestKg === null || profile.targetWeightKg === null) return null;
+    return estimateWeightTimeline({
+      currentKg: latestKg,
+      targetKg: profile.targetWeightKg,
+      heightCm: profile.heightCm,
+      objective: profile.objective,
+    });
+  }, [profile?.objective, profile?.heightCm, profile?.targetWeightKg, latestKg]);
+
+  async function saveTarget() {
+    const value = validateNumeric(targetText, isImperial ? "weightLb" : "weightKg", "Target weight");
+    if ("error" in value) { toast.error(value.error); return; }
+    const targetKg = isImperial ? value.value / POUNDS_PER_KG : value.value;
+    if (profile?.heightCm && profile.objective && latestKg != null) {
+      const assessment = estimateWeightTimeline({
+        currentKg: latestKg, targetKg, heightCm: profile.heightCm, objective: profile.objective,
+      });
+      if (["invalid_input", "review_target", "objective_mismatch"].includes(assessment.status)) {
+        toast.error(assessment.note); return;
+      }
+    }
+    setTargetBusy(true);
+    try {
+      await backend.updateProfile({ targetWeightKg: Math.round(targetKg * 100) / 100 });
+      await refresh();
+      bumpData();
+      setTargetText("");
+      toast.success("Target weight updated");
+    } catch {
+      toast.error("Unable to update your target");
+    } finally {
+      setTargetBusy(false);
+    }
+  }
+
   async function save() {
-    const numeric = Number(weightText.trim());
-    if (!Number.isFinite(numeric) || weightText.trim() === "") {
-      toast.error("Enter your measured weight");
-      return;
-    }
-    const kg = isImperial ? numeric / POUNDS_PER_KG : numeric;
-    if (kg < 20 || kg > 500) {
-      toast.error("Enter a weight between 20 and 500 kg (44–1102 lb)");
-      return;
-    }
+    const result = validateNumeric(weightText, isImperial ? "weightLb" : "weightKg", "Weight");
+    if ("error" in result) { toast.error(result.error); return; }
+    const kg = isImperial ? result.value / POUNDS_PER_KG : result.value;
     if (!isoDateIsValid(logDate) || logDate > today) {
       toast.error("Choose a valid date, no later than today");
       return;
@@ -108,7 +142,8 @@ export function WeightProgressModule({ onSaved }: WeightProgressModuleProps) {
         <div className="grid grid-cols-2 gap-3">
           <div className="grid gap-1.5">
             <Label htmlFor="weight-module-value">Weight ({units})</Label>
-            <Input id="weight-module-value" inputMode="decimal" type="number" step="any" min={0}
+            <Input id="weight-module-value" inputMode="decimal" type="number" step="any" min={isImperial ? LIMITS.weightLb.min : LIMITS.weightKg.min}
+              max={isImperial ? LIMITS.weightLb.max : LIMITS.weightKg.max}
               value={weightText} onChange={e => setWeightText(e.target.value)} placeholder={isImperial ? "172.4" : "78.2"} required />
           </div>
           <div className="grid gap-1.5">
@@ -137,6 +172,33 @@ export function WeightProgressModule({ onSaved }: WeightProgressModuleProps) {
           <Button variant="outline" size="sm" onClick={weightsState.reload}>Retry</Button>
         </div>
       )}
+
+      <section className="border-b pb-6" aria-labelledby="goal-weight-heading">
+        <h3 id="goal-weight-heading" className="text-base font-semibold">Target weight</h3>
+        <p className="mt-1 text-xs text-muted-foreground">Set a destination for a realistic planning range. You can revise it anytime.</p>
+        <div className="mt-3 flex flex-wrap items-end gap-3">
+          <div className="grid max-w-[190px] gap-1.5">
+            <Label htmlFor="weight-module-target">Target ({units})</Label>
+            <Input id="weight-module-target" type="number" step="any"
+              min={isImperial ? LIMITS.weightLb.min : LIMITS.weightKg.min}
+              max={isImperial ? LIMITS.weightLb.max : LIMITS.weightKg.max}
+              value={targetText}
+              onChange={e => setTargetText(e.target.value)}
+              placeholder={profile?.targetWeightKg ? (profile.targetWeightKg * (isImperial ? POUNDS_PER_KG : 1)).toFixed(1) : "Set your goal"} />
+          </div>
+          <Button type="button" className="min-h-10" onClick={() => void saveTarget()}
+            disabled={targetBusy || !targetText.trim()}>{targetBusy ? "Saving…" : "Update target"}</Button>
+        </div>
+        {profile?.targetWeightKg !== null && profile?.targetWeightKg !== undefined && (
+          <p className="mt-3 text-sm">Current target: <strong>{(profile.targetWeightKg * (isImperial ? POUNDS_PER_KG : 1)).toFixed(1)} {units}</strong></p>
+        )}
+        {timeline && (
+          <div className="mt-3 border-l-2 border-primary pl-3">
+            <strong className="text-sm">{weightTimelineLabel(timeline)}</strong>
+            <p className="mt-1 text-xs leading-5 text-muted-foreground">{timeline.note}</p>
+          </div>
+        )}
+      </section>
 
       {trend && (
         <section aria-labelledby="weight-trend-heading" className="border-b pb-5">
