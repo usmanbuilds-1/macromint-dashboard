@@ -51,6 +51,7 @@ export function ScanDialog({
 }) {
   const fileRef = useRef<HTMLInputElement>(null);
   const originalItems = useRef<ScanItem[]>([]);
+  const saving = useRef(false);
   const [gramDrafts, setGramDrafts] = useState<Record<number, string>>({});
   const [phase, setPhase] = useState<Phase>("capture");
   const [preview, setPreview] = useState<string | null>(null);
@@ -96,12 +97,14 @@ export function ScanDialog({
   };
 
   const addAll = async () => {
-    if (!target) return;
+    if (!target || saving.current || items.length === 0) return;
+    saving.current = true;
     setPhase("scanning");
+    const writtenIds: string[] = [];
     try {
       const corrections: Array<{ label: string; original: unknown; corrected: unknown }> = [];
       for (const item of items) {
-        await backend.addEntry({
+        const created = await backend.addEntry({
           entryDate: target.entryDate,
           mealType: target.mealType as never,
           foodId: item.matchedFoodId,
@@ -112,6 +115,7 @@ export function ScanDialog({
           baseNutrients: item.nutrients,
           source: "scan",
         });
+        writtenIds.push(created.id);
         corrections.push({
           label: item.label,
           original: { grams: item.grams, kcal: item.nutrients.kcal ?? null },
@@ -120,12 +124,25 @@ export function ScanDialog({
       }
       await backend.reportScanCorrections("scan-" + Date.now(), corrections).catch(() => undefined);
       bumpData();
-      toast.success(`${items.length} item${items.length === 1 ? "" : "s"} added to your diary. Review them below — you can adjust portions any time.`);
+      toast.success(`${items.length} item${items.length === 1 ? "" : "s"} added to your diary.`);
       onClose();
       reset();
     } catch {
-      toast.error("Could not add the scanned items");
-      setPhase("review");
+      // Compensate for a partial multi-item write. The backend's addEntry
+      // method is not atomic across items; never blindly retry duplicates.
+      const cleanup = await Promise.allSettled(writtenIds.map((id) => backend.deleteEntry(id)));
+      const cleanupFailed = cleanup.some((entry) => entry.status === "rejected");
+      bumpData();
+      if (cleanupFailed) {
+        toast.error("Some items may be in your diary. Review the diary before scanning again.");
+        onClose();
+        reset();
+      } else {
+        toast.error("Could not add the scanned items. Nothing was saved; please retry.");
+        setPhase("review");
+      }
+    } finally {
+      saving.current = false;
     }
   };
 
