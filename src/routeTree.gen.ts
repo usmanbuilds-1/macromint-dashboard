@@ -10,33 +10,163 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as AppRouteImport } from './routes/_app'
+import { Route as AppAdminRouteImport } from './routes/_app/admin'
+import { Route as AppDiaryRouteImport } from './routes/_app/diary'
+import { Route as AppFoodsRouteImport } from './routes/_app/foods'
+import { Route as AppGoalsRouteImport } from './routes/_app/goals'
+import { Route as AppSettingsRouteImport } from './routes/_app/settings'
+import { Route as AppTodayRouteImport } from './routes/_app/today'
+import { Route as AppTrendsRouteImport } from './routes/_app/trends'
+import { Route as AppAdminIndexRouteImport } from './routes/_app/admin.index'
+import { Route as AppAdminAuditRouteImport } from './routes/_app/admin.audit'
+import { Route as AppAdminSettingsRouteImport } from './routes/_app/admin.settings'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
+const AppRoute = AppRouteImport.update({
+  id: '/_app',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AppAdminRoute = AppAdminRouteImport.update({
+  id: '/admin',
+  path: '/admin',
+  getParentRoute: () => AppRoute,
+} as any)
+const AppDiaryRoute = AppDiaryRouteImport.update({
+  id: '/diary',
+  path: '/diary',
+  getParentRoute: () => AppRoute,
+} as any)
+const AppFoodsRoute = AppFoodsRouteImport.update({
+  id: '/foods',
+  path: '/foods',
+  getParentRoute: () => AppRoute,
+} as any)
+const AppGoalsRoute = AppGoalsRouteImport.update({
+  id: '/goals',
+  path: '/goals',
+  getParentRoute: () => AppRoute,
+} as any)
+const AppSettingsRoute = AppSettingsRouteImport.update({
+  id: '/settings',
+  path: '/settings',
+  getParentRoute: () => AppRoute,
+} as any)
+const AppTodayRoute = AppTodayRouteImport.update({
+  id: '/today',
+  path: '/today',
+  getParentRoute: () => AppRoute,
+} as any)
+const AppTrendsRoute = AppTrendsRouteImport.update({
+  id: '/trends',
+  path: '/trends',
+  getParentRoute: () => AppRoute,
+} as any)
+const AppAdminIndexRoute = AppAdminIndexRouteImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => AppAdminRoute,
+} as any)
+const AppAdminAuditRoute = AppAdminAuditRouteImport.update({
+  id: '/audit',
+  path: '/audit',
+  getParentRoute: () => AppAdminRoute,
+} as any)
+const AppAdminSettingsRoute = AppAdminSettingsRouteImport.update({
+  id: '/settings',
+  path: '/settings',
+  getParentRoute: () => AppAdminRoute,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/admin': typeof AppAdminRouteWithChildren
+  '/diary': typeof AppDiaryRoute
+  '/foods': typeof AppFoodsRoute
+  '/goals': typeof AppGoalsRoute
+  '/settings': typeof AppSettingsRoute
+  '/today': typeof AppTodayRoute
+  '/trends': typeof AppTrendsRoute
+  '/admin/audit': typeof AppAdminAuditRoute
+  '/admin/settings': typeof AppAdminSettingsRoute
+  '/admin/': typeof AppAdminIndexRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/diary': typeof AppDiaryRoute
+  '/foods': typeof AppFoodsRoute
+  '/goals': typeof AppGoalsRoute
+  '/settings': typeof AppSettingsRoute
+  '/today': typeof AppTodayRoute
+  '/trends': typeof AppTrendsRoute
+  '/admin/audit': typeof AppAdminAuditRoute
+  '/admin/settings': typeof AppAdminSettingsRoute
+  '/admin': typeof AppAdminIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
+  '/_app': typeof AppRouteWithChildren
+  '/_app/admin': typeof AppAdminRouteWithChildren
+  '/_app/diary': typeof AppDiaryRoute
+  '/_app/foods': typeof AppFoodsRoute
+  '/_app/goals': typeof AppGoalsRoute
+  '/_app/settings': typeof AppSettingsRoute
+  '/_app/today': typeof AppTodayRoute
+  '/_app/trends': typeof AppTrendsRoute
+  '/_app/admin/audit': typeof AppAdminAuditRoute
+  '/_app/admin/settings': typeof AppAdminSettingsRoute
+  '/_app/admin/': typeof AppAdminIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/'
+  fullPaths:
+    | '/'
+    | '/admin'
+    | '/diary'
+    | '/foods'
+    | '/goals'
+    | '/settings'
+    | '/today'
+    | '/trends'
+    | '/admin/audit'
+    | '/admin/settings'
+    | '/admin/'
   fileRoutesByTo: FileRoutesByTo
-  to: '/'
-  id: '__root__' | '/'
+  to:
+    | '/'
+    | '/diary'
+    | '/foods'
+    | '/goals'
+    | '/settings'
+    | '/today'
+    | '/trends'
+    | '/admin/audit'
+    | '/admin/settings'
+    | '/admin'
+  id:
+    | '__root__'
+    | '/'
+    | '/_app'
+    | '/_app/admin'
+    | '/_app/diary'
+    | '/_app/foods'
+    | '/_app/goals'
+    | '/_app/settings'
+    | '/_app/today'
+    | '/_app/trends'
+    | '/_app/admin/audit'
+    | '/_app/admin/settings'
+    | '/_app/admin/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  AppRoute: typeof AppRouteWithChildren
 }
 
 declare module '@tanstack/react-router' {
@@ -48,11 +178,127 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/_app': {
+      id: '/_app'
+      path: ''
+      fullPath: '/'
+      preLoaderRoute: typeof AppRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/_app/admin': {
+      id: '/_app/admin'
+      path: '/admin'
+      fullPath: '/admin'
+      preLoaderRoute: typeof AppAdminRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/_app/diary': {
+      id: '/_app/diary'
+      path: '/diary'
+      fullPath: '/diary'
+      preLoaderRoute: typeof AppDiaryRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/_app/foods': {
+      id: '/_app/foods'
+      path: '/foods'
+      fullPath: '/foods'
+      preLoaderRoute: typeof AppFoodsRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/_app/goals': {
+      id: '/_app/goals'
+      path: '/goals'
+      fullPath: '/goals'
+      preLoaderRoute: typeof AppGoalsRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/_app/settings': {
+      id: '/_app/settings'
+      path: '/settings'
+      fullPath: '/settings'
+      preLoaderRoute: typeof AppSettingsRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/_app/today': {
+      id: '/_app/today'
+      path: '/today'
+      fullPath: '/today'
+      preLoaderRoute: typeof AppTodayRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/_app/trends': {
+      id: '/_app/trends'
+      path: '/trends'
+      fullPath: '/trends'
+      preLoaderRoute: typeof AppTrendsRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/_app/admin/': {
+      id: '/_app/admin/'
+      path: '/'
+      fullPath: '/admin/'
+      preLoaderRoute: typeof AppAdminIndexRouteImport
+      parentRoute: typeof AppAdminRoute
+    }
+    '/_app/admin/audit': {
+      id: '/_app/admin/audit'
+      path: '/audit'
+      fullPath: '/admin/audit'
+      preLoaderRoute: typeof AppAdminAuditRouteImport
+      parentRoute: typeof AppAdminRoute
+    }
+    '/_app/admin/settings': {
+      id: '/_app/admin/settings'
+      path: '/settings'
+      fullPath: '/admin/settings'
+      preLoaderRoute: typeof AppAdminSettingsRouteImport
+      parentRoute: typeof AppAdminRoute
+    }
   }
 }
 
+interface AppAdminRouteChildren {
+  AppAdminAuditRoute: typeof AppAdminAuditRoute
+  AppAdminSettingsRoute: typeof AppAdminSettingsRoute
+  AppAdminIndexRoute: typeof AppAdminIndexRoute
+}
+
+const AppAdminRouteChildren: AppAdminRouteChildren = {
+  AppAdminAuditRoute: AppAdminAuditRoute,
+  AppAdminSettingsRoute: AppAdminSettingsRoute,
+  AppAdminIndexRoute: AppAdminIndexRoute,
+}
+
+const AppAdminRouteWithChildren = AppAdminRoute._addFileChildren(
+  AppAdminRouteChildren,
+)
+
+interface AppRouteChildren {
+  AppAdminRoute: typeof AppAdminRouteWithChildren
+  AppDiaryRoute: typeof AppDiaryRoute
+  AppFoodsRoute: typeof AppFoodsRoute
+  AppGoalsRoute: typeof AppGoalsRoute
+  AppSettingsRoute: typeof AppSettingsRoute
+  AppTodayRoute: typeof AppTodayRoute
+  AppTrendsRoute: typeof AppTrendsRoute
+}
+
+const AppRouteChildren: AppRouteChildren = {
+  AppAdminRoute: AppAdminRouteWithChildren,
+  AppDiaryRoute: AppDiaryRoute,
+  AppFoodsRoute: AppFoodsRoute,
+  AppGoalsRoute: AppGoalsRoute,
+  AppSettingsRoute: AppSettingsRoute,
+  AppTodayRoute: AppTodayRoute,
+  AppTrendsRoute: AppTrendsRoute,
+}
+
+const AppRouteWithChildren = AppRoute._addFileChildren(AppRouteChildren)
+
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  AppRoute: AppRouteWithChildren,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
