@@ -39,3 +39,26 @@ Status: standalone engine + reusable component, **not mounted on a route**. No d
 - Verify `pnpm test`, `pnpm exec tsc --noEmit`, `pnpm exec eslint . --rule 'prettier/prettier: off'`, `pnpm build`.
 - After selecting placement, use a real authenticated account to test log -> refresh -> correct past date -> trend refresh -> export and RLS separation, in mobile Safari and Chrome. Since Lovable Cloud Email auth is disabled, these live workflows cannot yet be fully verified.
 - The existing `computeGoals` onboarding calculator has fixed adjustment and sex-specific floor behavior. This module introduces a more conservative underweight check but does not silently rewrite onboarding behavior. Before applying it to onboarding, unify policy and retest old expectation snapshots.
+
+
+## Target-weight planning added November 3, 2026
+
+The `src/lib/weight/timeline.ts` module is a **planning range**, not a personalised deadline or a direct prediction from BMI. It requires current weight, goal weight, height (for adult BMI screening), and a directionally consistent objective.
+
+- For weight gain, Iraki et al. (2019), *Nutrition Recommendations for Bodybuilders in the Off-Season: A Narrative Review* (Sports 7(7):154, DOI 10.3390/sports7070154), suggest ~0.25–0.5% of body weight per week for novice/intermediate bodybuilders, generally with resistance training. The module integrates an illustrative relative weekly gain between these rates; this is **not a universal healthy timeline**, not a predicted rate of muscle gain and should not be used as a guarantee. Advanced trainees may progress more slowly. https://pmc.ncbi.nlm.nih.gov/articles/PMC6680710/
+- For weight loss, CDC public-health guidance describes gradual loss of roughly 1–2 lb/week as often more sustainable than rapid loss. It is a broad population recommendation, not an individual prescription. https://www.cdc.gov/healthy-weight-growth/losing-weight/index.html
+- For maintenance and recomposition, stable weight need not be a failure; the planner does not invent a target-weight deadline.
+- Underweight BMI and further weight-loss targets are flagged for individual review, without a timeline. If a goal contradicts the selected gain/lose direction, it is rejected before saving.
+- No formula establishes a guaranteed arrival date. Health, training, medications, hydration, adherence, changes in energy expenditure and muscle-versus-fat gain matter.
+
+Example: 60→74 kg with a gain objective can produce roughly 10–20 months from the body-weight-percentage starting range. **Do not represent this as exactly when the user will reach 74 kg.**
+
+## Numeric input contracts
+
+`src/lib/validation/limits.ts` is the central source for adult profile age/height/weight, target weight, weight logging (kg and lb), meal servings, portions, custom food nutrition, calorie/macro targets, hydration and admin trial/reward numeric settings. Each touched UI field declares visible browser bounds **and** the submit path rejects nonfinite, blank or outside-range values; browser min/max attributes alone are insufficient.
+
+- Adult age: 20–100 years; height 120–240 cm; current/target weight 25–450 kg. These are **consumer-app sanity bounds**, not universal human/clinical ranges, and should not silently clamp an impossible value.
+- Weight log storage remains the existing RLS-protected daily user/date upsert. A user can update a past entry; conversion from pounds to kilograms is performed before saving.
+- Calories and macros use the existing database constraints. Custom food nutrients have per-100g physical sanity ceilings; sodium is in mg and is **not** capped at the same number as kcal.
+- The current database schema has its own wider guardrails (profile heights 50–272 cm and weights 20–500 kg) and existing checks on `nutritional_goals`. Those are protection against extreme values but do **not** substitute for the narrower adult app validation. No database migration was applied.
+- Units should be checked across onboarding, Settings and the weight form as the application grows. Avoid falsely claiming every future numerical control is checked merely because one field uses `type=number`.
