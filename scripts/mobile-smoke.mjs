@@ -34,6 +34,12 @@ for (const [width, height] of sizes) {
     }));
     if (dims.document > dims.viewport + 1) throw new Error("Horizontal overflow: " + JSON.stringify(dims));
     if (!dims.heading) throw new Error("Missing h1");
+    // Catch low-resolution or broken imagery before a public release.
+    const heroImage = page.locator(".mint2-hero-photo img");
+    await heroImage.waitFor();
+    await heroImage.evaluate((img) => img.decode());
+    const renderedImageWidth = await heroImage.evaluate((img) => img.naturalWidth);
+    if (renderedImageWidth < 600) throw new Error("Hero photo is broken or too small: " + renderedImageWidth + "px");
     await page.screenshot({ path: `mobile-audit/landing-${width}.png`, fullPage: true });
     console.log("PASS landing", width, dims.heading);
     if (width === 390) {
