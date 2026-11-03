@@ -675,3 +675,28 @@
 @media(max-width:760px){.mint4-header{padding:17px 22px}.mint4-navigation{display:none}.mint4-layout{display:flex;flex-direction:column}.mint4-content{display:contents}.mint4-hero{order:0;min-height:unset;padding:62px 23px 58px}.mint4-rail{order:1}.mint4-rail-inner{position:static;min-height:unset;padding:45px 23px 50px;align-items:center}.mint4-rail-eyebrow,.mint4-rail-foot{align-self:flex-start;margin-left:max(0px,calc((100% - 435px)/2))}.mint4-preview{max-width:435px}.mint4-features{order:2}.mint4-photo{order:3}.mint4-site .mint2-walkthrough{order:4}.mint4-nutrients{order:5}.mint4-faq{order:7}.mint4-close{order:8}.mint4-footer{order:9}.mint4-hero h1{font-size:clamp(71px,15vw,114px)}.mint4-hero h2{margin-top:35px}.mint4-section,.mint4-site .mint2-walkthrough{padding:65px 23px}.mint4-footer{padding:28px 23px}.mint4-photo img{max-height:340px}}
 @media(max-width:500px){.mint4-header .mm-logo-name{font-size:22px}.mint4-hero h1{font-size:clamp(64px,17vw,83px)}.mint4-hero h2{font-size:clamp(34px,9vw,44px)}.mint4-hero>p:not(.mint4-eyebrow):not(.mint4-access){font-size:16px}.mint4-actions{gap:18px}.mint4-site .mint2-steps{grid-template-columns:1fr}.mint4-site .mint2-step{min-height:unset;flex-direction:row;align-items:center;gap:15px}.mint4-site .mint2-step-text strong{font-size:16px}.mint4-site .mint2-step-text small{font-size:12px}.mint4-rail-inner{padding-inline:20px}.mint4-preview{padding:15px}.mint4-energy-heading strong{font-size:26px}.mint4-preview-macros{gap:8px}.mint4-macro strong{font-size:13px}.mint4-footer{gap:14px}.mint4-footer nav{width:100%}}
 @media(prefers-reduced-motion:reduce){.mint4-site *{scroll-behavior:auto!important;transition:none!important}}
+
+
+/* Visual QA revision: split editorial canvas belongs to the first screen, not
+   a 3,000px-tall empty mint column on long desktop pages. */
+@media(min-width:761px){
+ .mint4-layout{min-height:720px}
+ .mint4-rail-inner{position:static;min-height:720px;height:100%;padding-block:55px;justify-content:center}
+ .mint4-layout .mint4-hero{min-height:720px;display:flex;flex-direction:column;align-items:flex-start;justify-content:center}
+ .mint4-section>*{max-width:980px;margin-left:auto;margin-right:auto}
+ .mint4-site .mint2-walkthrough .mint2-container{max-width:980px}
+ .mint4-photo img{max-width:980px}
+ .mint4-close{text-align:center}
+ .mint4-close h2{max-width:780px}
+ .mint4-feature-list,.mint4-features-list,.mint4-nutrient-example,.mint4-faq dl{max-width:850px}
+ .mint4-close .mint4-primary{margin-inline:auto}
+}
+.mint4-features{background:#fff}
+.mint4-site .mint2-walkthrough{background:#f2f8f3}
+.mint4-nutrients{background:#fff}
+.mint4-faq{background:#fff}
+.mint4-photo{background:#f2f8f3}
+@media(max-width:760px){
+ .mint4-layout{min-height:unset}
+ .mint4-layout .mint4-hero{min-height:unset}
+}
