@@ -12,19 +12,28 @@ export function Register() {
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [inviteCode, setInviteCode] = useState("");
   const [busy, setBusy] = useState(false);
   const navigate = useNavigate();
   const { setAuthUser } = useSession();
 
   const submit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!name.trim() || name.trim().length < 2) {
+      toast.error("Enter your name");
+      return;
+    }
+    if (!/^MM-[A-F0-9]{40}$/i.test(inviteCode.trim()) && !IS_DEMO) {
+      toast.error("Enter your beta invitation code");
+      return;
+    }
     if (password.length < 8) {
       toast.error("Password must be at least 8 characters");
       return;
     }
     setBusy(true);
     try {
-      const { needsVerification } = await backend.signUp(email.trim(), password, name.trim());
+      const { needsVerification } = await backend.signUp(email.trim(), password, name.trim(), inviteCode.trim());
       if (needsVerification && !IS_DEMO) {
         navigate("/verify", { state: { email: email.trim() } });
         return;
@@ -40,8 +49,15 @@ export function Register() {
   };
 
   return (
-    <AuthShell title="Create your account" subtitle="Your 14 day free trial starts immediately. No payment details required.">
+    <AuthShell title="Join the private beta" subtitle="Enter your name and personal invitation. Add an email and password so you can securely return to your diary.">
       <form onSubmit={submit} className="flex flex-col gap-4">
+        <div className="grid gap-1.5">
+          <Label htmlFor="invite">Invitation code</Label>
+          <Input id="invite" required={!IS_DEMO} autoComplete="off" spellCheck={false}
+            value={inviteCode} onChange={(e) => setInviteCode(e.target.value.toUpperCase().replace(/[^A-Z0-9-]/g, ""))}
+            placeholder="MM-..." className="font-mono text-sm tracking-wide" maxLength={43} />
+          <p className="text-xs text-muted-foreground">Codes are single-use. Contact the beta administrator if you need access.</p>
+        </div>
         <div className="grid gap-1.5">
           <Label htmlFor="name">Name</Label>
           <Input id="name" required autoComplete="name" value={name} onChange={(e) => setName(e.target.value)} placeholder="Your name" />
@@ -55,7 +71,7 @@ export function Register() {
           <Input id="password" type="password" required minLength={8} autoComplete="new-password" value={password} onChange={(e) => setPassword(e.target.value)} />
           <p className="text-xs text-muted-foreground">At least 8 characters.</p>
         </div>
-        <Button type="submit" disabled={busy}>{busy ? "Creating account…" : "Create account"}</Button>
+        <Button type="submit" disabled={busy}>{busy ? "Creating account…" : "Create beta account"}</Button>
         <p className="text-center text-sm text-muted-foreground">
           Already have an account?{" "}
           <Link to="/login" className="font-medium text-foreground underline underline-offset-2">Sign in</Link>
