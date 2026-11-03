@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { getSupabase } from "@/lib/supabase";
+import { INVITE_REGISTRATION_ENABLED } from "@/lib/beta/config";
 import { toast } from "sonner";
 import { ChevronDown, Search } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -100,6 +101,7 @@ function BetaInvitations() {
   };
 
   useEffect(() => {
+    if (!INVITE_REGISTRATION_ENABLED) return;
     void reload().catch(() => setLoaded(false));
   }, []);
 
@@ -137,6 +139,18 @@ function BetaInvitations() {
       setBusy(false);
     }
   };
+
+  if (!INVITE_REGISTRATION_ENABLED) {
+    return (
+      <section className="border-b pb-6" aria-labelledby="beta-invites-heading">
+        <h2 id="beta-invites-heading" className="text-base font-semibold">Closed beta invitations</h2>
+        <p className="mt-2 text-sm leading-6 text-muted-foreground">
+          Invitation management will be available after Lovable Cloud email authentication
+          and the beta invitation backend are configured. Existing account management stays available.
+        </p>
+      </section>
+    );
+  }
 
   return (
     <section className="border-b pb-6" aria-labelledby="beta-invites-heading">
