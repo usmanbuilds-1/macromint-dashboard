@@ -37,13 +37,28 @@ jobs:
             file "$p"
             test "$(wc -c < "$p")" -gt 25000
           done
+      - name: Optimize original photos as WebP for mobile
+        run: |
+          python -m pip --quiet install pillow
+          python - <<'PY'
+          from PIL import Image
+          from pathlib import Path
+          for src in sorted(Path("public/images").glob("*-hq.jpg")):
+              img = Image.open(src).convert("RGB")
+              dst = src.with_suffix(".webp")
+              img.save(dst, "WEBP", quality=78, method=6)
+              if dst.stat().st_size < 25000:
+                  raise RuntimeError("Unexpectedly small output: " + str(dst))
+              print(dst, img.size, dst.stat().st_size)
+              src.unlink()
+          PY
       - name: Commit assets to visual review branch
         shell: bash
         run: |
           set -euo pipefail
           git config user.name 'github-actions[bot]'
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
-          git add public/images/*-hq.jpg
+          git add -A public/images/
           git diff --cached --quiet && exit 0
           git commit -m 'assets: bundle sharp food photos for reliable local delivery'
           git push origin HEAD:fix/landing-cronometer-polish-20261103
