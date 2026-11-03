@@ -48,13 +48,20 @@ for (const [width, height] of sizes) {
     }
     const reg = await page.goto(url + "/register", { waitUntil: "networkidle", timeout: 30000 });
     if (!reg || reg.status() >= 400) throw new Error("Registration HTTP status " + reg?.status());
-    await page.locator("#invite").waitFor({ timeout: 15000 });
-    await page.locator("#name").waitFor({ timeout: 15000 });
+    if (process.env.VITE_BETA_INVITES_ENABLED === "true") {
+      await page.locator("#invite").waitFor({ timeout: 15000 });
+      await page.locator("#name").waitFor({ timeout: 15000 });
+    } else {
+      await page.getByRole("heading", { name: /Beta registration is coming soon/i }).waitFor({ timeout: 15000 });
+      if (await page.locator("#password").count()) {
+        throw new Error("Registration must be disabled until Cloud Auth and invite backend are activated");
+      }
+    }
     const registerSize = await page.evaluate(() => ({ viewport: window.innerWidth, doc: document.documentElement.scrollWidth }));
     if (registerSize.doc > registerSize.viewport + 1) throw new Error("Signup horizontally overflows " + JSON.stringify(registerSize));
     await page.screenshot({ path: `mobile-audit/signup-${width}.png`, fullPage: true });
     if (problems.length) throw new Error("Runtime errors: " + problems.join("; "));
-    console.log("PASS signup", width);
+    console.log("PASS registration release state", width);
   } catch (error) {
     failed = true;
     console.error("FAIL width", width, String(error));
