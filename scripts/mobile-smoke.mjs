@@ -60,7 +60,10 @@ for (const [width, height] of sizes) {
     const registerSize = await page.evaluate(() => ({ viewport: window.innerWidth, doc: document.documentElement.scrollWidth }));
     if (registerSize.doc > registerSize.viewport + 1) throw new Error("Signup horizontally overflows " + JSON.stringify(registerSize));
     await page.screenshot({ path: `mobile-audit/signup-${width}.png`, fullPage: true });
-    if (width === 390 && !process.env.VITE_SUPABASE_URL) {
+    if (width === 390 && process.env.MACROMINT_TEST_DEMO_LOGIN === "true") {
+      // The checked-in .env already configures Lovable Cloud Supabase. Never
+      // try to sign into that live backend from public browser smoke tests.
+      // Enable this block only with a purpose-built local demo environment.
       // The smoke environment is the isolated demo adapter, never a live account.
       await page.goto(url + "/login", { waitUntil: "networkidle" });
       await page.locator("#email").fill("demo@macromint.app");
