@@ -96,7 +96,7 @@ export function Today() {
           </div>
           {target === null && <Link className="text-xs font-medium text-primary underline underline-offset-4" to="/goals">Set a target</Link>}
         </div>
-        <div className="mm-today-arc" role="progressbar" aria-label="Calories consumed today" aria-valuenow={consumed} aria-valuemin={0} aria-valuemax={Math.max(target ?? consumed, 1)}>
+        <div className="mm-today-arc" role="progressbar" aria-label="Calories consumed today" aria-valuenow={consumed} aria-valuemin={0} aria-valuemax={Math.max(target ?? 0, consumed, 1)}>
           <svg viewBox="0 0 240 135" aria-hidden="true">
             <path d="M 19 119 A 101 101 0 0 1 221 119" pathLength="100" stroke="var(--color-secondary)" strokeWidth="14" strokeLinecap="round" fill="none" />
             <path d="M 19 119 A 101 101 0 0 1 221 119" pathLength="100" stroke="var(--color-primary)" strokeWidth="14" strokeLinecap="round" fill="none"
@@ -124,7 +124,7 @@ export function Today() {
               <span>{macro.label}</span>
               <strong className="tabular-nums">{formatNumber(macro.value)} g</strong>
               <small className="tabular-nums">{macro.goal === null ? "No target" : `of ${formatNumber(macro.goal)} g`}</small>
-              <div role="progressbar" aria-label={`${macro.label} progress`} aria-valuemin={0} aria-valuenow={macro.value} aria-valuemax={Math.max(macro.goal ?? macro.value, 1)} className="mm-today-macro-track">
+              <div role="progressbar" aria-label={`${macro.label} progress`} aria-valuemin={0} aria-valuenow={macro.value} aria-valuemax={Math.max(macro.goal ?? 0, macro.value, 1)} className="mm-today-macro-track">
                 <i style={{ width: `${macro.goal && macro.goal > 0 ? Math.min(100, (macro.value / macro.goal) * 100) : 0}%` }} />
               </div>
             </div>
