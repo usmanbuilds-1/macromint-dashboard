@@ -1,0 +1,49 @@
+name: Import licensed high-resolution food photography
+
+on:
+  push:
+    branches:
+      - fix/landing-cronometer-polish-20261103
+    paths:
+      - .github/workflows/import-food-photography.yml
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  import:
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: true
+      - name: Download high-resolution photographs from Unsplash
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p public/images
+          curl --fail --location --silent --show-error --retry 3 --retry-delay 2 \
+            'https://images.unsplash.com/photo-1546069901-ba9599a7e63c?fm=jpg&fit=crop&w=1200&q=82' \
+            --output public/images/meal-hero-hq.jpg
+          curl --fail --location --silent --show-error --retry 3 --retry-delay 2 \
+            'https://images.unsplash.com/photo-1762631383628-77f92d18b184?fm=jpg&fit=crop&w=1200&q=82' \
+            --output public/images/meal-review-hq.jpg
+          curl --fail --location --silent --show-error --retry 3 --retry-delay 2 \
+            'https://images.unsplash.com/photo-1517673400267-0251440c45dc?fm=jpg&fit=crop&w=1200&q=82' \
+            --output public/images/breakfast-hero-hq.jpg
+          for p in public/images/*-hq.jpg; do
+            file "$p"
+            test "$(wc -c < "$p")" -gt 25000
+          done
+      - name: Commit assets to visual review branch
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add public/images/*-hq.jpg
+          git diff --cached --quiet && exit 0
+          git commit -m 'assets: bundle sharp food photos for reliable local delivery'
+          git push origin HEAD:fix/landing-cronometer-polish-20261103
