@@ -98,10 +98,10 @@ function Walkthrough() {
           <p>Three straightforward steps. No complicated setup.</p>
         </div>
         <div className="mint2-walkthrough-layout">
-          <div className="mint2-steps" role="tablist" aria-label="Explore food logging steps">
+          <div className="mint2-steps" role="group" aria-label="Explore food logging steps">
             {STEPS.map((s) => (
               <button key={s.key} type="button" role="tab" id={`step-${s.key}`}
-                aria-selected={step === s.key} aria-controls="walkthrough-panel"
+                aria-pressed={step === s.key} aria-controls="walkthrough-panel"
                 className={step === s.key ? "mint2-step is-current" : "mint2-step"}
                 onClick={() => choose(s.key)}>
                 <span className="mint2-step-number">{s.number}</span>
