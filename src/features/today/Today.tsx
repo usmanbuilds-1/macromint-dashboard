@@ -37,7 +37,7 @@ export function Today() {
   const proteinTarget = goals?.proteinG ?? null;
 
   const byMeal = useMemo(() => {
-    const map = new Map<MealType, DiaryEntry[]>(MEAL_TYPES.map((m) => [m, []]));
+    const map = new Map<MealType, DiaryEntry[]>(MEAL_TYPES.map((m): [MealType, DiaryEntry[]] => [m, []]));
     entries.forEach((entry) => map.get(entry.mealType)?.push(entry));
     return map;
   }, [entries]);
