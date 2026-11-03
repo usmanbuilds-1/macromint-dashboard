@@ -100,7 +100,7 @@ export interface Backend {
   // Auth
   getSessionUser(): Promise<SessionUser | null>;
   signIn(email: string, password: string): Promise<void>;
-  signUp(email: string, password: string, name: string): Promise<{ needsVerification: boolean }>;
+  signUp(email: string, password: string, name: string, inviteCode: string): Promise<{ needsVerification: boolean }>;
   signOut(): Promise<void>;
   requestPasswordReset(email: string): Promise<void>;
   resendVerification(): Promise<void>;

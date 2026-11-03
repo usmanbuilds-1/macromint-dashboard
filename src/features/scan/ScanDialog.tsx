@@ -16,7 +16,7 @@ import { Label } from "@/components/ui/label";
 import { ScanError, friendlyScanError, prepareImage, scanImage, type ScanResponse } from "@/lib/scan/client";
 import { groundScanItems, type RawModelItem } from "@/lib/scan/grounding";
 import { backend, bumpData } from "@/lib/backend";
-import { checkPlausibility } from "@/lib/nutrition/math";
+import { checkPlausibility, rescaleScanNutrients } from "@/lib/nutrition/math";
 import { kcalOf } from "@/components/app/bits";
 import { formatNumber } from "@/lib/utils";
 import { cn } from "@/lib/utils";
@@ -50,6 +50,9 @@ export function ScanDialog({
   onClose: () => void;
 }) {
   const fileRef = useRef<HTMLInputElement>(null);
+  const originalItems = useRef<ScanItem[]>([]);
+  const saving = useRef(false);
+  const [gramDrafts, setGramDrafts] = useState<Record<number, string>>({});
   const [phase, setPhase] = useState<Phase>("capture");
   const [preview, setPreview] = useState<string | null>(null);
   const [hints, setHints] = useState("");
@@ -63,6 +66,8 @@ export function ScanDialog({
     setHints("");
     setResult(null);
     setItems([]);
+    originalItems.current = [];
+    setGramDrafts({});
     setError(null);
   };
 
@@ -81,7 +86,8 @@ export function ScanDialog({
         items = await groundScanItems(res.items as unknown as RawModelItem[], foods);
       }
       setResult(res);
-      setItems(items.map((i) => ({ ...i })));
+      originalItems.current = items.map((i) => ({ ...i, nutrients: { ...i.nutrients } }));
+      setItems(items.map((i) => ({ ...i, nutrients: { ...i.nutrients } })));
       setPhase("review");
     } catch (e) {
       const code = e instanceof ScanError ? e.code : "AI_FAILED";
@@ -91,12 +97,14 @@ export function ScanDialog({
   };
 
   const addAll = async () => {
-    if (!target) return;
+    if (!target || saving.current || items.length === 0) return;
+    saving.current = true;
     setPhase("scanning");
+    const writtenIds: string[] = [];
     try {
       const corrections: Array<{ label: string; original: unknown; corrected: unknown }> = [];
       for (const item of items) {
-        await backend.addEntry({
+        const created = await backend.addEntry({
           entryDate: target.entryDate,
           mealType: target.mealType as never,
           foodId: item.matchedFoodId,
@@ -107,6 +115,7 @@ export function ScanDialog({
           baseNutrients: item.nutrients,
           source: "scan",
         });
+        writtenIds.push(created.id);
         corrections.push({
           label: item.label,
           original: { grams: item.grams, kcal: item.nutrients.kcal ?? null },
@@ -115,16 +124,31 @@ export function ScanDialog({
       }
       await backend.reportScanCorrections("scan-" + Date.now(), corrections).catch(() => undefined);
       bumpData();
-      toast.success(`${items.length} item${items.length === 1 ? "" : "s"} added to your diary. Review them below — you can adjust portions any time.`);
+      toast.success(`${items.length} item${items.length === 1 ? "" : "s"} added to your diary.`);
       onClose();
       reset();
     } catch {
-      toast.error("Could not add the scanned items");
-      setPhase("review");
+      // Compensate for a partial multi-item write. The backend's addEntry
+      // method is not atomic across items; never blindly retry duplicates.
+      const cleanup = await Promise.allSettled(writtenIds.map((id) => backend.deleteEntry(id)));
+      const cleanupFailed = cleanup.some((entry) => entry.status === "rejected");
+      bumpData();
+      if (cleanupFailed) {
+        toast.error("Some items may be in your diary. Review the diary before scanning again.");
+        onClose();
+        reset();
+      } else {
+        toast.error("Could not add the scanned items. Nothing was saved; please retry.");
+        setPhase("review");
+      }
+    } finally {
+      saving.current = false;
     }
   };
 
   if (!open) return null;
+
+  const invalidGramDraft = Object.values(gramDrafts).some((draft) => !Number.isSafeInteger(Number(draft)) || Number(draft) <= 0 || draft.length === 0);
 
   const totalKcal = items.reduce((s, i) => s + kcalOf(i.nutrients), 0);
 
@@ -134,7 +158,7 @@ export function ScanDialog({
         <DialogHeader>
           <DialogTitle>Scan a meal</DialogTitle>
           <DialogDescription>
-            Photograph your plate. Every item is checked against the verified food database, validated for consistency, and shown to you for review before anything is logged.
+            Photo scanning estimates foods and portions. Review each item and adjust its grams before logging. Database matches are references, not guarantees of accuracy.
           </DialogDescription>
         </DialogHeader>
 
@@ -234,13 +258,28 @@ export function ScanDialog({
                           id={`grams-${idx}`}
                           inputMode="numeric"
                           className="h-8 w-24 text-sm tabular-nums"
-                          value={item.grams}
+                          value={gramDrafts[idx] ?? String(item.grams)}
+                          aria-describedby={`grams-help-${idx}`}
                           onChange={(e) => {
-                            const grams = Math.max(Number(e.target.value.replace(/\D/g, "")) || 0, 1);
-                            setItems((prev) => prev.map((it, i) => (i === idx ? { ...it, grams } : it)));
+                            const draft = e.target.value.replace(/[^0-9]/g, "");
+                            setGramDrafts((prev) => ({ ...prev, [idx]: draft }));
+                            const grams = Number(draft);
+                            const original = originalItems.current[idx];
+                            if (!original || !Number.isSafeInteger(grams) || grams <= 0) return;
+                            setItems((prev) => prev.map((it, i) =>
+                              i === idx
+                                ? { ...it, grams, nutrients: rescaleScanNutrients(original.nutrients, original.grams, grams) }
+                                : it,
+                            ));
                           }}
+                          onBlur={() => setGramDrafts((prev) => {
+                            const next = { ...prev };
+                            delete next[idx];
+                            return next;
+                          })}
+
                         />
-                        <span className="text-xs tabular-nums text-muted-foreground">
+                        <span id={`grams-help-${idx}`} className="text-xs tabular-nums text-muted-foreground">
                           P {formatNumber(item.nutrients.protein ?? 0)} · C {formatNumber(item.nutrients.carbs ?? 0)} · F {formatNumber(item.nutrients.fat ?? 0)}
                         </span>
                       </div>
@@ -267,7 +306,7 @@ export function ScanDialog({
             {phase === "review" ? "Scan another" : "Back"}
           </Button>
           {phase === "review" && items.length > 0 && (
-            <Button onClick={addAll}>Add {items.length} item{items.length === 1 ? "" : "s"} to diary</Button>
+            <Button onClick={addAll} disabled={invalidGramDraft}>Add {items.length} item{items.length === 1 ? "" : "s"} to diary</Button>
           )}
         </DialogFooter>
       </DialogContent>

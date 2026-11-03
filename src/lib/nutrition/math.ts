@@ -48,6 +48,25 @@ export function scaleNutrients(
   return out;
 }
 
+/**
+ * Recompute the nutrients of a scan item using the ORIGINAL scan estimate.
+ * Callers must retain the original amount/profile, not repeatedly scale the
+ * edited record: repeated edits must not introduce rounding drift.
+ * Undefined nutrients remain unavailable, rather than becoming fake zeroes.
+ */
+export function rescaleScanNutrients(
+  original: NutrientRecord,
+  originalGrams: number,
+  editedGrams: number,
+): NutrientRecord {
+  if (!Number.isFinite(originalGrams) || originalGrams <= 0 ||
+      !Number.isFinite(editedGrams) || editedGrams <= 0) {
+    throw new RangeError("Scan portions must be positive finite gram amounts");
+  }
+  // scaleNutrients rounds each displayed nutrient once from its baseline.
+  return scaleNutrients(original, (editedGrams / originalGrams) * 100);
+}
+
 /** Sum nutrient records. A key sums to null only when every record lacks it. */
 export function sumNutrients(records: NutrientRecord[]): NutrientRecord {
   const out: NutrientRecord = {};

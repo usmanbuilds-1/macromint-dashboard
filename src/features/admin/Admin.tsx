@@ -1,4 +1,6 @@
 import { useEffect, useState } from "react";
+import { getSupabase } from "@/lib/supabase";
+import { INVITE_REGISTRATION_ENABLED } from "@/lib/beta/config";
 import { toast } from "sonner";
 import { ChevronDown, Search } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -72,6 +74,150 @@ function StateBadge({ state }: { state: AccessState }) {
   );
 }
 
+interface BetaInviteRow {
+  id: string;
+  created_at: string;
+  expires_at: string;
+  max_uses: number;
+  used_count: number;
+  revoked_at: string | null;
+  note: string | null;
+}
+
+/** Admin-only controls. Raw codes are shown exactly once after generation. */
+function BetaInvitations() {
+  const [invitations, setInvitations] = useState<BetaInviteRow[]>([]);
+  const [createdCode, setCreatedCode] = useState<string | null>(null);
+  const [expiresDays, setExpiresDays] = useState(14);
+  const [note, setNote] = useState("");
+  const [busy, setBusy] = useState(false);
+  const [loaded, setLoaded] = useState(false);
+
+  const reload = async () => {
+    const { data, error } = await getSupabase().functions.invoke("beta-invites", { body: { action: "list" } });
+    if (error || data?.error) throw new Error("Could not load beta invitations. Confirm the beta-invites server function is deployed.");
+    setInvitations((data?.invitations ?? []) as BetaInviteRow[]);
+    setLoaded(true);
+  };
+
+  useEffect(() => {
+    if (!INVITE_REGISTRATION_ENABLED) return;
+    void reload().catch(() => setLoaded(false));
+  }, []);
+
+  const create = async () => {
+    setBusy(true);
+    setCreatedCode(null);
+    try {
+      const { data, error } = await getSupabase().functions.invoke("beta-invites", {
+        body: { action: "create", expiresDays, maxUses: 1, note },
+      });
+      if (error || !data?.invitationCode) throw new Error("Unable to create an invitation. Check server deployment.");
+      setCreatedCode(String(data.invitationCode));
+      setNote("");
+      await reload();
+      toast.success("New single-use invitation created");
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Could not create invitation");
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const revoke = async (inviteId: string) => {
+    setBusy(true);
+    try {
+      const { data, error } = await getSupabase().functions.invoke("beta-invites", {
+        body: { action: "revoke", inviteId },
+      });
+      if (error || data?.error) throw new Error("Could not revoke invitation");
+      await reload();
+      toast.success("Invitation revoked");
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Could not revoke invitation");
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  if (!INVITE_REGISTRATION_ENABLED) {
+    return (
+      <section className="border-b pb-6" aria-labelledby="beta-invites-heading">
+        <h2 id="beta-invites-heading" className="text-base font-semibold">Closed beta invitations</h2>
+        <p className="mt-2 text-sm leading-6 text-muted-foreground">
+          Invitation management will be available after Lovable Cloud email authentication
+          and the beta invitation backend are configured. Existing account management stays available.
+        </p>
+      </section>
+    );
+  }
+
+  return (
+    <section className="border-b pb-6" aria-labelledby="beta-invites-heading">
+      <div>
+        <h2 id="beta-invites-heading" className="text-base font-semibold">Closed beta invitations</h2>
+        <p className="mt-1 max-w-xl text-sm text-muted-foreground">
+          Give a tester one private invitation code. They enter their name and code, then create secure login credentials. Each account remains manageable below.
+        </p>
+      </div>
+      <div className="mt-4 flex flex-wrap items-end gap-3">
+        <div className="grid gap-1.5">
+          <Label htmlFor="invite-expiry">Code expires after</Label>
+          <select
+            id="invite-expiry"
+            className="h-11 rounded-md border bg-card px-3 text-sm"
+            value={expiresDays}
+            onChange={(e) => setExpiresDays(Number(e.target.value))}
+          >
+            <option value={1}>1 day</option><option value={7}>7 days</option>
+            <option value={14}>14 days</option><option value={30}>30 days</option>
+          </select>
+        </div>
+        <div className="grid min-w-40 flex-1 gap-1.5">
+          <Label htmlFor="invite-note">Private tester note (optional)</Label>
+          <Input id="invite-note" className="h-11" value={note} onChange={(e) => setNote(e.target.value)} maxLength={200} placeholder="Tester name or batch" />
+        </div>
+        <Button disabled={busy} onClick={() => void create()} className="h-11">Generate invitation</Button>
+      </div>
+      {createdCode && (
+        <div className="mt-4 rounded-md border border-primary/30 bg-accent p-4">
+          <p className="text-xs font-medium text-muted-foreground">Copy this code now. It will not be shown again.</p>
+          <p className="mt-2 break-all font-mono text-sm font-semibold tracking-wide">{createdCode}</p>
+          <Button
+            variant="outline"
+            className="mt-3 h-11"
+            onClick={() => void navigator.clipboard.writeText(createdCode).then(() => toast.success("Invitation copied")).catch(() => toast.error("Select and copy the code manually"))}
+          >
+            Copy code
+          </Button>
+        </div>
+      )}
+      {!loaded && (
+        <p className="mt-3 text-xs text-muted-foreground">Invite listing unavailable until the server function and migration are deployed.</p>
+      )}
+      {invitations.length > 0 && (
+        <div className="mt-4 divide-y border-y">
+          {invitations.map((inv) => {
+            const expired = new Date(inv.expires_at).getTime() <= Date.now();
+            const status = inv.revoked_at ? "Revoked" : expired ? "Expired" : inv.used_count >= inv.max_uses ? "Used" : "Available";
+            return (
+              <div key={inv.id} className="flex flex-wrap items-center justify-between gap-2 py-3">
+                <div className="min-w-0">
+                  <p className="text-sm font-medium">{inv.note || "Beta invitation"} · {status}</p>
+                  <p className="text-xs text-muted-foreground">{inv.used_count}/{inv.max_uses} redeemed · expires {formatDateShort(inv.expires_at.slice(0, 10))}</p>
+                </div>
+                {!inv.revoked_at && status === "Available" && (
+                  <Button variant="outline" size="sm" disabled={busy} onClick={() => void revoke(inv.id)}>Revoke</Button>
+                )}
+              </div>
+            );
+          })}
+        </div>
+      )}
+    </section>
+  );
+}
+
 function AdminUsers() {
   const [search, setSearch] = useState("");
   const [noteTarget, setNoteTarget] = useState<AdminUserRow | null>(null);
@@ -93,6 +239,7 @@ function AdminUsers() {
 
   return (
     <div className="flex flex-col gap-4">
+      <BetaInvitations />
       <div className="relative">
         <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
         <Input

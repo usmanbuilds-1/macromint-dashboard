@@ -7,11 +7,13 @@ import { Label } from "@/components/ui/label";
 import { AuthShell } from "./AuthShell";
 import { backend, BackendError } from "@/lib/backend";
 import { useSession } from "@/context/Session";
+import { getRememberMe, setRememberMe } from "@/lib/auth/remember-me";
 
 export function Login() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [busy, setBusy] = useState(false);
+  const [remember, setRemember] = useState(getRememberMe());
   const navigate = useNavigate();
   const location = useLocation();
   const { setAuthUser } = useSession();
@@ -20,6 +22,7 @@ export function Login() {
     e.preventDefault();
     setBusy(true);
     try {
+      setRememberMe(remember);
       await backend.signIn(email.trim(), password);
       await setAuthUserAndGo();
     } catch (err) {
@@ -50,6 +53,11 @@ export function Login() {
           </div>
           <Input id="password" type="password" required autoComplete="current-password" value={password} onChange={(e) => setPassword(e.target.value)} />
         </div>
+        <label className="flex min-h-11 cursor-pointer items-center gap-3 text-sm text-muted-foreground">
+          <input type="checkbox" checked={remember} onChange={(e) => setRemember(e.target.checked)}
+            className="h-4 w-4 accent-primary" />
+          Keep me signed in on this device
+        </label>
         <Button type="submit" disabled={busy}>{busy ? "Signing in…" : "Sign in"}</Button>
         <p className="text-center text-sm text-muted-foreground">
           New here?{" "}

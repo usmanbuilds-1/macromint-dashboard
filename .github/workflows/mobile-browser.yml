@@ -1,0 +1,45 @@
+name: Mobile browser smoke audit
+
+on:
+  push:
+    branches:
+      - feat/mobile-precision-and-beta-20261103
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  mobile:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Install pnpm
+        run: npm install -g pnpm@10
+      - name: Install dependencies and browser
+        run: |
+          pnpm install --no-frozen-lockfile
+          pnpm add -D playwright@1.56.0
+          pnpm exec playwright install chromium --with-deps
+      - name: Build production preview
+        run: pnpm build
+      - name: Start preview
+        run: |
+          pnpm dev --host 127.0.0.1 --port 4173 > /tmp/macromint-preview.log 2>&1 &
+          for i in $(seq 1 60); do
+            if curl -fsS http://127.0.0.1:4173/ > /dev/null; then exit 0; fi
+            sleep 1
+          done
+          cat /tmp/macromint-preview.log
+          exit 1
+      - name: Inspect landing and invite form at phone/tablet/desktop widths
+        run: node scripts/mobile-smoke.mjs
+      - name: Upload screenshots even on failure
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: mobile-browser-screenshots
+          path: mobile-audit/
+          if-no-files-found: warn

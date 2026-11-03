@@ -3,17 +3,21 @@ import { ChevronDown, ChevronLeft, ChevronRight, Copy, Pencil, Plus, Star, BookM
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { CalorieRing, MacroBar } from "@/components/app/bits";
 import { useSession } from "@/context/Session";
 import { backend, bumpData } from "@/lib/backend";
 import { useAsyncData, useDataVersion } from "@/hooks/useData";
 import { dailyTotals } from "@/lib/nutrition/math";
 import { addDaysStr, formatDateLong, formatDateShort, todayStr } from "@/lib/nutrition/datetime";
-import { MEAL_LABELS, MEAL_TYPES, type DiaryEntry } from "@/types";
+import { MEAL_LABELS, MEAL_TYPES, type DiaryEntry, type MealType } from "@/types";
 import { useFoodLog } from "@/features/foods/FoodLogProvider";
 import { formatNumber } from "@/lib/utils";
 import { cn } from "@/lib/utils";
 import { ServingConfigDialog } from "@/features/foods/ServingConfig";
+
+function preferredMeal(): MealType {
+  const hour = new Date().getHours();
+  return hour < 11 ? "breakfast" : hour < 15 ? "lunch" : hour < 21 ? "dinner" : "snacks";
+}
 
 export function Diary() {
   const { goals } = useSession();
@@ -28,7 +32,8 @@ export function Diary() {
   const entries = diary.data ?? [];
   const totals = useMemo(() => dailyTotals(entries), [entries]);
   const kcal = totals.kcal ?? 0;
-  const target = goals?.calorieTarget ?? 2000;
+  const target = goals?.calorieTarget ?? null;
+  const remaining = target === null ? null : target - kcal;
 
   const byMeal = useMemo(() => {
     const map = new Map<string, DiaryEntry[]>();
@@ -38,8 +43,13 @@ export function Diary() {
   }, [entries]);
 
   const removeEntry = async (entry: DiaryEntry) => {
-    await backend.deleteEntry(entry.id);
-    bumpData();
+    try {
+      await backend.deleteEntry(entry.id);
+      bumpData();
+    } catch {
+      toast.error("Could not delete this entry. Try again.");
+      return;
+    }
     toast("Deleted " + entry.name, {
       action: {
         label: "Undo",
@@ -98,9 +108,13 @@ export function Diary() {
   };
 
   const copyDay = async (from: string, to: string) => {
-    const count = await backend.copyDay(from, to);
-    bumpData();
-    toast[count ? "success" : "info"](count ? `Copied ${count} items` : "Nothing to copy");
+    try {
+      const count = await backend.copyDay(from, to);
+      bumpData();
+      toast[count ? "success" : "info"](count ? `Copied ${count} items` : "Nothing to copy");
+    } catch {
+      toast.error("Meals could not be copied. Try again.");
+    }
   };
 
   return (
@@ -120,39 +134,63 @@ export function Diary() {
         </div>
       </header>
 
-      <section aria-label="Day summary" className="rounded-xl border bg-card">
-        <div className="flex flex-col items-center gap-5 p-5 sm:flex-row">
-          <CalorieRing consumed={kcal} target={target} size={128} />
-          <div className="w-full flex-1">
-            <div className="flex flex-col gap-3">
-              <MacroBar label="Protein" value={totals.protein ?? 0} target={goals?.proteinG ?? 100} colorClass="bg-macro-protein" />
-              <MacroBar label="Carbohydrates" value={totals.carbs ?? 0} target={goals?.carbsG ?? 200} colorClass="bg-macro-carbs" />
-              <MacroBar label="Fat" value={totals.fat ?? 0} target={goals?.fatG ?? 65} colorClass="bg-macro-fat" />
-              {(totals.fiber != null || goals?.fiberG) && (
-                <MacroBar label="Fiber" value={totals.fiber ?? 0} target={goals?.fiberG ?? 30} colorClass="bg-chart-5" />
-              )}
-            </div>
+      <section aria-label="Diary totals" className="border-y py-5">
+        <div className="flex flex-wrap items-baseline justify-between gap-4">
+          <div>
+            <p className="text-xs font-medium text-muted-foreground">{remaining === null ? "Energy eaten" : remaining < 0 ? "Above energy target" : "Energy remaining"}</p>
+            <p className="mt-1 text-3xl font-semibold tracking-tight tabular-nums">
+              {formatNumber(remaining === null ? kcal : Math.abs(remaining))}
+              <span className="ml-2 text-sm font-normal text-muted-foreground">kcal</span>
+            </p>
+            <p className="mt-1 text-sm text-muted-foreground tabular-nums">{formatNumber(kcal)} logged{target !== null ? ` of ${formatNumber(target)} kcal` : ""}</p>
+          </div>
+          <div className="min-w-[125px]">
+            <p className="text-xs font-medium text-muted-foreground">Protein</p>
+            <p className="mt-1 text-lg font-semibold tabular-nums">
+              {formatNumber(totals.protein ?? 0)} g
+              {goals?.proteinG != null && <span className="text-sm font-normal text-muted-foreground"> / {goals.proteinG} g</span>}
+            </p>
+            <p className="mt-1 text-xs text-muted-foreground tabular-nums">
+              Carbs {formatNumber(totals.carbs ?? 0)} g · Fat {formatNumber(totals.fat ?? 0)} g
+            </p>
           </div>
         </div>
       </section>
 
-      <div className="flex flex-wrap gap-2">
-        <Button onClick={() => foodLog.open({ entryDate: date, mealType: "breakfast" })} className="gap-2">
-          <Plus className="h-4 w-4" /> Add food
+      <div className="flex flex-wrap items-center gap-3">
+        <Button className="min-h-11 flex-1 gap-2 sm:flex-none" onClick={() => foodLog.open({ entryDate: date, mealType: preferredMeal() })}>
+          <Plus className="h-4 w-4" /> Log food
         </Button>
-        <Button variant="outline" onClick={() => copyDay(addDaysStr(date, -1), date)}>
-          <Copy className="h-4 w-4" /> Copy yesterday
-        </Button>
-        <Button variant="outline" onClick={() => copyDay(date, addDaysStr(date, 1))} disabled={date >= todayStr()}>
-          <Copy className="h-4 w-4" /> Copy to tomorrow
-        </Button>
+        <details className="group relative">
+          <summary className="flex min-h-11 cursor-pointer list-none items-center px-3 text-sm font-medium text-muted-foreground underline underline-offset-4">
+            Reuse a day
+          </summary>
+          <div className="absolute right-0 top-full z-10 mt-1 flex min-w-48 flex-col gap-1 rounded-md border bg-card p-2 shadow-sm">
+            <button type="button" className="min-h-11 rounded-md px-3 text-left text-sm hover:bg-accent" onClick={() => void copyDay(addDaysStr(date, -1), date)}>Copy yesterday here</button>
+            {date < todayStr() && <button type="button" className="min-h-11 rounded-md px-3 text-left text-sm hover:bg-accent" onClick={() => void copyDay(date, addDaysStr(date, 1))}>Copy this day forward</button>}
+          </div>
+        </details>
       </div>
+
+      {diary.loading && !diary.data && <div className="space-y-2" aria-label="Loading diary">
+        <div className="h-12 animate-pulse rounded-md bg-secondary" />
+        <div className="h-12 animate-pulse rounded-md bg-secondary" />
+      </div>}
+      {diary.error && (
+        <div role="alert" className="flex flex-wrap items-center justify-between gap-2 border border-destructive/30 p-3 text-sm">
+          Could not load your diary for this day.
+          <Button variant="outline" size="sm" onClick={diary.reload}>Retry</Button>
+        </div>
+      )}
+      {!diary.loading && !diary.error && entries.length === 0 && (
+        <p className="text-sm text-muted-foreground">Nothing logged on this day yet. Add food to start your diary.</p>
+      )}
 
       {MEAL_TYPES.map((meal) => {
         const mealEntries = byMeal.get(meal) ?? [];
         return (
-          <section key={meal} aria-label={MEAL_LABELS[meal]} className="overflow-hidden rounded-xl border">
-            <div className="flex items-center justify-between border-b bg-secondary/40 px-4 py-2.5">
+          <section key={meal} aria-label={MEAL_LABELS[meal]} className="overflow-hidden border-b">
+            <div className="flex min-h-14 items-center justify-between gap-2 py-2.5">
               <div className="flex items-baseline gap-2.5">
                 <h2 className="text-sm font-semibold">{MEAL_LABELS[meal]}</h2>
                 <span className="text-xs tabular-nums text-muted-foreground">
@@ -179,7 +217,7 @@ export function Diary() {
                     <div className="flex items-center justify-between gap-3">
                       <button
                         type="button"
-                        className="min-w-0 flex-1 text-left"
+                        className="min-h-11 min-w-0 flex-1 text-left"
                         onClick={() => setEditEntry(entry)}
                       >
                         <p className="truncate text-sm font-medium">{entry.name}</p>
@@ -213,13 +251,13 @@ export function Diary() {
                     </div>
                     {openRow === entry.id && (
                       <div className="mt-2.5 flex flex-wrap gap-2 rounded-lg border bg-secondary/40 p-2.5">
-                        <button type="button" className="min-h-8 rounded-md border px-2.5 py-1 text-xs font-medium hover:bg-accent" onClick={() => { void duplicateEntry(entry); setOpenRow(null); }}>
+                        <button type="button" className="min-h-11 rounded-md border px-3 py-2 text-sm font-medium hover:bg-accent" onClick={() => { void duplicateEntry(entry); setOpenRow(null); }}>
                           <Copy className="mr-1.5 inline h-3 w-3" /> Duplicate
                         </button>
                         <button type="button" className="min-h-8 rounded-md border px-2.5 py-1 text-xs font-medium hover:bg-accent" onClick={() => { void favoriteEntry(entry); setOpenRow(null); }}>
                           <Star className="mr-1.5 inline h-3 w-3" /> Favourite
                         </button>
-                        <button type="button" className="min-h-8 rounded-md border border-destructive/40 px-2.5 py-1 text-xs font-medium text-destructive hover:bg-destructive/10" onClick={() => { void removeEntry(entry); setOpenRow(null); }}>
+                        <button type="button" className="min-h-11 rounded-md border border-destructive/40 px-3 py-2 text-sm font-medium text-destructive hover:bg-destructive/10" onClick={() => { void removeEntry(entry); setOpenRow(null); }}>
                           <Trash2 className="mr-1.5 inline h-3 w-3" /> Delete
                         </button>
                       </div>

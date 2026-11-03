@@ -79,11 +79,14 @@ export const supabaseBackend: Backend = {
     if (error) throw new BackendError("AUTH", error.message);
   },
 
-  async signUp(email, password, name) {
+  async signUp(email, password, name, inviteCode) {
+    if (!inviteCode || !/^MM-[A-F0-9]{40}$/i.test(inviteCode.trim())) {
+      throw new BackendError("INVITE", "Enter the invitation code from your beta invitation");
+    }
     const { data, error } = await getSupabase().auth.signUp({
       email,
       password,
-      options: { data: { name } },
+      options: { data: { name, beta_invite_code: inviteCode.trim() } },
     });
     if (error) throw new BackendError("AUTH", error.message);
     return { needsVerification: !data.session };

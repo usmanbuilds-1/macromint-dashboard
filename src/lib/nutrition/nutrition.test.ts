@@ -7,6 +7,7 @@ import {
   checkPlausibility,
   daysToKcal,
   scaleNutrients,
+  rescaleScanNutrients,
   sumNutrients,
 } from "./math";
 import { computeGoals, mifflinStJeorBmr, tdee, sanitizeGoalEdit } from "./targets";
@@ -112,6 +113,45 @@ describe("nutrient arithmetic", () => {
     ]);
     expect(total.kcal).toBe(301);
     expect(total.protein).toBe(30);
+  });
+});
+
+describe("scan portion corrections", () => {
+  const original = {
+    kcal: 200, protein: 12, carbs: 30, fat: 4, sodium: null, iron: 2.5, fiber: 3,
+  };
+
+  it("scales calories, macros and micronutrients from the original grams", () => {
+    const increased = rescaleScanNutrients(original, 100, 150);
+    expect(increased).toMatchObject({
+      kcal: 300, protein: 18, carbs: 45, fat: 6, iron: 3.8, fiber: 4.5, sodium: null,
+    });
+    expect(rescaleScanNutrients(original, 100, 100)).toEqual(original);
+  });
+
+  it("does not accumulate drift across repeated portion edits", () => {
+    const first = rescaleScanNutrients(original, 100, 150);
+    expect(first.iron).toBe(3.8);
+    expect(rescaleScanNutrients(original, 100, 100).iron).toBe(2.5);
+  });
+
+  it("keeps missing nutrients unknown while preserving measured zeros", () => {
+    expect(rescaleScanNutrients({ kcal: 0, vitaminD: null }, 90, 180))
+      .toEqual({ kcal: 0, vitaminD: null });
+  });
+
+  it("rejects blank, zero, infinite and invalid portions instead of saving them", () => {
+    expect(() => rescaleScanNutrients(original, 100, 0)).toThrow(RangeError);
+    expect(() => rescaleScanNutrients(original, 0, 100)).toThrow(RangeError);
+    expect(() => rescaleScanNutrients(original, 100, Number.POSITIVE_INFINITY)).toThrow(RangeError);
+  });
+
+  it("resizes each item independently in multi-food scans", () => {
+    const other = { kcal: 80, protein: 1 };
+    const one = rescaleScanNutrients(original, 100, 50);
+    const two = rescaleScanNutrients(other, 200, 300);
+    expect(one.kcal).toBe(100);
+    expect(two.kcal).toBe(120);
   });
 });
 

@@ -136,7 +136,7 @@ export function AppLayout() {
 
       <div className="flex min-w-0 flex-1 flex-col">
         {/* Mobile top bar */}
-        <header className="sticky top-0 z-40 flex items-center justify-between border-b bg-background/95 px-4 py-3 backdrop-blur md:hidden">
+        <header className="sticky top-0 z-40 flex items-center justify-between border-b bg-background px-4 py-3 md:hidden">
           <Logo />
           <Sheet>
             <SheetTrigger asChild>
@@ -176,15 +176,10 @@ export function AppLayout() {
 
         {/* Mobile bottom nav */}
         <nav
-          className="fixed inset-x-0 bottom-0 z-40 grid grid-cols-5 border-t bg-background/95 pb-[env(safe-area-inset-bottom)] backdrop-blur md:hidden"
+          className="fixed inset-x-0 bottom-0 z-40 grid grid-cols-5 border-t bg-background pb-[env(safe-area-inset-bottom)] md:hidden"
           aria-label="Primary"
         >
-          {[
-            ...NAV,
-            isAdmin
-              ? { to: "/admin", label: "Admin", icon: ShieldCheck }
-              : { to: "/goals", label: "Goals", icon: Target },
-          ].map((n) => (
+          {NAV.map((n) => (
             <NavLink
               key={n.to}
               to={n.to}

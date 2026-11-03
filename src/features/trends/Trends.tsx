@@ -122,8 +122,24 @@ export function Trends() {
         </Tabs>
       </header>
 
+      {diaryData.loading && !diaryData.data && (
+        <p role="status" className="text-sm text-muted-foreground">Loading your nutrition history…</p>
+      )}
+      {diaryData.error && (
+        <div role="alert" className="flex flex-wrap items-center justify-between gap-3 border border-destructive/30 p-3 text-sm">
+          Nutrition history could not load.
+          <Button variant="outline" size="sm" onClick={diaryData.reload}>Retry</Button>
+        </div>
+      )}
+      {weight.error && (
+        <div role="alert" className="flex flex-wrap items-center justify-between gap-3 border border-destructive/30 p-3 text-sm">
+          Your weight history could not load.
+          <Button variant="outline" size="sm" onClick={weight.reload}>Retry</Button>
+        </div>
+      )}
+
       {/* Calorie trend */}
-      <section className="rounded-xl border bg-card p-5" aria-label="Calorie trend">
+      <section className="border-b bg-card/0 pb-6" aria-label="Calorie trend">
         <div className="flex flex-wrap items-center justify-between gap-2">
           <h2 className="text-sm font-semibold">Daily calories</h2>
           {adherence.adherencePct !== null ? (
@@ -170,7 +186,7 @@ export function Trends() {
 
       <div className="grid gap-6 lg:grid-cols-2">
         {/* Weight */}
-        <section className="rounded-xl border bg-card p-5" aria-label="Weight trend">
+        <section className="border-b pb-6" aria-label="Weight trend">
           <div className="flex items-center justify-between gap-2">
             <h2 className="text-sm font-semibold">Weight</h2>
             <AddWeightButton />
@@ -191,7 +207,7 @@ export function Trends() {
                       contentStyle={{ background: "var(--popover)", border: "1px solid var(--border)", borderRadius: 8, fontSize: 12 }}
                       formatter={(value) => [`${formatNumber(Number(value), 1)} kg`, "Weight"]}
                     />
-                    <Line type="monotone" dataKey="weight" stroke="var(--chart-2)" strokeWidth={2} dot={{ r: 2.5, fill: "var(--chart-2)" }} />
+                    <Line type="monotone" dataKey="weight" stroke="var(--primary)" strokeWidth={2} dot={{ r: 2.5, fill: "var(--primary)" }} />
                   </LineChart>
                 </ResponsiveContainer>
               </div>
@@ -207,15 +223,15 @@ export function Trends() {
         </section>
 
         {/* Macro distribution */}
-        <section className="rounded-xl border bg-card p-5" aria-label="Macro distribution">
+        <section className="border-b pb-6" aria-label="Macro distribution">
           <h2 className="text-sm font-semibold">Energy from macros</h2>
           <p className="mt-0.5 text-xs text-muted-foreground">Share of logged energy in this range</p>
           {macroShare ? (
             <>
               <div className="mt-5 flex h-3 overflow-hidden rounded-full">
-                <div className="bg-macro-protein" style={{ width: `${macroShare.protein}%` }} />
-                <div className="bg-macro-carbs" style={{ width: `${macroShare.carbs}%` }} />
-                <div className="bg-macro-fat" style={{ width: `${macroShare.fat}%` }} />
+                <div className="bg-primary" style={{ width: `${macroShare.protein}%` }} />
+                <div className="bg-primary/60" style={{ width: `${macroShare.carbs}%` }} />
+                <div className="bg-primary/25" style={{ width: `${macroShare.fat}%` }} />
               </div>
               <dl className="mt-4 grid grid-cols-3 gap-3 text-center">
                 <div>
@@ -263,11 +279,17 @@ function WeeklyArchive({ target, version }: { target: number; version: number })
   }, [version, target]);
 
   return (
-    <section aria-label="Weekly history" className="overflow-hidden rounded-xl border">
-      <div className="border-b bg-secondary/40 px-4 py-2.5">
+    <section aria-label="Weekly history" className="overflow-hidden border-y">
+      <div className="border-b px-2 py-3">
         <h2 className="text-sm font-semibold">Week by week</h2>
       </div>
-      {data.loading && <p className="px-4 py-4 text-sm text-muted-foreground">Loading…</p>}
+      {data.loading && <p role="status" className="px-4 py-4 text-sm text-muted-foreground">Loading weekly history…</p>}
+      {data.error && (
+        <div role="alert" className="flex items-center justify-between px-4 py-3 text-sm">
+          Weekly history unavailable.
+          <Button variant="outline" size="sm" onClick={data.reload}>Retry</Button>
+        </div>
+      )}
       {data.data?.map(({ dates, stats }) => (
         <div key={dates[0]} className="flex items-center justify-between gap-3 border-t px-4 py-3 first:border-t-0">
           <div>
