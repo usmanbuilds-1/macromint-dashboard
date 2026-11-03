@@ -7,6 +7,7 @@ import { Label } from "@/components/ui/label";
 import { AuthShell } from "./AuthShell";
 import { backend, BackendError, IS_DEMO } from "@/lib/backend";
 import { useSession } from "@/context/Session";
+import { INVITE_REGISTRATION_ENABLED } from "@/lib/beta/config";
 
 export function Register() {
   const [name, setName] = useState("");
@@ -19,6 +20,10 @@ export function Register() {
 
   const submit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!INVITE_REGISTRATION_ENABLED && !IS_DEMO) {
+      toast.error("Beta registration is not open yet.");
+      return;
+    }
     if (!name.trim() || name.trim().length < 2) {
       toast.error("Enter your name");
       return;
@@ -47,6 +52,25 @@ export function Register() {
       setBusy(false);
     }
   };
+
+  if (!INVITE_REGISTRATION_ENABLED && !IS_DEMO) {
+    return (
+      <AuthShell title="Beta registration is coming soon" subtitle="Macromint is preparing private beta access. New accounts cannot be created until secure sign-in and invitations are enabled.">
+        <div className="flex flex-col gap-5">
+          <p className="text-sm leading-6 text-muted-foreground">
+            Existing users can sign in when authentication is available. We won't ask you
+            to create an account until it can be secured and saved correctly.
+          </p>
+          <Link className="inline-flex min-h-12 items-center justify-center rounded-md bg-primary px-4 text-sm font-semibold text-primary-foreground" to="/">
+            Back to Macromint
+          </Link>
+          <Link to="/login" className="inline-flex min-h-11 items-center justify-center text-sm font-medium underline underline-offset-4">
+            Existing member? Sign in
+          </Link>
+        </div>
+      </AuthShell>
+    );
+  }
 
   return (
     <AuthShell title="Join the private beta" subtitle="Enter your name and personal invitation. Add an email and password so you can securely return to your diary.">
