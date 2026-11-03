@@ -33,6 +33,7 @@ import { kcalOf } from "@/components/app/bits";
 import { formatNumber } from "@/lib/utils";
 import { cn } from "@/lib/utils";
 import type { FoodLogTarget, LoggableFood } from "./FoodLogProvider";
+import { LIMITS } from "@/lib/validation/limits";
 
 const PORTION_PRESETS = [25, 50, 75, 100];
 
@@ -118,7 +119,10 @@ export function ServingConfigDialog({
     }
   }, [view, target, entry]);
 
-  const gramsNum = Math.max(Number(grams) || 0, 0) * (unit === "oz" ? 28.349523125 : 1);
+  const rawGrams = Number(grams);
+  const gramsNum = rawGrams * (unit === "oz" ? 28.349523125 : 1);
+  const invalidAmount = !grams.trim() || !Number.isFinite(gramsNum) ||
+    gramsNum < LIMITS.foodGrams.min || gramsNum > LIMITS.foodGrams.max;
   const per100g = useMemo<NutrientRecord>(() => {
     if (!view) return {};
     if (!quickAdd) return view.per100g;
@@ -131,7 +135,12 @@ export function ServingConfigDialog({
   }, [view, quickAdd, manualValues]);
   const invalidManual = quickAdd && (
     manualValues.kcal.trim() === "" ||
-    Object.values(manualValues).some((value) => value !== "" && (!Number.isFinite(Number(value)) || Number(value) < 0))
+    Object.entries(manualValues).some(([key, value]) => {
+      if (value.trim() === "") return false;
+      const numeric = Number(value);
+      const bound = key === "kcal" ? LIMITS.foodKcalPer100g : LIMITS.foodMacroPer100g;
+      return !Number.isFinite(numeric) || numeric < bound.min || numeric > bound.max;
+    })
   );
   const base = useMemo(
     () => (view ? scaleNutrients(per100g, gramsNum, 100) : {}),
@@ -143,11 +152,11 @@ export function ServingConfigDialog({
 
   const submit = async () => {
     if (invalidManual) {
-      toast.error("Enter valid calories per 100 g. Leave other nutrients blank if unknown.");
+      toast.error("Quick-add nutrition exceeds allowed per-100 g limits or is incomplete.");
       return;
     }
-    if (gramsNum <= 0) {
-      toast.error("Portion must be greater than zero");
+    if (invalidAmount) {
+      toast.error(`Portion must be between ${LIMITS.foodGrams.min} and ${LIMITS.foodGrams.max} g.`);
       return;
     }
     setBusy(true);
@@ -215,7 +224,8 @@ export function ServingConfigDialog({
                   <div className="grid gap-1.5" key={key}>
                     <Label htmlFor={`quick-${key}`}>{key === "kcal" ? "Calories (kcal)" : `${key.charAt(0).toUpperCase() + key.slice(1)} (g)`}</Label>
                     <Input
-                      id={`quick-${key}`} inputMode="decimal"
+                      id={`quick-${key}`} inputMode="decimal" type="number" step="any"
+                      min={0} max={key === "kcal" ? LIMITS.foodKcalPer100g.max : LIMITS.foodMacroPer100g.max}
                       value={manualValues[key]}
                       onChange={(e) => setManualValues((prev) => ({ ...prev, [key]: e.target.value }))}
                       placeholder={key === "kcal" ? "Required" : "Unknown"}
@@ -246,6 +256,10 @@ export function ServingConfigDialog({
               <Label htmlFor="sc-grams">Amount ({unit})</Label>
               <Input
                 id="sc-grams"
+                type="number"
+                min={unit === "oz" ? LIMITS.foodGrams.min / 28.349523125 : LIMITS.foodGrams.min}
+                max={unit === "oz" ? LIMITS.foodGrams.max / 28.349523125 : LIMITS.foodGrams.max}
+                step="any"
                 inputMode="decimal"
                 value={grams}
                 onChange={(e) => setGrams(e.target.value)}
@@ -376,7 +390,7 @@ export function ServingConfigDialog({
             <Button variant="outline" onClick={onClose}>
               Cancel
             </Button>
-            <Button onClick={submit} disabled={busy || invalidManual || gramsNum <= 0}>
+            <Button onClick={submit} disabled={busy || invalidManual || invalidAmount}>
               {busy && <Loader2 className="h-4 w-4 animate-spin" />}
               {editing ? "Save changes" : "Add to diary"}
             </Button>
