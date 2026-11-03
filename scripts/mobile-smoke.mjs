@@ -21,6 +21,12 @@ for (const [width, height] of sizes) {
     const response = await page.goto(url, { waitUntil: "networkidle", timeout: 30000 });
     if (!response || response.status() >= 400) throw new Error("Landing HTTP status " + response?.status());
     await page.getByRole("heading", { level: 1 }).waitFor({ timeout: 20000 });
+    const overlay = await page.locator("vite-error-overlay").count();
+    if (overlay > 0) throw new Error("Vite error overlay is present");
+    const stylesheetLoaded = await page.evaluate(() =>
+      getComputedStyle(document.body).fontFamily.includes("Instrument Sans")
+    );
+    if (!stylesheetLoaded) throw new Error("Design system stylesheet failed to load");
     const dims = await page.evaluate(() => ({
       viewport: window.innerWidth,
       document: document.documentElement.scrollWidth,
