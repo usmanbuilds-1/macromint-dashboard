@@ -129,7 +129,8 @@ export function computeGoals(input: GoalInput): ComputedGoals {
 /** Revalidate a manually edited goal set (used by Goals and Settings). */
 export function sanitizeGoalEdit(g: Partial<GoalSet>): GoalSet | null {
   const num = (v: unknown, min: number, max: number): number | null => {
-    const n = typeof v === "string" ? Number(v) : typeof v === "number" ? v : NaN;
+    // Empty or whitespace input means missing, never a recorded zero.
+    const n = typeof v === "string" && v.trim() !== "" ? Number(v) : typeof v === "number" ? v : NaN;
     if (!Number.isFinite(n) || n < min || n > max) return null;
     return Math.round(n);
   };
