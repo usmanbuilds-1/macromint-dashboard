@@ -172,15 +172,15 @@ export function Landing() {
         </nav>
         <Link to="/login" className="mint4-signin">Sign in <ArrowRight size={16} aria-hidden="true" /></Link>
       </header>
-      <div className="mint4-layout">
-        <aside className="mint4-rail" aria-label="Product preview">
+      <main id="main-content">
+        <div className="mint4-layout">
+          <aside className="mint4-rail" aria-label="Product preview">
           <div className="mint4-rail-inner">
             <p className="mint4-rail-eyebrow">A BETTER VIEW OF EVERY DAY</p>
             <DailyPreview />
             <p className="mint4-rail-foot">INTERACTIVE PREVIEW <span>·</span> SAMPLE DATA</p>
           </div>
-        </aside>
-        <main className="mint4-content" id="main-content">
+          </aside>
           <section className="mint4-hero" aria-labelledby="mint4-hero-title">
             <p className="mint4-eyebrow">NUTRITION TRACKING, WITHOUT THE NOISE</p>
             <h1 id="mint4-hero-title">macro<span>mint.</span></h1>
@@ -192,6 +192,7 @@ export function Landing() {
             </div>
             <p className="mint4-access">The web app is live. {INVITE_REGISTRATION_ENABLED ? "New members join using a personal invitation." : "New account invitations are not yet available; existing members can sign in."}</p>
           </section>
+        </div>
           <section className="mint4-features mint4-section" id="features" aria-labelledby="mint4-features-title">
             <p className="mint4-eyebrow">DESIGNED FOR THE DAILY ROUTINE</p>
             <h2 id="mint4-features-title">A food diary that stays useful.</h2>
@@ -242,8 +243,7 @@ export function Landing() {
             <p>Photo-based nutrition suggestions are estimates. Check portions before logging.</p>
             <nav aria-label="Legal links"><Link to="/privacy">Privacy</Link><Link to="/terms">Terms</Link><Link to="/login">Sign in</Link></nav>
           </footer>
-        </main>
-      </div>
+      </main>
     </div>
   );
 }
