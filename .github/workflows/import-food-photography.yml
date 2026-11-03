@@ -61,4 +61,6 @@ jobs:
           git add -A public/images/
           git diff --cached --quiet && exit 0
           git commit -m 'assets: bundle sharp food photos for reliable local delivery'
+          git fetch origin fix/landing-cronometer-polish-20261103
+          git rebase origin/fix/landing-cronometer-polish-20261103
           git push origin HEAD:fix/landing-cronometer-polish-20261103
