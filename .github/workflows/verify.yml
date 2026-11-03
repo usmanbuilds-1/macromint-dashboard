@@ -25,7 +25,7 @@ jobs:
       - name: Nutrition regression tests
         run: pnpm test
       - name: ESLint (existing Prettier violations excluded)
-        run: pnpm exec eslint . --rule 'prettier/prettier: off'
+        run: "pnpm exec eslint . --rule 'prettier/prettier: off'"
       - name: TypeScript
         run: pnpm exec tsc --noEmit
       - name: Build
