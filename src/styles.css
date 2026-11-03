@@ -360,3 +360,203 @@
   .mm-story-photo { width:min(100%,250px); height:250px; }
   .mm-scene-food { width:37%; }
 }
+
+
+/* Macro Mint public site: deliberately restrained, mobile-first, real product proof.
+   This namespace avoids changing production diary, admin and auth screens. */
+.mint2-site { background:#fcfdfb; color:#17352a; overflow:clip; }
+.mint2-site .mint2-container { width:100%; max-width:1320px; padding-inline:clamp(20px,4.4vw,68px); margin-inline:auto; }
+.mint2-site a { text-decoration:none; }
+.mint2-header { background:#fff; border-bottom:1px solid #e8eee9; }
+.mint2-header-inner { display:flex; gap:24px; min-height:77px; align-items:center; justify-content:space-between; }
+.mint2-header-links,.mint2-header-actions { display:flex; align-items:center; gap:clamp(13px,2.3vw,32px); }
+.mint2-header-links a { color:#42564b; font-size:14px; font-weight:550; }
+.mint2-header-links a:hover { color:#087549; }
+.mint2-header-actions { gap:22px; }
+.mint2-text-link { font-size:14px; font-weight:650; white-space:nowrap; }
+.mint2-button { display:inline-flex; align-items:center; justify-content:center; gap:13px; min-height:52px; padding:0 23px; border-radius:9px; font-size:14px; font-weight:650; color:white; background:#075e3a; border:1px solid #075e3a; white-space:nowrap; transition:background .16s ease; }
+.mint2-button:hover,.mint2-action:hover { background:#064a31; color:#fff; }
+.mint2-button--small { min-height:42px; font-size:13px; padding:0 17px; }
+.mint2-eyebrow { display:block; color:#087549; font-size:11px; font-weight:750; letter-spacing:.14em; line-height:1.5; }
+.mint2-hero { display:grid; grid-template-columns:minmax(0,.92fr) minmax(0,1.08fr); align-items:center; gap:clamp(24px,4vw,70px); padding-top:clamp(46px,6vw,100px); padding-bottom:clamp(80px,8vw,120px); min-height:680px; }
+.mint2-hero-copy { max-width:530px; }
+.mint2-hero-copy h1 { font-size:clamp(58px,5.7vw,84px); line-height:1.025; letter-spacing:-.068em; font-weight:760; margin-top:21px; }
+.mint2-hero-copy h1 em { font-style:normal; color:#0a7a50; }
+.mint2-hero-copy>p { font-size:clamp(16px,1.3vw,19px); line-height:1.65; color:#637368; margin-top:26px; max-width:450px; }
+.mint2-hero-actions { display:flex; gap:21px; align-items:center; flex-wrap:wrap; margin-top:32px; }
+.mint2-secondary { color:#244b38; min-height:48px; display:inline-flex; align-items:center; border-bottom:1px solid #9ead9f; font-size:14px; font-weight:650; }
+.mint2-secondary:hover,.mint2-inline-link:hover { color:#0c8156; }
+.mint2-hero-status { display:flex; align-items:center; gap:9px; font-size:12px; font-weight:550; color:#677c6c; margin-top:24px; }
+.mint2-hero-status>span { width:7px; height:7px; border-radius:50%; background:#198a5b; }
+.mint2-hero-visual { min-height:540px; height:clamp(540px,43vw,610px); position:relative; isolation:isolate; }
+.mint2-hero-photo { position:absolute; right:0; top:0; height:92%; width:77%; border-radius:230px 230px 8px 8px; background:#e7e7dc; overflow:hidden; }
+.mint2-hero-photo img { width:100%; height:100%; object-fit:cover; object-position:center 44%; }
+.mint2-dashboard { position:absolute; left:0; bottom:0; width:min(66%,360px); min-width:280px; border:1px solid #e4ebe5; border-radius:13px; background:#fff; box-shadow:0 23px 52px rgba(17,53,42,.13); padding:clamp(18px,2vw,26px); }
+.mint2-dashboard-head { display:flex; justify-content:space-between; align-items:flex-start; gap:10px; }
+.mint2-meta,.mint2-preview-label { font-size:10px; font-weight:720; color:#088452; letter-spacing:.11em; }
+.mint2-dashboard h3 { font-size:24px; font-weight:720; margin-top:3px; letter-spacing:-.05em; }
+.mint2-daystamp { background:#f1f5f1; color:#62756b; padding:6px 9px; font-size:10px; border-radius:5px; }
+.mint2-total { display:flex; justify-content:space-between; align-items:flex-end; gap:12px; margin-top:25px; }
+.mint2-total>div { display:flex; flex-direction:column; gap:2px; }
+.mint2-total strong { font-size:33px; font-weight:760; letter-spacing:-.06em; line-height:1; }
+.mint2-total span { font-size:11px; color:#657367; }
+.mint2-total-remaining { text-align:right; color:#20865a; }
+.mint2-total-remaining strong { color:#0b7c4e; font-size:26px; }
+.mint2-energy-track,.mint2-track { height:7px; border-radius:999px; overflow:hidden; background:#e8eee9; }
+.mint2-energy-track { margin-top:17px; }
+.mint2-energy-track>span,.mint2-track>i { height:100%; display:block; border-radius:inherit; background:#0c8d5b; }
+.mint2-macro-list { display:flex; flex-direction:column; gap:14px; margin-top:22px; }
+.mint2-macro-row { display:grid; grid-template-columns:1fr auto; gap:6px; align-items:center; }
+.mint2-macro-row>span { color:#62756a; font-size:11px; }
+.mint2-macro-row strong { font-size:12px; font-weight:750; }
+.mint2-macro-row small { font-size:10px; font-weight:450; color:#75857a; }
+.mint2-macro-row .mint2-track { grid-column:1/-1; height:4px; }
+.mint2-dashboard-meals { margin-top:20px; border-top:1px solid #e7ece8; padding-top:14px; }
+.mint2-dashboard-meals p { font-size:10px; font-weight:700; letter-spacing:.08em; color:#738375; }
+.mint2-dashboard-meals>div { display:flex; justify-content:space-between; gap:15px; padding:8px 0; border-bottom:1px solid #eef1ee; font-size:11px; color:#4a6051; }
+.mint2-dashboard-meals b { font-size:11px; font-weight:700; color:#17352a; }
+.mint2-proof { background:#fff; border-top:1px solid #e6ece7; border-bottom:1px solid #e6ece7; }
+.mint2-proof-inner { display:grid; grid-template-columns:minmax(0,.82fr) minmax(0,1.18fr); gap:clamp(35px,7vw,110px); padding-block:clamp(66px,8vw,104px); }
+.mint2-proof h2 { font-size:clamp(30px,3vw,44px); line-height:1.14; letter-spacing:-.055em; font-weight:740; max-width:370px; margin-top:16px; }
+.mint2-feature-list { border-top:1px solid #e3eae4; }
+.mint2-feature-list>div { display:grid; grid-template-columns:29px 1fr; column-gap:16px; padding:20px 0; border-bottom:1px solid #e3eae4; }
+.mint2-feature-list>div>span { font-size:12px; font-weight:750; color:#15855a; padding-top:3px; }
+.mint2-feature-list h3 { font-size:17px; line-height:1.3; font-weight:700; letter-spacing:-.025em; }
+.mint2-feature-list p { grid-column:2; margin-top:6px; font-size:14px; line-height:1.6; color:#637368; }
+.mint2-section { padding-block:clamp(67px,9vw,125px); }
+.mint2-section-header { max-width:680px; }
+.mint2-section-header h2 { font-size:clamp(34px,3.8vw,52px); font-weight:750; letter-spacing:-.057em; line-height:1.1; margin-top:14px; }
+.mint2-section-header>p { color:#65756b; margin-top:14px; font-size:16px; }
+.mint2-walkthrough-layout { display:grid; grid-template-columns:minmax(0,.82fr) minmax(0,1.18fr); gap:clamp(40px,6vw,100px); margin-top:46px; align-items:start; }
+.mint2-steps { border-top:1px solid #dce7de; }
+.mint2-step { width:100%; display:grid; grid-template-columns:30px 1fr 18px; gap:14px; padding:23px 12px 23px 0; min-height:102px; text-align:left; align-items:center; border-bottom:1px solid #dce7de; }
+.mint2-step-number { font-size:12px; color:#5e9b78; align-self:start; padding-top:5px; font-weight:700; }
+.mint2-step-text strong { display:block; font-size:19px; font-weight:700; letter-spacing:-.03em; }
+.mint2-step-text small { display:block; font-size:13px; margin-top:5px; color:#67786b; line-height:1.55; }
+.mint2-step svg { color:#748d7e; }
+.mint2-step.is-current { color:#076b45; }
+.mint2-step.is-current .mint2-step-number { color:#056d42; }
+.mint2-step:hover { background:#f5f9f5; }
+.mint2-step-panel { min-height:360px; position:relative; background:#fff; border:1px solid #e2eae2; border-radius:13px; padding:clamp(21px,3vw,33px); box-shadow:0 12px 35px rgba(23,53,42,.035); }
+.mint2-preview-label { margin-bottom:22px; }
+.mint2-step-content { min-height:277px; }
+.mint2-searchbox { display:flex; align-items:center; gap:12px; border:1px solid #d9e4db; border-radius:8px; padding:17px; margin-bottom:12px; font-size:14px; color:#526c5b; }
+.mint2-searchbox svg { color:#238a5b; }
+.mint2-found-food { display:flex; align-items:center; width:100%; gap:17px; border:1px solid #e2ebe3; background:#fcfdfc; border-radius:9px; padding:11px; text-align:left; min-height:98px; }
+.mint2-found-food:hover { border-color:#5cab80; }
+.mint2-found-food img { width:65px; height:68px; border-radius:7px; object-fit:cover; }
+.mint2-found-food>span { flex:1; min-width:0; }
+.mint2-found-food strong { font-weight:700; display:block; font-size:14px; }
+.mint2-found-food small { display:block; margin-top:7px; font-size:12px; color:#74877a; }
+.mint2-found-food svg { color:#21784f; }
+.mint2-step-help { margin-top:13px; font-size:12px; color:#6b806f; }
+.mint2-scan-preview { position:relative; width:100%; height:180px; border-radius:8px; overflow:hidden; }
+.mint2-scan-preview>img { width:100%; height:100%; object-fit:cover; object-position:center 40%; }
+.mint2-scan-preview>div { position:absolute; bottom:12px; left:13px; display:flex; align-items:center; gap:7px; font-size:12px; border-radius:6px; padding:6px 9px; color:white; background:#18392cb8; }
+.mint2-step-review-row { display:flex; align-items:center; justify-content:space-between; gap:10px; padding-block:17px; }
+.mint2-step-review-row strong { font-size:13px; font-weight:700; }
+.mint2-step-review-row span { font-size:11px; color:#678072; }
+.mint2-action { margin-top:14px; display:flex; justify-content:center; align-items:center; gap:10px; width:100%; height:48px; color:#fff; background:#075e3a; font-size:14px; font-weight:650; border-radius:8px; }
+.mint2-portion-top { display:flex; align-items:center; justify-content:space-between; gap:12px; font-size:14px; border-bottom:1px solid #e5ede6; padding-bottom:18px; }
+.mint2-portion-top strong { font-size:19px; letter-spacing:-.04em; white-space:nowrap; }
+.mint2-portion-label { display:flex; align-items:center; justify-content:space-between; gap:15px; font-size:13px; font-weight:650; margin-top:27px; }
+.mint2-portion-label output { color:#08784c; }
+.mint2-step-content input[type=range] { display:block; width:100%; margin-top:13px; height:27px; accent-color:#08784c; }
+.mint2-portion-nutrients { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:9px; margin-top:14px; }
+.mint2-portion-nutrients>div { border-right:1px solid #e3ece5; }
+.mint2-portion-nutrients>div:last-child { border:0; }
+.mint2-portion-nutrients span { font-size:11px; color:#687e6e; display:block; }
+.mint2-portion-nutrients strong { display:block; font-size:17px; font-weight:730; margin-top:4px; }
+.mint2-sample-tag { display:block; font-size:11px; color:#859188; margin-top:15px; }
+.mint2-feature-photo-section { border-top:1px solid #e9eee9; background:#fff; }
+.mint2-detail-layout { display:grid; grid-template-columns:1fr 1fr; align-items:center; gap:clamp(45px,8vw,110px); padding-block:clamp(70px,9vw,128px); }
+.mint2-detail-photo { max-width:470px; height:clamp(320px,40vw,470px); border-radius:10px; overflow:hidden; background:#eff1ed; }
+.mint2-detail-photo img { width:100%; height:100%; object-fit:cover; }
+.mint2-detail-copy h2 { font-size:clamp(32px,3.4vw,47px); font-weight:750; letter-spacing:-.055em; line-height:1.14; margin-top:15px; max-width:470px; }
+.mint2-detail-copy p { max-width:460px; font-size:16px; line-height:1.75; color:#63736a; margin-top:22px; }
+.mint2-inline-link { display:inline-flex; align-items:center; gap:12px; font-size:14px; font-weight:700; margin-top:24px; color:#076f49; border-bottom:1px solid #81b89b; padding-bottom:7px; }
+.mint2-access { background:#eaf4ed; }
+.mint2-access-inner { padding-block:clamp(56px,7vw,90px); display:flex; align-items:center; justify-content:space-between; gap:30px; }
+.mint2-access h2 { font-size:clamp(30px,3.1vw,44px); max-width:590px; font-weight:740; line-height:1.13; letter-spacing:-.05em; margin-top:12px; }
+.mint2-access p { font-size:15px; color:#55705e; line-height:1.6; margin-top:16px; max-width:520px; }
+.mint2-footer { border-top:1px solid #e7eee9; background:#fff; }
+.mint2-footer-inner { display:grid; grid-template-columns:auto 1fr auto; align-items:center; gap:27px; padding-block:30px; }
+.mint2-footer .mm-logo-name { font-size:19px; }
+.mint2-footer p { font-size:11px; color:#7d8d80; line-height:1.5; justify-self:center; max-width:370px; }
+.mint2-footer nav { display:flex; gap:17px; font-size:12px; color:#596e60; }
+.mint2-site :is(a,button,input):focus-visible { outline:2px solid #0b8455; outline-offset:3px; }
+#how-it-works { scroll-margin-top:28px; }
+@media (max-width:980px) {
+ .mint2-hero { grid-template-columns:minmax(0,1fr) minmax(0,1fr); gap:24px; }
+ .mint2-hero-copy h1 { font-size:clamp(47px,6vw,65px); }
+ .mint2-hero-visual { height:510px; min-height:510px; }
+ .mint2-dashboard { min-width:245px; padding:19px; }
+ .mint2-hero-photo { width:78%; }
+ .mint2-total strong { font-size:29px; }
+ .mint2-total-remaining strong { font-size:23px; }
+}
+@media (max-width:740px) {
+ .mint2-header-inner { min-height:67px; }
+ .mint2-header-links { display:none; }
+ .mint2-hero { display:flex; flex-direction:column; align-items:stretch; gap:30px; padding-top:65px; padding-bottom:70px; min-height:unset; }
+ .mint2-hero-copy { max-width:630px; }
+ .mint2-hero-copy h1 { font-size:clamp(49px,9vw,70px); }
+ .mint2-hero-visual { width:100%; max-width:580px; align-self:center; min-height:530px; height:530px; }
+ .mint2-hero-photo { right:0; width:74%; height:89%; }
+ .mint2-dashboard { width:60%; min-width:270px; }
+ .mint2-proof-inner,.mint2-walkthrough-layout { grid-template-columns:1fr; }
+ .mint2-proof-inner { gap:36px; }
+ .mint2-proof h2 { max-width:590px; }
+ .mint2-walkthrough-layout { gap:22px; }
+ .mint2-step { min-height:85px; padding-block:15px; }
+ .mint2-detail-layout { gap:35px; }
+ .mint2-detail-photo { height:390px; }
+ .mint2-access-inner { align-items:flex-start; flex-direction:column; }
+ .mint2-footer-inner { display:flex; flex-wrap:wrap; justify-content:space-between; gap:17px; }
+ .mint2-footer p { order:3; max-width:100%; flex:1 1 100%; }
+}
+@media (max-width:520px) {
+ .mint2-header-inner { gap:10px; }
+ .mint2-header-actions { gap:12px; }
+ .mint2-header-actions .mint2-text-link { display:none; }
+ .mint2-header-actions .mint2-button--small { font-size:12px; padding-inline:14px; }
+ .mint2-site .mm-logo-name { font-size:21px; }
+ .mint2-hero { padding-top:45px; gap:25px; padding-bottom:60px; }
+ .mint2-hero-copy h1 { font-size:clamp(46px,11.5vw,58px); margin-top:16px; }
+ .mint2-hero-copy>p { font-size:15px; margin-top:19px; }
+ .mint2-hero-actions { margin-top:23px; gap:15px; }
+ .mint2-hero-actions>.mint2-button { min-height:49px; padding-inline:16px; font-size:13px; }
+ .mint2-hero-status { margin-top:16px; font-size:11px; }
+ .mint2-hero-visual { height:465px; min-height:465px; max-width:390px; }
+ .mint2-hero-photo { right:0; width:75%; height:80%; border-radius:150px 150px 8px 8px; }
+ .mint2-dashboard { width:68%; min-width:244px; bottom:0; left:0; padding:15px; border-radius:11px; }
+ .mint2-dashboard h3 { font-size:21px; }
+ .mint2-daystamp { font-size:9px; padding:4px 6px; }
+ .mint2-total { margin-top:17px; }
+ .mint2-total strong { font-size:29px; }
+ .mint2-total-remaining strong { font-size:22px; }
+ .mint2-macro-list { gap:11px; margin-top:16px; }
+ .mint2-dashboard-meals { margin-top:12px; }
+ .mint2-dashboard-meals>div { padding:6px 0; }
+ .mint2-proof-inner,.mint2-section { padding-block:65px; }
+ .mint2-feature-list>div { padding-block:16px; }
+ .mint2-walkthrough-layout { margin-top:30px; }
+ .mint2-step-panel { padding:18px; }
+ .mint2-steps { display:flex; flex-direction:column; }
+ .mint2-step { min-height:65px; padding:12px 3px; }
+ .mint2-step-text strong { font-size:16px; }
+ .mint2-step-text small { font-size:12px; }
+ .mint2-detail-layout { grid-template-columns:1fr; padding-block:60px; gap:28px; }
+ .mint2-detail-photo { max-width:100%; height:330px; }
+ .mint2-detail-copy h2 { font-size:36px; }
+ .mint2-access-inner { padding-block:52px; }
+ .mint2-footer nav { margin-left:auto; }
+}
+@media (max-width:365px) {
+ .mint2-hero-copy h1 { font-size:42px; }
+ .mint2-hero-visual { height:435px; min-height:435px; }
+ .mint2-dashboard { transform:scale(.88); transform-origin:bottom left; }
+}
+@media (prefers-reduced-motion:reduce) {
+ .mint2-site * { transition-duration:.01ms !important; animation-duration:.01ms !important; }
+}
