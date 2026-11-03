@@ -275,7 +275,7 @@ export const demoBackend: Backend & DemoExtras = {
     save(st);
   },
 
-  async signUp(email, _password, name) {
+  async signUp(email, _password, name, _inviteCode) {
     await demoBackend.signIn(email, "");
     return { needsVerification: false };
   },
