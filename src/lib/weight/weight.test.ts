@@ -1,5 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { calculateAdultBmi, estimateAdultEnergy } from "./energy";
+import { estimateWeightTimeline, weightTimelineLabel } from "./timeline";
+import { LIMITS, validateNumeric, withinLimit } from "@/lib/validation/limits";
 import {
   evaluateWeightTrend,
   MIN_LOGGED_DAYS,
@@ -112,5 +114,63 @@ describe("four-week weight trend", () => {
     all[0]!.weightKg = 83;
     const result = evaluateWeightTrend(all, "lose", asOf);
     expect(result.weeklyTrendKg === null || Math.abs(result.weeklyTrendKg) < .2).toBe(true);
+  });
+});
+
+describe("goal-weight timeline uses evidence-informed ranges, not guaranteed dates", () => {
+  it("models a 60 to 74 kg novice/intermediate gain as a multi-month range", () => {
+    const r = estimateWeightTimeline({
+      currentKg: 60, targetKg: 74, heightCm: 180, objective: "gain",
+    });
+    expect(r.status).toBe("ready");
+    expect(r.method).toBe("gain_percent_body_weight");
+    expect(r.earliestWeeks).toBeGreaterThan(30);
+    expect(r.latestWeeks).toBeGreaterThan(r.earliestWeeks!);
+    expect(r.latestWeeks).toBeLessThan(120);
+    expect(weightTimelineLabel(r)).toMatch(/months/);
+  });
+  it("rejects goals that disagree with direction without inventing dates", () => {
+    const r = estimateWeightTimeline({ currentKg: 60, targetKg: 74, heightCm: 180, objective: "lose" });
+    expect(r.status).toBe("objective_mismatch");
+    expect(r.earliestWeeks).toBeNull();
+  });
+  it("does not provide an underweight adult weight-loss forecast", () => {
+    const r = estimateWeightTimeline({ currentKg: 60, targetKg: 48, heightCm: 180, objective: "lose" });
+    expect(r.status).toBe("review_target");
+    expect(r.latestWeeks).toBeNull();
+  });
+  it("does not call stable body recomposition a weight target deadline", () => {
+    const r = estimateWeightTimeline({ currentKg: 60, targetKg: 74, heightCm: 180, objective: "recomp" });
+    expect(r.status).toBe("not_applicable");
+    expect(r.method).toBe("none");
+  });
+  it("uses public-health loss range while clearly avoiding a prediction", () => {
+    const r = estimateWeightTimeline({ currentKg: 90, targetKg: 80, heightCm: 180, objective: "lose" });
+    expect(r.status).toBe("ready");
+    expect(r.earliestWeeks).toBeGreaterThanOrEqual(11);
+    expect(r.latestWeeks).toBeLessThanOrEqual(23);
+  });
+});
+
+describe("shared numeric ceilings", () => {
+  it("rejects impossible height and weight, including 999", () => {
+    expect(withinLimit(999, "heightCm")).toBe(false);
+    expect(withinLimit(999, "weightKg")).toBe(false);
+    expect(withinLimit(180, "heightCm")).toBe(true);
+  });
+  it("rejects blank strings, non-finite, malformed and out-of-range values", () => {
+    expect(validateNumeric("", "heightCm", "Height")).toHaveProperty("error");
+    expect(validateNumeric("Infinity", "weightKg", "Weight")).toHaveProperty("error");
+    expect(validateNumeric("999", "heightCm", "Height")).toHaveProperty("error");
+    expect(validateNumeric("180", "heightCm", "Height")).toEqual({ value: 180 });
+  });
+  it("uses explicit floor and ceiling for every numeric class", () => {
+    Object.keys(LIMITS).forEach((k) => {
+      const bounds = LIMITS[k as keyof typeof LIMITS];
+      expect(bounds.min).toBeLessThan(bounds.max);
+      expect(withinLimit(bounds.min, k as keyof typeof LIMITS)).toBe(true);
+      expect(withinLimit(bounds.max, k as keyof typeof LIMITS)).toBe(true);
+      expect(withinLimit(bounds.max + 1, k as keyof typeof LIMITS)).toBe(false);
+    });
   });
 });
