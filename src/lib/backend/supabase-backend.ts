@@ -27,6 +27,12 @@ import type {
   WeightEntry,
 } from "@/types";
 
+async function currentUserId(): Promise<string> {
+  const { data } = await getSupabase().auth.getSession();
+  if (!data.session?.user.id) throw new BackendError("AUTH", "Please sign in again");
+  return data.session.user.id;
+}
+
 function n(v: unknown): number {
   const num = Number(v);
   return Number.isFinite(num) ? num : 0;
@@ -271,7 +277,7 @@ export const supabaseBackend: Backend = {
       await getSupabase().from("favorites").delete().eq("id", String(existing.id));
       return false;
     }
-    const { error } = await getSupabase().from("favorites").insert({ food_id: foodId });
+    const { error } = await getSupabase().from("favorites").insert({ user_id: await currentUserId(), food_id: foodId });
     if (error) throw new BackendError("DB", error.message);
     return true;
   },
@@ -304,7 +310,7 @@ export const supabaseBackend: Backend = {
     });
     const { data: saved, error: insertError } = await getSupabase()
       .from("saved_meals")
-      .insert({ name, items })
+      .insert({ user_id: await currentUserId(), name, items })
       .select()
       .single();
     if (insertError) throw new BackendError("DB", insertError.message);
@@ -371,6 +377,7 @@ export const supabaseBackend: Backend = {
     const { data, error } = await getSupabase()
       .from("diary_entries")
       .insert({
+        user_id: await currentUserId(),
         entry_date: input.entryDate,
         meal_type: input.mealType,
         food_id: input.foodId ?? null,
@@ -489,7 +496,7 @@ export const supabaseBackend: Backend = {
   async createRecipe(input: RecipeInput) {
     const { data: recipe, error } = await getSupabase()
       .from("recipes")
-      .insert({ name: input.name, servings: input.servings, notes: input.notes ?? null })
+      .insert({ user_id: await currentUserId(), name: input.name, servings: input.servings, notes: input.notes ?? null })
       .select()
       .single();
     if (error) throw new BackendError("DB", error.message);
@@ -563,7 +570,7 @@ export const supabaseBackend: Backend = {
     const { data, error } = await getSupabase()
       .from("weight_entries")
       .upsert(
-        { entry_date: entryDate, weight_kg: weightKg, note: note ?? null },
+        { user_id: await currentUserId(), entry_date: entryDate, weight_kg: weightKg, note: note ?? null },
         { onConflict: "user_id,entry_date" },
       )
       .select()
@@ -605,7 +612,7 @@ export const supabaseBackend: Backend = {
   },
 
   async addWater(entryDate, amountMl) {
-    const { error } = await getSupabase().from("water_entries").insert({ entry_date: entryDate, amount_ml: amountMl });
+    const { error } = await getSupabase().from("water_entries").insert({ user_id: await currentUserId(), entry_date: entryDate, amount_ml: amountMl });
     if (error) throw new BackendError("DB", error.message);
   },
 
@@ -637,8 +644,10 @@ export const supabaseBackend: Backend = {
   // ── Scans ───────────────────────────────────────────────────────────────
   async reportScanCorrections(scanId, items) {
     if (!items.length) return;
+    const userId = await currentUserId();
     const { error } = await getSupabase().from("scan_corrections").insert(
       items.map((i) => ({
+        user_id: userId,
         scan_id: scanId,
         item_label: i.label,
         original: i.original as Record<string, unknown>,
@@ -706,7 +715,7 @@ export const supabaseBackend: Backend = {
   },
 
   async setConsent(kind, version) {
-    await getSupabase().from("user_consents").upsert({ kind, version }, { onConflict: "user_id,kind" });
+    await getSupabase().from("user_consents").upsert({ user_id: await currentUserId(), kind, version }, { onConflict: "user_id,kind" });
   },
 
   async exportAllData() {

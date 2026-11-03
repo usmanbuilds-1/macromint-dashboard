@@ -249,7 +249,7 @@ export function Onboarding() {
       </div>
 
       <div className="mt-10 flex items-center justify-between gap-3">
-        <Button variant="ghost" onClick={() => void skip()} disabled={busy}>
+        <Button variant="ghost" onClick={() => step === 0 ? void skip() : setStep((s) => s - 1)} disabled={busy}>
           <ArrowLeft className="h-4 w-4" /> {step === 0 ? "Skip for now" : "Back"}
         </Button>
         {step < 3 ? (
