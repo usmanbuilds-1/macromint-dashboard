@@ -21,7 +21,7 @@ import { cn } from "@/lib/utils";
 
 function ResultRow({ food, onSelect }: { food: LoggableFood; onSelect: (f: LoggableFood) => void }) {
   return (
-    <CommandItem value={`${food.name} ${food.brand ?? ""}`} onSelect={() => onSelect(food)} className="items-start gap-3 py-2.5">
+    <CommandItem value={`${food.name} ${food.brand ?? ""}`} onSelect={() => onSelect(food)} className="min-h-14 items-start gap-3 py-3">
       <div className="min-w-0 flex-1">
         <p className="truncate text-sm font-medium">{food.name}</p>
         <p className="mt-0.5 flex items-center gap-2 text-xs text-muted-foreground">
@@ -98,6 +98,8 @@ export function FoodSearchDialog({
       const res = await backend.lookupBarcode(code);
       setHit(res);
       if (!res.local.length && !res.remote.length) toast.info("No product found for that barcode");
+    } catch {
+      toast.error("Barcode lookup failed. Try again.");
     } finally {
       setSearching(false);
     }
@@ -106,7 +108,7 @@ export function FoodSearchDialog({
   const showRecents = q.trim().length < 2;
 
   return (
-    <CommandDialog open={open} onOpenChange={(o) => (!o ? onClose() : undefined)} className="max-h-[80vh]">
+    <CommandDialog open={open} onOpenChange={(o) => (!o ? onClose() : undefined)} className="!top-auto !bottom-0 !translate-y-0 max-h-[88dvh] w-full !max-w-none rounded-t-xl rounded-b-none sm:!top-1/2 sm:!bottom-auto sm:!-translate-y-1/2 sm:!max-w-lg sm:rounded-lg">
       <CommandInput placeholder="Search foods, brands, or paste a barcode…" value={q} onValueChange={setQ} />
       <CommandList>
         {searching && <p className="px-4 py-3 text-sm text-muted-foreground">Searching…</p>}
@@ -133,11 +135,11 @@ export function FoodSearchDialog({
                         per100g: per100gFromBase(entry.baseNutrients, entry.grams),
                         servingLabel: `${formatNumber(entry.grams, 0)} g`,
                         servingGrams: entry.grams,
-                        verified: true,
-                        sourceLabel: "Logged before",
+                        verified: false,
+                        sourceLabel: "Previously logged",
                       })
                     }
-                    className="items-center gap-3 py-2.5"
+                    className="min-h-14 items-center gap-3 py-3"
                   >
                     <Clock className="h-4 w-4 shrink-0 text-muted-foreground" />
                     <div className="min-w-0 flex-1">
@@ -193,7 +195,7 @@ export function FoodSearchDialog({
                 foodId: null,
                 name: term.charAt(0).toUpperCase() + term.slice(1),
                 brand: null,
-                per100g: { kcal: 0, protein: 0, carbs: 0, fat: 0 },
+                per100g: { kcal: null, protein: null, carbs: null, fat: null },
                 servingLabel: "100 g",
                 servingGrams: 100,
                 verified: false,
@@ -202,7 +204,7 @@ export function FoodSearchDialog({
             }}
             className="gap-2 text-muted-foreground"
           >
-            <Plus className="h-4 w-4" /> Quick add "{q.trim() || "custom item"}" (set values manually)
+            <Plus className="h-4 w-4" /> Quick add "{q.trim() || "custom item"}" (nutrition unknown until entered)
           </CommandItem>
         </CommandGroup>
       </CommandList>
