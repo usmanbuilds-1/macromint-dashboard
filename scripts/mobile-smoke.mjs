@@ -40,6 +40,12 @@ for (const [width, height] of sizes) {
     await heroImage.evaluate((img) => img.decode());
     const renderedImageWidth = await heroImage.evaluate((img) => img.naturalWidth);
     if (renderedImageWidth < 600) throw new Error("Hero photo is broken or too small: " + renderedImageWidth + "px");
+    const breakfastImage = page.locator(".mint2-detail-photo img");
+    await breakfastImage.scrollIntoViewIfNeeded();
+    await breakfastImage.evaluate((img) => img.decode());
+    const breakfastImageWidth = await breakfastImage.evaluate((img) => img.naturalWidth);
+    if (breakfastImageWidth < 600) throw new Error("Breakfast photo is broken or too small: " + breakfastImageWidth + "px");
+    await page.locator("#hero-title").scrollIntoViewIfNeeded();
     await page.screenshot({ path: `mobile-audit/landing-${width}.png`, fullPage: true });
     console.log("PASS landing", width, dims.heading);
     if (width === 390) {
