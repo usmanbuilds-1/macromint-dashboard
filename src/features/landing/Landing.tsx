@@ -1,257 +1,206 @@
 import { useState } from "react";
 import { Link } from "react-router-dom";
-import { Button } from "@/components/ui/button";
+import { Camera, ChevronDown, ChevronRight, CircleCheck, Plus, Search, SlidersHorizontal } from "lucide-react";
 import { Logo } from "@/components/app/AppLayout";
 import { IS_DEMO } from "@/lib/backend";
 import { INVITE_REGISTRATION_ENABLED } from "@/lib/beta/config";
-import { formatNumber } from "@/lib/utils";
 
-const SAMPLE = {
-  name: "Chicken and rice bowl",
-  grams: 300,
-  kcal: 480,
-  protein: 42,
-  carbs: 48,
-  fat: 12,
-};
+const DEFAULT_PORTION = 300;
+const DEMO_FOOD = { name: "Grilled chicken bowl", kcal: 480, protein: 42, carbs: 48, fat: 12 };
+const SAMPLE_DAY = { kcal: 1420, goal: 2000, protein: 92, proteinGoal: 130, carbs: 158, fat: 46 };
+const NUTRIENTS = [
+  { label: "Protein", key: "protein", suffix: "g" },
+  { label: "Carbs", key: "carbs", suffix: "g" },
+  { label: "Fat", key: "fat", suffix: "g" },
+] as const;
 
-/** All figures in the demonstration derive from the same example portion. */
-function sampleAt(grams: number) {
-  const factor = grams / SAMPLE.grams;
+function sampleNutrition(grams: number) {
+  const scale = grams / DEFAULT_PORTION;
   return {
-    grams,
-    kcal: Math.round(SAMPLE.kcal * factor),
-    protein: Math.round(SAMPLE.protein * factor * 10) / 10,
-    carbs: Math.round(SAMPLE.carbs * factor * 10) / 10,
-    fat: Math.round(SAMPLE.fat * factor * 10) / 10,
+    kcal: Math.round(DEMO_FOOD.kcal * scale),
+    protein: Math.round(DEMO_FOOD.protein * scale),
+    carbs: Math.round(DEMO_FOOD.carbs * scale),
+    fat: Math.round(DEMO_FOOD.fat * scale),
   };
 }
 
-export function Landing() {
-  const [grams, setGrams] = useState(300);
-  const example = sampleAt(grams);
+/** A real, keyboard-accessible React preview with example data. Not a screenshot. */
+function ProductScene() {
+  const [grams, setGrams] = useState(DEFAULT_PORTION);
+  const [added, setAdded] = useState(false);
+  const [mealOpen, setMealOpen] = useState(false);
+  const food = sampleNutrition(grams);
 
   return (
-    <div className="min-h-screen bg-background text-foreground">
-      <header className="border-b bg-background">
-        <div className="mx-auto flex h-16 max-w-6xl items-center justify-between gap-3 px-4 sm:px-7">
-          <Logo />
-          <nav className="flex items-center gap-2" aria-label="Public site">
-            <Link className="inline-flex min-h-11 items-center px-2 text-sm font-medium text-muted-foreground hover:text-foreground" to="/login">Sign in</Link>
-            <Button className="h-11" asChild><Link to="/register">{INVITE_REGISTRATION_ENABLED || IS_DEMO ? "Join beta" : "Beta status"}</Link></Button>
+    <div className="mm-scene" id="preview" aria-label="Interactive Macromint interface preview">
+      <div className="mm-scene-light" aria-hidden="true" />
+      <div className="mm-scene-food">
+        <img
+          src="/images/hero-chicken-generated.webp"
+          alt="Grilled chicken and rice bowl with vegetables"
+          width={170}
+          height={210}
+          decoding="async"
+          fetchPriority="high"
+        />
+      </div>
+
+      <section className="mm-phone mm-phone--main" aria-label="Example daily nutrition dashboard">
+        <div className="mm-phone-top" aria-hidden="true">
+          <span>9:41</span><span className="mm-phone-island" /><span>••• ▰</span>
+        </div>
+        <div className="mm-phone-screen">
+          <div className="mm-phone-titlebar">
+            <strong>Today</strong>
+            <span className="mm-phone-menu"><SlidersHorizontal size={15} aria-hidden="true" /></span>
+          </div>
+          <p className="mm-phone-date">Tuesday, Nov 3</p>
+          <div className="mm-energy-arc" role="img" aria-label="1,420 of 2,000 calories in this demonstration">
+            <svg viewBox="0 0 200 112" aria-hidden="true">
+              <path d="M 18 97 A 82 82 0 0 1 182 97" pathLength="100" stroke="#e6ebe7" strokeWidth="13" fill="none" strokeLinecap="round" />
+              <path d="M 18 97 A 82 82 0 0 1 182 97" pathLength="100" stroke="#1d9368" strokeWidth="13" fill="none" strokeLinecap="round" strokeDasharray="71 100" />
+            </svg>
+            <div className="mm-energy-number"><strong>1,420</strong><span> / 2,000 kcal</span></div>
+          </div>
+          <div className="mm-phone-macros">
+            {NUTRIENTS.map(({ label, key, suffix }) => (
+              <div key={key}>
+                <span>{label}</span>
+                <strong>{SAMPLE_DAY[key]}{suffix}</strong>
+                <div className="mm-mini-progress"><i style={{ width: `${key === "protein" ? 71 : key === "carbs" ? 63 : 56}%` }} /></div>
+              </div>
+            ))}
+          </div>
+          <button className="mm-phone-log" type="button" onClick={() => document.getElementById("portion-control")?.focus()}>
+            <Plus size={15} aria-hidden="true" /> Log food
+          </button>
+          <div className="mm-phone-meals">
+            {[
+              ["Breakfast", "420"],
+              ["Lunch", "580"],
+              ["Dinner", "420"],
+              ["Snacks", "0"],
+            ].map(([meal, kcal]) => (
+              <button type="button" key={meal} onClick={() => setMealOpen((prev) => !prev)} className="mm-phone-meal">
+                <span>{meal}</span><span>{kcal} kcal <ChevronRight size={12} aria-hidden="true" /></span>
+              </button>
+            ))}
+            {mealOpen && <p className="mm-phone-note">Your diary makes every meal easy to review.</p>}
+          </div>
+          <div className="mm-phone-tabs" aria-hidden="true"><strong>Today</strong><span>Diary</span><span>Trends</span><span>More</span></div>
+        </div>
+      </section>
+
+      <section className="mm-phone mm-phone--scan" aria-label="Interactive meal scan review demonstration">
+        <div className="mm-phone-top mm-phone-top--dark" aria-hidden="true">
+          <span>9:41</span><span className="mm-phone-island" /><span>••• ▰</span>
+        </div>
+        <div className="mm-scan-head"><span>‹</span><strong>Review meal</strong><span>•••</span></div>
+        <div className="mm-scan-photo">
+          <img src="/images/hero-chicken-generated.webp" alt="Example chicken and rice meal selected for review" width={170} height={210} loading="lazy" />
+          <span className="mm-scan-corner mm-scan-corner--tl" />
+          <span className="mm-scan-corner mm-scan-corner--br" />
+        </div>
+        <div className="mm-scan-review">
+          <p className="mm-scan-review-kicker">YOUR MEAL</p>
+          <strong>{DEMO_FOOD.name}</strong>
+          <div className="mm-scan-kcal"><b>{food.kcal}</b> kcal <span>· {grams} g</span></div>
+          <label htmlFor="portion-control" className="mm-scan-portion">Adjust portion <span>{grams} g</span></label>
+          <input
+            id="portion-control"
+            type="range"
+            min={150}
+            max={500}
+            step={25}
+            value={grams}
+            onChange={(event) => { setGrams(Number(event.target.value)); setAdded(false); }}
+            aria-label="Change example meal portion in grams"
+          />
+          <div className="mm-scan-macros" aria-live="polite">
+            <span>P {food.protein}g</span><span>C {food.carbs}g</span><span>F {food.fat}g</span>
+          </div>
+          <button type="button" className="mm-scan-button" onClick={() => setAdded(true)}>
+            {added ? <CircleCheck size={14} aria-hidden="true" /> : <Plus size={14} aria-hidden="true" />}
+            {added ? "Added in this demo" : "Add to diary"}
+          </button>
+        </div>
+      </section>
+      <div className="mm-scene-caption">INTERACTIVE PREVIEW <span>·</span> SAMPLE DATA</div>
+    </div>
+  );
+}
+
+export function Landing() {
+  const betaReady = INVITE_REGISTRATION_ENABLED || IS_DEMO;
+  return (
+    <div className="mm-landing">
+      <header className="mm-header">
+        <div className="mm-container mm-header-inner">
+          <Link to="/" aria-label="Macro Mint home"><Logo /></Link>
+          <nav className="mm-header-nav" aria-label="Explore Macro Mint">
+            <a href="#features">Features</a>
+            <a href="#how-it-works">How it works</a>
           </nav>
+          <div className="mm-header-actions">
+            <Link to="/login" className="mm-outline-button">Sign in</Link>
+            <Link to="/register" className="mm-green-button">{betaReady ? "Get started" : "Beta status"}</Link>
+          </div>
         </div>
       </header>
 
       <main>
-        <section className="mx-auto grid max-w-6xl gap-12 px-4 pb-16 pt-14 sm:px-7 sm:pt-20 lg:grid-cols-[1.1fr_0.9fr] lg:items-center lg:gap-16">
-          <div>
-            <p className="text-xs font-semibold tracking-wide text-primary">MACROMINT / PRIVATE BETA</p>
-            <h1 className="mt-5 max-w-[14ch] text-[clamp(2.6rem,7vw,5rem)] font-semibold leading-[1.04] tracking-[-0.055em]">
-              Food tracking, without the guesswork.
-            </h1>
-            <p className="mt-7 max-w-lg text-base leading-7 text-muted-foreground sm:text-lg">
-              Log meals with a quick search or a photo. Correct the portion yourself, see your progress,
-              and understand which nutrition values come from a food database or an AI estimate.
-            </p>
-            <div className="mt-8 flex flex-wrap items-center gap-3">
-              <Button size="lg" className="min-h-12 px-6" asChild>
-                <Link to={IS_DEMO ? "/login" : "/register"}>
-                  {IS_DEMO ? "Open the demo" : INVITE_REGISTRATION_ENABLED ? "Enter your invitation" : "Beta opening soon"}
-                </Link>
-              </Button>
-              <a href="#try-it" className="inline-flex min-h-12 items-center px-3 text-sm font-medium underline underline-offset-4">
-                Try the portion editor
-              </a>
+        <section className="mm-hero mm-container" aria-labelledby="main-heading">
+          <div className="mm-hero-copy">
+            <p className="mm-eyebrow">NUTRITION TRACKING, MADE SIMPLE</p>
+            <h1 id="main-heading">Track your food.<br /><em>Hit your goals.</em></h1>
+            <p className="mm-hero-lead">Know what you eat, see what matters, and build habits that last. All in one beautifully simple food diary.</p>
+            <div className="mm-hero-actions">
+              <Link to="/register" className="mm-green-button mm-large-button">
+                {betaReady ? "Get started free" : "Private beta coming soon"} <ChevronRight size={17} aria-hidden="true" />
+              </Link>
+              <a href="#preview" className="mm-outline-button mm-large-button">See how it works <ChevronDown size={16} aria-hidden="true" /></a>
             </div>
-            <p className="mt-4 text-xs leading-relaxed text-muted-foreground">
-              Private beta access is being prepared. Registration will open once secure sign-in and one-time invitations are activated.
-              No payment information requested.
-            </p>
+            <p className="mm-access-note">{betaReady ? "A personal invitation is required during the private beta." : "Private beta registration is being prepared."}</p>
           </div>
+          <ProductScene />
+        </section>
 
-          <div id="try-it" className="scroll-mt-12 bg-card p-5 ring-1 ring-border sm:p-8" aria-labelledby="demo-heading">
-            <div className="flex items-baseline justify-between gap-3 border-b pb-4">
-              <div>
-                <p className="text-xs font-medium text-muted-foreground">LIVE DEMONSTRATION</p>
-                <h2 id="demo-heading" className="mt-1 text-xl font-semibold">Review a lunch entry</h2>
-              </div>
-              <span className="text-xs text-muted-foreground">Example data</span>
-            </div>
-            <div className="pt-6">
-              <div className="flex items-center gap-4">
-                <img
-                  src="/images/food-bowl.webp"
-                  alt="Illustrative food photograph of a chicken rice bowl with vegetables"
-                  width={88}
-                  height={88}
-                  loading="lazy"
-                  decoding="async"
-                  className="h-[88px] w-[88px] shrink-0 rounded-md object-cover"
-                />
-                <div>
-                  <p className="text-sm font-semibold">{SAMPLE.name}</p>
-                  <p className="mt-1 text-xs leading-5 text-muted-foreground">
-                    Illustrative food image · example nutrition data · editable portion
-                  </p>
-                </div>
-              </div>
-              <div className="mt-7 flex items-baseline justify-between tabular-nums">
-                <span className="text-sm text-muted-foreground">Calories</span>
-                <strong className="text-3xl font-semibold tracking-tight">{formatNumber(example.kcal)} <span className="text-sm font-normal text-muted-foreground">kcal</span></strong>
-              </div>
-              <div className="mt-5 grid grid-cols-3 divide-x border-y py-4">
-                {[
-                  { label: "Protein", value: example.protein },
-                  { label: "Carbs", value: example.carbs },
-                  { label: "Fat", value: example.fat },
-                ].map((metric) => (
-                  <div key={metric.label} className="px-3 first:pl-0 last:pr-0">
-                    <p className="text-xs text-muted-foreground">{metric.label}</p>
-                    <p className="mt-1 text-lg font-semibold tabular-nums">{metric.value} <span className="text-xs font-normal text-muted-foreground">g</span></p>
-                  </div>
-                ))}
-              </div>
-              <label htmlFor="demo-grams" className="mt-7 flex justify-between gap-2 text-sm font-medium">
-                <span>Adjust portion</span>
-                <output htmlFor="demo-grams" className="tabular-nums">{example.grams} g</output>
-              </label>
-              <input
-                id="demo-grams"
-                type="range"
-                min="100"
-                max="600"
-                step="25"
-                value={grams}
-                onChange={(e) => setGrams(Number(e.target.value))}
-                className="my-4 h-9 w-full cursor-pointer accent-primary"
-              />
-              <p aria-live="polite" className="text-xs leading-relaxed text-muted-foreground">
-                All example nutrients recalculate together as the portion changes.
-                A photo alone cannot establish exact food identity, oil content or weight.
-              </p>
+        <section className="mm-benefits" id="features" aria-label="What makes Macro Mint useful">
+          <div className="mm-container mm-benefits-grid">
+            <div><span className="mm-benefit-index">01</span><h2>Log in seconds</h2><p>Find foods, save favourites, or scan a meal.</p></div>
+            <div><span className="mm-benefit-index">02</span><h2>See the whole picture</h2><p>Calories, protein, macros, and daily progress.</p></div>
+            <div><span className="mm-benefit-index">03</span><h2>Make it yours</h2><p>Set your own targets and adjust every portion.</p></div>
+          </div>
+        </section>
+
+        <section className="mm-story mm-container" id="how-it-works">
+          <div className="mm-story-photo">
+            <img src="/images/hero-chicken-generated.webp" alt="Grilled chicken and rice bowl" width={170} height={210} loading="lazy" decoding="async" />
+          </div>
+          <div className="mm-story-copy">
+            <span className="mm-eyebrow">FROM PLATE TO PROGRESS</span>
+            <h2>One place for everything you eat.</h2>
+            <p>Search your foods, review a photo scan, and log your meal with the right serving size. Your diary and daily targets update together.</p>
+            <div className="mm-story-details">
+              <div><Search size={18} aria-hidden="true" /><span><strong>Search it</strong> Find familiar foods and recent meals.</span></div>
+              <div><Camera size={18} aria-hidden="true" /><span><strong>Scan it</strong> Add a meal from a photo, then review.</span></div>
+              <div><CircleCheck size={18} aria-hidden="true" /><span><strong>Track it</strong> Watch the day come together.</span></div>
             </div>
           </div>
         </section>
 
-        <section className="border-y bg-card" aria-labelledby="process-heading">
-          <div className="mx-auto max-w-6xl px-4 py-16 sm:px-7 sm:py-20">
-            <div className="max-w-2xl">
-              <p className="text-xs font-semibold tracking-wide text-primary">THE DAILY FLOW</p>
-              <h2 id="process-heading" className="mt-3 text-3xl font-semibold tracking-tight sm:text-4xl">Your food diary is the point.</h2>
-              <p className="mt-4 text-base leading-7 text-muted-foreground">
-                The most valuable nutrition app is one you can actually use after every meal.
-                Macromint keeps logging, reviewing and editing in one connected flow.
-              </p>
-            </div>
-            <ol className="mt-10 divide-y border-y lg:grid lg:grid-cols-3 lg:divide-x lg:divide-y-0">
-              <li className="py-7 lg:pr-8">
-                <span className="text-sm tabular-nums text-primary">01 / Log</span>
-                <h3 className="mt-3 text-xl font-semibold">Search or scan.</h3>
-                <p className="mt-2 text-sm leading-6 text-muted-foreground">
-                  Find a food manually or scan your plate. The camera suggests items; it never silently adds them to your diary.
-                </p>
-              </li>
-              <li className="py-7 lg:px-8">
-                <span className="text-sm tabular-nums text-primary">02 / Correct</span>
-                <h3 className="mt-3 text-xl font-semibold">Choose what you ate.</h3>
-                <p className="mt-2 text-sm leading-6 text-muted-foreground">
-                  Fix portion grams and review calories, macros and available micronutrients before saving.
-                </p>
-              </li>
-              <li className="py-7 lg:pl-8">
-                <span className="text-sm tabular-nums text-primary">03 / Understand</span>
-                <h3 className="mt-3 text-xl font-semibold">See the full day.</h3>
-                <p className="mt-2 text-sm leading-6 text-muted-foreground">
-                  Keep your remaining calories, protein progress and editable breakfast-to-dinner diary in sight.
-                </p>
-              </li>
-            </ol>
-          </div>
-        </section>
-
-        <section className="mx-auto max-w-6xl px-4 py-16 sm:px-7 sm:py-20" aria-labelledby="source-heading">
-          <div className="grid gap-8 lg:grid-cols-2 lg:gap-20">
-            <div>
-              <p className="text-xs font-semibold tracking-wide text-primary">THE SOURCE MATTERS</p>
-              <h2 id="source-heading" className="mt-3 max-w-sm text-3xl font-semibold tracking-tight sm:text-4xl">A number should come with context.</h2>
-            </div>
-            <div className="divide-y border-y">
-              <div className="py-5">
-                <h3 className="font-semibold">Food database</h3>
-                <p className="mt-2 text-sm leading-6 text-muted-foreground">
-                  Nutrition values can come from established reference datasets or community-contributed product labels.
-                  A database match is useful, but is not proof the photograph or serving size is correct.
-                </p>
-              </div>
-              <div className="py-5">
-                <h3 className="font-semibold">AI-assisted estimate</h3>
-                <p className="mt-2 text-sm leading-6 text-muted-foreground">
-                  When items or portions are inferred from an image, they remain estimates. Macromint lets you correct them.
-                </p>
-              </div>
-              <div className="py-5">
-                <h3 className="font-semibold">Unknown means unknown</h3>
-                <p className="mt-2 text-sm leading-6 text-muted-foreground">
-                  Missing nutrient values are not automatically zeros. You should know what is and is not included in the record.
-                </p>
-              </div>
-            </div>
-          </div>
-        </section>
-
-        <section id="pricing" className="border-y bg-card" aria-labelledby="access-heading">
-          <div className="mx-auto grid max-w-6xl gap-6 px-4 py-14 sm:px-7 lg:grid-cols-[1fr_auto] lg:items-center">
-            <div>
-              <p className="text-xs font-semibold tracking-wide text-primary">CURRENT ACCESS</p>
-              <h2 id="access-heading" className="mt-3 text-2xl font-semibold tracking-tight sm:text-3xl">{INVITE_REGISTRATION_ENABLED ? "Private beta by invitation." : "Private beta opening soon."}</h2>
-              <p className="mt-3 max-w-2xl text-sm leading-6 text-muted-foreground">
-                {INVITE_REGISTRATION_ENABLED ? "Use your invitation to create an account. The beta administrator controls access and trial extensions." : "Registration is not active yet. Existing sign-in and closed-beta invitations require Lovable Cloud authentication and backend setup."}
-                Checkout and rewarded advertising are not configured; no purchase is available on this deployment.
-              </p>
-            </div>
-            <Button size="lg" className="h-12" asChild><Link to="/register">{INVITE_REGISTRATION_ENABLED || IS_DEMO ? "Join with a code" : "View beta status"}</Link></Button>
-          </div>
-        </section>
-
-        <section className="mx-auto max-w-3xl px-4 py-16 sm:px-7" aria-labelledby="faq-heading">
-          <h2 id="faq-heading" className="text-2xl font-semibold tracking-tight">Questions</h2>
-          <div className="mt-6 divide-y border-y">
-            {[
-              {
-                q: "Do I need an invitation?",
-                a: "Registration will open once email authentication and secure invitations are enabled. At that point, a personal invitation will be required.",
-              },
-              {
-                q: "Does a photo produce exact calories?",
-                a: "No. A photo cannot reliably reveal every ingredient or portion. Check the suggested foods and quantities before logging.",
-              },
-              {
-                q: "Can I edit meals after logging?",
-                a: "Yes. Your diary lets you review entries and adjust portions. Changes to portion size recalculate available nutrient values.",
-              },
-              {
-                q: "Can I keep my data?",
-                a: "You create a regular account using your email and password. Your diary is scoped to your account, with export and deletion controls in Settings.",
-              },
-            ].map(({ q, a }) => (
-              <details key={q} className="group py-5">
-                <summary className="min-h-11 cursor-pointer text-sm font-semibold leading-6">{q}</summary>
-                <p className="pb-2 text-sm leading-6 text-muted-foreground">{a}</p>
-              </details>
-            ))}
+        <section className="mm-access" id="access">
+          <div className="mm-container mm-access-inner">
+            <div><span className="mm-eyebrow">EARLY ACCESS</span><h2>Your goals. Your pace.</h2><p>{betaReady ? "Macromint is currently accepting invited beta testers." : "We’re preparing access for our first beta testers."}</p></div>
+            <Link className="mm-green-button mm-large-button" to="/register">{betaReady ? "Join the beta" : "View beta status"} <ChevronRight size={17} aria-hidden="true" /></Link>
           </div>
         </section>
       </main>
-
-      <footer className="border-t">
-        <div className="mx-auto flex max-w-6xl flex-wrap items-center justify-between gap-3 px-4 py-8 sm:px-7">
+      <footer className="mm-footer">
+        <div className="mm-container mm-footer-inner">
           <Logo />
-          <nav className="flex flex-wrap gap-5 text-sm text-muted-foreground">
-            <Link to="/privacy" className="hover:text-foreground">Privacy</Link>
-            <Link to="/terms" className="hover:text-foreground">Terms</Link>
-            <Link to="/login" className="hover:text-foreground">Sign in</Link>
-          </nav>
+          <p>Photo-based nutrition suggestions are estimates. Review portions before logging.</p>
+          <nav aria-label="Legal and account links"><Link to="/privacy">Privacy</Link><Link to="/terms">Terms</Link><Link to="/login">Sign in</Link></nav>
         </div>
       </footer>
     </div>

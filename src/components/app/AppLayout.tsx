@@ -37,15 +37,12 @@ const SECONDARY = [
 
 export function Logo({ compact = false }: { compact?: boolean }) {
   return (
-    <span className="inline-flex items-center gap-2.5">
-      <span className="grid h-7 w-7 place-items-center rounded-md bg-primary">
-        <svg viewBox="0 0 32 32" className="h-5 w-5" aria-hidden="true">
-          <path d="M9 23V9l7 8 7-8v14" stroke="var(--primary-foreground)" strokeWidth="2.8" fill="none" strokeLinecap="round" strokeLinejoin="round" />
-        </svg>
+    <span className="mm-logo inline-flex items-center gap-2.5">
+      <span className="mm-logo-leaves" aria-hidden="true">
+        <span className="mm-logo-leaf mm-logo-leaf--left" />
+        <span className="mm-logo-leaf mm-logo-leaf--right" />
       </span>
-      {!compact && (
-        <span className="text-[15px] font-semibold tracking-tight">Macromint</span>
-      )}
+      {!compact && <span className="mm-logo-name">Macro Mint</span>}
     </span>
   );
 }

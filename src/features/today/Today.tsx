@@ -88,40 +88,54 @@ export function Today() {
         </Link>
       </header>
 
-      <section aria-labelledby="energy-heading" className="border-b pb-6">
-        <p id="energy-heading" className="text-sm text-muted-foreground">
-          {remaining === null ? "Energy consumed" : remaining < 0 ? "Over your energy target" : "Energy remaining"}
-        </p>
-        <div className="mt-1 flex items-baseline gap-2 tabular-nums">
-          <strong className="text-[40px] leading-tight font-semibold tracking-tight">
-            {diary.loading && !diary.data ? "—" : formatNumber(remaining === null ? consumed : Math.abs(remaining))}
-          </strong>
-          <span className="text-sm text-muted-foreground">kcal</span>
-        </div>
-        <p className="mt-1 text-sm text-muted-foreground tabular-nums">
-          {formatNumber(consumed)} eaten{target !== null ? ` · ${formatNumber(target)} daily target` : ""}
-        </p>
-        {target === null && <Link className="mt-2 inline-block text-sm font-medium text-primary underline underline-offset-4" to="/goals">Set your nutrition goals</Link>}
-        <div className="mt-5 h-2 w-full overflow-hidden rounded-full bg-secondary" role="progressbar" aria-label="Energy consumed" aria-valuenow={consumed} aria-valuemin={0} aria-valuemax={Math.max(target ?? consumed, 1)}>
-          <div className="h-full rounded-full bg-primary" style={{ width: `${target && target > 0 ? Math.min((consumed / target) * 100, 100) : 0}%` }} />
-        </div>
-        <div className="mt-5 flex items-center justify-between gap-4">
+      <section aria-labelledby="energy-heading" className="mm-today-summary">
+        <div className="mm-today-summary-head">
           <div>
-            <p className="text-xs text-muted-foreground">Protein</p>
-            <p className="mt-0.5 text-sm font-medium tabular-nums">
-              {formatNumber(protein)} g{proteinTarget !== null ? ` / ${formatNumber(proteinTarget)} g` : ""}
-            </p>
+            <p className="text-xs font-medium text-muted-foreground">DAILY NUTRITION</p>
+            <h2 id="energy-heading" className="text-base font-semibold tracking-tight">Your progress</h2>
           </div>
-          <div className="h-1.5 w-28 max-w-[38%] overflow-hidden rounded-full bg-secondary" role="progressbar" aria-label="Protein consumed" aria-valuenow={protein} aria-valuemin={0} aria-valuemax={Math.max(proteinTarget ?? protein, 1)}>
-            <div className="h-full rounded-full bg-primary" style={{ width: `${proteinTarget && proteinTarget > 0 ? Math.min((protein / proteinTarget) * 100, 100) : 0}%` }} />
+          {target === null && <Link className="text-xs font-medium text-primary underline underline-offset-4" to="/goals">Set a target</Link>}
+        </div>
+        <div className="mm-today-arc" role="progressbar" aria-label="Calories consumed today" aria-valuenow={consumed} aria-valuemin={0} aria-valuemax={Math.max(target ?? 0, consumed, 1)}>
+          <svg viewBox="0 0 240 135" aria-hidden="true">
+            <path d="M 19 119 A 101 101 0 0 1 221 119" pathLength="100" stroke="var(--color-secondary)" strokeWidth="14" strokeLinecap="round" fill="none" />
+            <path d="M 19 119 A 101 101 0 0 1 221 119" pathLength="100" stroke="var(--color-primary)" strokeWidth="14" strokeLinecap="round" fill="none"
+              strokeDasharray={`${target !== null && target > 0 ? Math.min(100, (consumed / target) * 100) : 0} 100`} />
+          </svg>
+          <div className="mm-today-arc-label">
+            <strong className="tabular-nums">{diary.loading && !diary.data ? "—" : formatNumber(consumed)}</strong>
+            <span className="tabular-nums">{target === null ? "kcal logged" : `of ${formatNumber(target)} kcal`}</span>
           </div>
+        </div>
+        {target !== null && (
+          <p className="mm-today-remaining tabular-nums">
+            {remaining !== null && remaining >= 0
+              ? `${formatNumber(remaining)} kcal remaining`
+              : `${formatNumber(Math.abs(remaining ?? 0))} kcal over target`}
+          </p>
+        )}
+        <div className="mm-today-macros">
+          {[
+            { label: "Protein", value: protein, goal: proteinTarget },
+            { label: "Carbs", value: totals.carbs ?? 0, goal: goals?.carbsG ?? null },
+            { label: "Fat", value: totals.fat ?? 0, goal: goals?.fatG ?? null },
+          ].map((macro) => (
+            <div key={macro.label}>
+              <span>{macro.label}</span>
+              <strong className="tabular-nums">{formatNumber(macro.value)} g</strong>
+              <small className="tabular-nums">{macro.goal === null ? "No target" : `of ${formatNumber(macro.goal)} g`}</small>
+              <div role="progressbar" aria-label={`${macro.label} progress`} aria-valuemin={0} aria-valuenow={macro.value} aria-valuemax={Math.max(macro.goal ?? 0, macro.value, 1)} className="mm-today-macro-track">
+                <i style={{ width: `${macro.goal && macro.goal > 0 ? Math.min(100, (macro.value / macro.goal) * 100) : 0}%` }} />
+              </div>
+            </div>
+          ))}
         </div>
       </section>
 
       <section aria-label="Log food" className="relative">
         <Button
           size="lg"
-          className="h-12 w-full justify-center gap-2 text-sm font-semibold"
+          className="h-12 w-full justify-center gap-2 text-sm font-semibold shadow-none"
           onClick={() => setOpenLog((current) => !current)}
           aria-expanded={openLog}
           aria-controls="log-actions"

@@ -37,8 +37,8 @@ for (const [width, height] of sizes) {
     await page.screenshot({ path: `mobile-audit/landing-${width}.png`, fullPage: true });
     console.log("PASS landing", width, dims.heading);
     if (width === 390) {
-      const slider = page.locator("#demo-grams");
-      if (!(await slider.count())) throw new Error("Demo portion slider missing");
+      const slider = page.locator("#portion-control");
+      if (!(await slider.count())) throw new Error("Interactive meal portion control missing");
       await slider.evaluate((input) => {
         input.value = "400";
         input.dispatchEvent(new Event("input", { bubbles: true }));
@@ -60,6 +60,30 @@ for (const [width, height] of sizes) {
     const registerSize = await page.evaluate(() => ({ viewport: window.innerWidth, doc: document.documentElement.scrollWidth }));
     if (registerSize.doc > registerSize.viewport + 1) throw new Error("Signup horizontally overflows " + JSON.stringify(registerSize));
     await page.screenshot({ path: `mobile-audit/signup-${width}.png`, fullPage: true });
+    if (width === 390 && process.env.MACROMINT_TEST_DEMO_LOGIN === "true") {
+      // The checked-in .env already configures Lovable Cloud Supabase. Never
+      // try to sign into that live backend from public browser smoke tests.
+      // Enable this block only with a purpose-built local demo environment.
+      // The smoke environment is the isolated demo adapter, never a live account.
+      await page.goto(url + "/login", { waitUntil: "networkidle" });
+      await page.locator("#email").fill("demo@macromint.app");
+      await page.locator("#password").fill("demo-password-only");
+      await page.getByRole("button", { name: /^Sign in$/ }).click();
+      await page.waitForTimeout(300);
+      console.log("Demo login route", page.url());
+      console.log("Demo login state", (await page.locator("body").innerText()).slice(0, 500));
+      await page.waitForURL((u) => u.pathname === "/today" || u.pathname === "/onboarding", { timeout: 15000 });
+      if (page.url().includes("/onboarding")) {
+        await page.getByRole("button", { name: /Skip for now/ }).click();
+        await page.waitForURL((u) => u.pathname === "/today", { timeout: 15000 });
+      }
+      await page.getByRole("heading", { name: "Today", exact: true }).waitFor({ timeout: 15000 });
+      await page.locator(".mm-today-arc").waitFor({ timeout: 10000 });
+      const todayOverflow = await page.evaluate(() => document.documentElement.scrollWidth - window.innerWidth);
+      if (todayOverflow > 1) throw new Error("Today screen horizontal overflow: " + todayOverflow);
+      await page.screenshot({ path: "mobile-audit/today-390.png", fullPage: true });
+      console.log("PASS actual mobile Today", width);
+    }
     if (problems.length) throw new Error("Runtime errors: " + problems.join("; "));
     console.log("PASS registration release state", width);
   } catch (error) {
