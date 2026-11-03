@@ -35,22 +35,34 @@ for (const [width, height] of sizes) {
     if (dims.document > dims.viewport + 1) throw new Error("Horizontal overflow: " + JSON.stringify(dims));
     if (!dims.heading) throw new Error("Missing h1");
     // Catch low-resolution or broken imagery before a public release.
-    const heroImage = page.locator(".mint2-hero-photo img");
+    const heroImage = page.locator(".mint4-photo img").first();
     await heroImage.waitFor();
     await heroImage.evaluate((img) => img.decode());
     const renderedImageWidth = await heroImage.evaluate((img) => img.naturalWidth);
     if (renderedImageWidth < 600) throw new Error("Hero photo is broken or too small: " + renderedImageWidth + "px");
-    const breakfastImage = page.locator(".mint2-detail-photo img");
+    const breakfastImage = page.locator(".mint4-photo img").last();
     await breakfastImage.scrollIntoViewIfNeeded();
     await breakfastImage.evaluate((img) => img.decode());
     const breakfastImageWidth = await breakfastImage.evaluate((img) => img.naturalWidth);
     if (breakfastImageWidth < 600) throw new Error("Breakfast photo is broken or too small: " + breakfastImageWidth + "px");
-    await page.locator("#hero-title").scrollIntoViewIfNeeded();
+    await page.locator("#mint4-hero-title").scrollIntoViewIfNeeded();
     await page.screenshot({ path: `mobile-audit/landing-${width}.png`, fullPage: true });
+    // Example dashboard controls must work, without pretending to update a real account.
+    const water = page.getByRole("progressbar", { name: "Example water intake" });
+    const beforeWater = Number(await water.getAttribute("aria-valuenow"));
+    await page.getByRole("button", { name: "Add 250 ml to example" }).click();
+    const afterWater = Number(await water.getAttribute("aria-valuenow"));
+    if (afterWater !== beforeWater + 250) throw new Error("Interactive dashboard water controls broken");
+    await page.getByRole("button", { name: "Remove 250 ml from example" }).click();
+    if (Number(await water.getAttribute("aria-valuenow")) !== beforeWater) throw new Error("Water reset failed");
+    const forbiddenText = await page.locator("body").innerText();
+    for (const claim of ["Trust Score", "80+ nutrients", "Speak to a dietician", "verified grade", "Free forever", "No ads"]) {
+      if (forbiddenText.toLowerCase().includes(claim.toLowerCase())) throw new Error("Unsupported GLM claim on landing: " + claim);
+    }
     console.log("PASS landing", width, dims.heading);
     if (width === 390) {
       // The primary CTA must lead to a usable walkthrough, not a decorative anchor.
-      await page.getByRole("link", { name: /See how it works/i }).click();
+      await page.getByRole("link", { name: /Try the interactive demo/i }).first().click();
       await page.waitForURL((u) => u.hash === "#how-it-works", { timeout: 10000 });
       await page.getByRole("heading", { name: /From your plate to your diary/i }).waitFor();
 
