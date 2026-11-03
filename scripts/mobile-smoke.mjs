@@ -37,14 +37,21 @@ for (const [width, height] of sizes) {
     await page.screenshot({ path: `mobile-audit/landing-${width}.png`, fullPage: true });
     console.log("PASS landing", width, dims.heading);
     if (width === 390) {
+      // The primary CTA must lead to a usable walkthrough, not a decorative anchor.
+      await page.getByRole("link", { name: /See how it works/i }).click();
+      await page.waitForURL((u) => u.hash === "#how-it-works", { timeout: 10000 });
+      await page.getByRole("heading", { name: /From your plate to your diary/i }).waitFor();
+
+      await page.getByRole("button", { name: /Review your meal/i }).click();
+      await page.getByRole("button", { name: /Review portion/i }).click();
       const slider = page.locator("#portion-control");
-      if (!(await slider.count())) throw new Error("Interactive meal portion control missing");
-      await slider.evaluate((input) => {
-        input.value = "400";
-        input.dispatchEvent(new Event("input", { bubbles: true }));
-        input.dispatchEvent(new Event("change", { bubbles: true }));
-      });
+      await slider.waitFor();
+      await slider.fill("400");
+      await page.getByText("640 kcal", { exact: true }).waitFor();
+      await page.getByRole("button", { name: "Add to diary" }).click();
+      await page.getByRole("button", { name: "Added in this example" }).waitFor();
       await page.screenshot({ path: "mobile-audit/portion-390.png", fullPage: true });
+      console.log("PASS interactive 3-step walkthrough", width);
     }
     const reg = await page.goto(url + "/register", { waitUntil: "networkidle", timeout: 30000 });
     if (!reg || reg.status() >= 400) throw new Error("Registration HTTP status " + reg?.status());
@@ -52,7 +59,7 @@ for (const [width, height] of sizes) {
       await page.locator("#invite").waitFor({ timeout: 15000 });
       await page.locator("#name").waitFor({ timeout: 15000 });
     } else {
-      await page.getByRole("heading", { name: /Beta registration is coming soon/i }).waitFor({ timeout: 15000 });
+      await page.getByRole("heading", { name: /Invitation access/i }).waitFor({ timeout: 15000 });
       if (await page.locator("#password").count()) {
         throw new Error("Registration must be disabled until Cloud Auth and invite backend are activated");
       }
