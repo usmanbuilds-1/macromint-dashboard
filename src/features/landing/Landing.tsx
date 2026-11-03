@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { Link } from "react-router-dom";
-import { ArrowRight, Camera, Check, ChevronRight, Search } from "lucide-react";
+import { ArrowRight, Camera, Check, ChevronRight, Search, Droplets, Plus, Minus } from "lucide-react";
 import { Logo } from "@/components/app/AppLayout";
 import { INVITE_REGISTRATION_ENABLED } from "@/lib/beta/config";
 
@@ -32,46 +32,45 @@ function nutritionAt(grams: number) {
 }
 
 function DailyPreview() {
+  const [water, setWater] = useState(1250);
   return (
-    <div className="mint2-dashboard" aria-label="Example of the Macromint daily nutrition screen">
-      <div className="mint2-dashboard-head">
-        <div>
-          <span className="mint2-meta">YOUR DAY</span>
-          <h3>Today</h3>
-        </div>
-        <span className="mint2-daystamp">Sample data</span>
+    <section className="mint4-preview" aria-label="Interactive example nutrition dashboard">
+      <div className="mint4-preview-top">
+        <div><span className="mint4-preview-overline">YOUR DAY</span><h3>Today</h3></div>
+        <span className="mint4-preview-label">Sample diary</span>
       </div>
-      <div className="mint2-total">
-        <div>
-          <strong>1,430</strong><span>of 2,100 kcal</span>
-        </div>
-        <div className="mint2-total-remaining">
-          <strong>670</strong><span>remaining</span>
-        </div>
+      <div className="mint4-energy-heading">
+        <div><span>Calories consumed</span><strong>1,430 <small>/ 2,100 kcal</small></strong></div>
+        <span className="mint4-energy-remaining"><strong>670</strong><small>remaining</small></span>
       </div>
-      <div className="mint2-energy-track" aria-label="Example: 1430 of 2100 calories">
-        <span style={{ width: `${(SAMPLE.total / SAMPLE.goal) * 100}%` }} />
-      </div>
-      <div className="mint2-macro-list">
+      <div className="mint4-energy-meter" role="progressbar" aria-label="Example calories consumed" aria-valuemin={0} aria-valuenow={1430} aria-valuemax={2100}><i style={{width:"68.095%"}} /></div>
+      <div className="mint4-preview-macros">
         {[
-          { name: "Protein", value: SAMPLE.protein, goal: SAMPLE.proteinGoal },
-          { name: "Carbs", value: SAMPLE.carbs, goal: 220 },
-          { name: "Fat", value: SAMPLE.fat, goal: 70 },
-        ].map((m) => (
-          <div className="mint2-macro-row" key={m.name}>
-            <span>{m.name}</span>
-            <strong>{m.value}g <small>/ {m.goal}g</small></strong>
-            <div className="mint2-track"><i style={{ width: `${Math.min(100, (m.value / m.goal) * 100)}%` }} /></div>
+          ["Protein", SAMPLE.protein, SAMPLE.proteinGoal],
+          ["Carbs", SAMPLE.carbs, 220],
+          ["Fat", SAMPLE.fat, 70]
+        ].map(([name, value, goal])=>(
+          <div className="mint4-macro" key={name}>
+            <div><span>{name}</span><strong>{value} <small>/ {goal} g</small></strong></div>
+            <div className="mint4-macro-meter"><i style={{width:`${Math.round(Number(value)/Number(goal)*100)}%`}} /></div>
           </div>
         ))}
       </div>
-      <div className="mint2-dashboard-meals">
-        <p>YOUR DIARY</p>
-        <div><span>Breakfast</span><b>320 kcal</b></div>
-        <div><span>Lunch</span><b>610 kcal</b></div>
-        <div><span>Dinner</span><b>500 kcal</b></div>
+      <div className="mint4-preview-diary">
+        <div className="mint4-section-line"><strong>Your food diary</strong><span>1,430 kcal</span></div>
+        <div><span>Breakfast <small>Overnight oats</small></span><b>320</b></div>
+        <div><span>Lunch <small>Chicken and rice</small></span><b>610</b></div>
+        <div><span>Dinner <small>Vegetable bowl</small></span><b>500</b></div>
       </div>
-    </div>
+      <div className="mint4-preview-water">
+        <div className="mint4-water-top"><div><Droplets size={16} aria-hidden="true" /><span>Water <small>{(water/1000).toFixed(2)} / 2.00 L</small></span></div><div>
+          <button type="button" aria-label="Remove 250 ml from example" disabled={water===0} onClick={()=>setWater(v=>Math.max(0,v-250))}><Minus size={15}/></button>
+          <button type="button" aria-label="Add 250 ml to example" disabled={water>=2000} onClick={()=>setWater(v=>Math.min(2000,v+250))}><Plus size={15}/></button>
+        </div></div>
+        <div className="mint4-water-meter" role="progressbar" aria-label="Example water intake" aria-valuenow={water} aria-valuemin={0} aria-valuemax={2000}><i style={{width:`${water/20}%`}}/></div>
+        <p>Use the controls to try the preview</p>
+      </div>
+    </section>
   );
 }
 
@@ -162,97 +161,89 @@ function Walkthrough() {
 
 export function Landing() {
   return (
-    <div className="mint2-site">
-      <header className="mint2-header">
-        <div className="mint2-container mint2-header-inner">
-          <Link to="/" aria-label="Macro Mint home"><Logo /></Link>
-          <nav className="mint2-header-links" aria-label="Site navigation">
-            <a href="#features">Features</a>
-            <a href="#how-it-works">How it works</a>
-          </nav>
-          <div className="mint2-header-actions">
-            <Link to="/login" className="mint2-text-link">Sign in</Link>
-            <a href="#how-it-works" className="mint2-button mint2-button--small">Explore the app</a>
-          </div>
-        </div>
+    <div className="mint4-site">
+      <a href="#main-content" className="mint4-skip">Skip to content</a>
+      <header className="mint4-header">
+        <Link to="/" aria-label="Macro Mint home"><Logo /></Link>
+        <nav aria-label="Site navigation" className="mint4-navigation">
+          <a href="#features">Features</a>
+          <a href="#how-it-works">How it works</a>
+          <a href="#questions">Questions</a>
+        </nav>
+        <Link to="/login" className="mint4-signin">Sign in <ArrowRight size={16} aria-hidden="true" /></Link>
       </header>
-
-      <main>
-        <section className="mint2-hero mint2-container" aria-labelledby="hero-title">
-          <div className="mint2-hero-copy">
-            <span className="mint2-eyebrow">A BETTER FOOD DIARY</span>
-            <h1 id="hero-title">Your nutrition,<br /><em>in focus.</em></h1>
-            <p>Log meals by search or photo. Keep your calories, macros, and daily progress in one beautifully clear place.</p>
-            <div className="mint2-hero-actions">
-              <a href="#how-it-works" className="mint2-button">See how it works <ArrowRight size={18} aria-hidden="true" /></a>
-              <a href="#features" className="mint2-secondary">Explore features</a>
-            </div>
-            <div className="mint2-hero-status"><span aria-hidden="true" /> Available now · Access by invitation</div>
-          </div>
-          <div className="mint2-hero-visual">
-            <picture className="mint2-hero-photo">
-              <img src={HERO_PHOTO} alt="Fresh vegetables, grains and greens arranged in a vibrant bowl" width={1200} height={900} fetchPriority="high" decoding="async" />
-            </picture>
+      <div className="mint4-layout">
+        <aside className="mint4-rail" aria-label="Product preview">
+          <div className="mint4-rail-inner">
+            <p className="mint4-rail-eyebrow">A BETTER VIEW OF EVERY DAY</p>
             <DailyPreview />
+            <p className="mint4-rail-foot">INTERACTIVE PREVIEW <span>·</span> SAMPLE DATA</p>
           </div>
-        </section>
-
-        <section className="mint2-proof" id="features" aria-labelledby="features-title">
-          <div className="mint2-container mint2-proof-inner">
-            <div className="mint2-proof-intro">
-              <span className="mint2-eyebrow">WHAT YOU CAN DO</span>
-              <h2 id="features-title">Good nutrition starts with good information.</h2>
+        </aside>
+        <main className="mint4-content" id="main-content">
+          <section className="mint4-hero" aria-labelledby="mint4-hero-title">
+            <p className="mint4-eyebrow">NUTRITION TRACKING, WITHOUT THE NOISE</p>
+            <h1 id="mint4-hero-title">macro<span>mint.</span></h1>
+            <h2>Know what you eat.<br/>See what matters.</h2>
+            <p>Search for food, review a meal from a photo, and follow your calories and nutrients in one clear diary.</p>
+            <div className="mint4-actions">
+              <a className="mint4-primary" href="#how-it-works">Try the interactive demo <ArrowRight size={16} aria-hidden="true"/></a>
+              <Link className="mint4-text-action" to="/login">Member sign in</Link>
             </div>
-            <div className="mint2-feature-list">
-              <div><span>01</span><h3>Keep a food diary that works.</h3><p>Search foods, save favourites, and return to meals you log often.</p></div>
-              <div><span>02</span><h3>See beyond calories.</h3><p>Follow protein, carbs, fat, and available micronutrients as you go.</p></div>
-              <div><span>03</span><h3>Make progress visible.</h3><p>Personal targets, weight entries, and trends together in one place.</p></div>
+            <p className="mint4-access">The web app is live. {INVITE_REGISTRATION_ENABLED ? "New members join using a personal invitation." : "New account invitations are not yet available; existing members can sign in."}</p>
+          </section>
+          <section className="mint4-features mint4-section" id="features" aria-labelledby="mint4-features-title">
+            <p className="mint4-eyebrow">DESIGNED FOR THE DAILY ROUTINE</p>
+            <h2 id="mint4-features-title">A food diary that stays useful.</h2>
+            <div className="mint4-features-list">
+              <article><span>01</span><div><h3>Food logging, less friction.</h3><p>Find foods, save favourites, and reuse meals you log often.</p></div></article>
+              <article><span>02</span><div><h3>More than a calorie total.</h3><p>Track protein, carbs, fat, and available vitamins and minerals.</p></div></article>
+              <article><span>03</span><div><h3>Your goals, in context.</h3><p>Review estimated energy targets and change them when needed.</p></div></article>
+              <article><span>04</span><div><h3>A record of your progress.</h3><p>Follow weight entries and nutrition trends. Export your data.</p></div></article>
             </div>
-          </div>
-        </section>
-
-        <Walkthrough />
-
-        <section className="mint2-feature-photo-section" aria-labelledby="detail-title">
-          <div className="mint2-container mint2-detail-layout">
-            <div className="mint2-detail-photo">
-              <img src={BREAKFAST_PHOTO} alt="Yogurt breakfast bowl with berries, oats and banana" width={600} height={750} loading="lazy" decoding="async" />
+          </section>
+          <section className="mint4-photo mint4-section" aria-labelledby="mint4-photo-title">
+            <img src={HERO_PHOTO} alt="Colorful bowl of grains, fresh vegetables and greens" width={1200} height={900} loading="lazy" />
+            <p className="mint4-eyebrow">YOUR PLATE, YOUR PORTION</p>
+            <h2 id="mint4-photo-title">More useful detail.<br/>Fewer steps.</h2>
+            <p>Check the food and quantity before logging. Keep the rest of your day in view.</p>
+          </section>
+          <Walkthrough />
+          <section className="mint4-nutrients mint4-section" aria-labelledby="mint4-nutrient-title">
+            <p className="mint4-eyebrow">THE DETAILS BEHIND THE DAY</p>
+            <h2 id="mint4-nutrient-title">Track what your food data actually provides.</h2>
+            <p>Macro totals stay easy to find, while available vitamins and minerals add context. Missing nutrient data stays missing instead of turning into a made-up number.</p>
+            <div className="mint4-nutrient-example">
+              <span>SAMPLE NUTRIENTS</span>
+              {[["Fiber","18 g",61],["Iron","9 mg",74],["Vitamin C","67 mg",82]].map(([name,value,pct])=><div key={name}><strong>{name}</strong><span>{value}</span><div><i style={{width:`${pct}%`}} /></div></div>)}
             </div>
-            <div className="mint2-detail-copy">
-              <span className="mint2-eyebrow">THE EVERYDAY DETAILS</span>
-              <h2 id="detail-title">Food logging that fits real life.</h2>
-              <p>Your diary should help you keep going, not get in the way. Add a meal in seconds, edit portions when you need to, and see where you stand for the day.</p>
-              <a href="#how-it-works" className="mint2-inline-link">Try the interactive demo <ArrowRight size={17} aria-hidden="true" /></a>
-            </div>
-          </div>
-        </section>
-
-        <section className="mint2-access" id="access" aria-labelledby="access-title">
-          <div className="mint2-container mint2-access-inner">
-            <div>
-              <span className="mint2-eyebrow">MACRO MINT IS LIVE</span>
-              <h2 id="access-title">Your next meal is a good place to start.</h2>
-              <p>{INVITE_REGISTRATION_ENABLED
-                ? "Have an invitation? Create your account and start tracking."
-                : "Already have an account? Sign in. New account invitations are being configured."}</p>
-            </div>
-            <Link to={INVITE_REGISTRATION_ENABLED ? "/register" : "/login"} className="mint2-button">
-              {INVITE_REGISTRATION_ENABLED ? "Join with your code" : "Member sign in"} <ArrowRight size={18} aria-hidden="true" />
-            </Link>
-          </div>
-        </section>
-      </main>
-      <footer className="mint2-footer">
-        <div className="mint2-container mint2-footer-inner">
-          <Logo />
-          <p>Photo-based food suggestions are estimates. Photos: <a href="https://unsplash.com/?utm_source=macro_mint&utm_medium=referral" target="_blank" rel="noopener noreferrer">Unsplash</a>.</p>
-          <nav aria-label="Legal links">
-            <Link to="/privacy">Privacy</Link>
-            <Link to="/terms">Terms</Link>
-            <Link to="/login">Sign in</Link>
-          </nav>
-        </div>
-      </footer>
+          </section>
+          <section className="mint4-photo mint4-section" aria-labelledby="mint4-breakfast-title">
+            <img src={BREAKFAST_PHOTO} alt="Yogurt bowl with berries and oats" width={600} height={750} loading="lazy" />
+            <h2 id="mint4-breakfast-title">Make the ordinary meals count.</h2>
+            <p>Whether it's breakfast or your usual lunch, build a diary you can actually keep up with.</p>
+          </section>
+          <section className="mint4-faq mint4-section" id="questions" aria-labelledby="mint4-faq-title">
+            <p className="mint4-eyebrow">STRAIGHT ANSWERS</p>
+            <h2 id="mint4-faq-title">A few useful details.</h2>
+            <dl>
+              <div><dt>Can I log food without a photo?</dt><dd>Yes. Search foods, use saved items, or enter a custom food.</dd></div>
+              <div><dt>Does Macromint automatically prescribe calories?</dt><dd>No. Starting targets are estimates based on your profile and activity. You can review and edit them.</dd></div>
+              <div><dt>Can I export my data?</dt><dd>Yes. Account settings include an export of your stored data.</dd></div>
+              <div><dt>How do I join?</dt><dd>{INVITE_REGISTRATION_ENABLED ? "Use the private invitation code provided to you." : "Existing members can sign in. New invitations are not currently active."}</dd></div>
+            </dl>
+          </section>
+          <section className="mint4-close mint4-section" aria-labelledby="mint4-close-title">
+            <h2 id="mint4-close-title">A clearer view of your nutrition.</h2>
+            <Link to="/login" className="mint4-primary">Member sign in <ArrowRight size={17} aria-hidden="true" /></Link>
+          </section>
+          <footer className="mint4-footer">
+            <Logo/>
+            <p>Photo-based nutrition suggestions are estimates. Check portions before logging.</p>
+            <nav aria-label="Legal links"><Link to="/privacy">Privacy</Link><Link to="/terms">Terms</Link><Link to="/login">Sign in</Link></nav>
+          </footer>
+        </main>
+      </div>
     </div>
   );
 }
