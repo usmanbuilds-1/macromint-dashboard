@@ -131,6 +131,8 @@ export function ScanDialog({
 
   if (!open) return null;
 
+  const invalidGramDraft = Object.values(gramDrafts).some((draft) => !Number.isSafeInteger(Number(draft)) || Number(draft) <= 0 || draft.length === 0);
+
   const totalKcal = items.reduce((s, i) => s + kcalOf(i.nutrients), 0);
 
   return (
@@ -287,7 +289,7 @@ export function ScanDialog({
             {phase === "review" ? "Scan another" : "Back"}
           </Button>
           {phase === "review" && items.length > 0 && (
-            <Button onClick={addAll}>Add {items.length} item{items.length === 1 ? "" : "s"} to diary</Button>
+            <Button onClick={addAll} disabled={invalidGramDraft}>Add {items.length} item{items.length === 1 ? "" : "s"} to diary</Button>
           )}
         </DialogFooter>
       </DialogContent>
