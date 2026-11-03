@@ -258,7 +258,7 @@ export const demoBackend: Backend & DemoExtras = {
     const st = s();
     let user = st.users.find((x) => x.email.toLowerCase() === email.toLowerCase());
     if (!user) {
-      user = { id: uid("user"), email, name: email.split("@")[0], emailVerified: true, createdAt: new Date().toISOString() };
+      user = { id: uid("user"), email, name: email.split("@")[0] || email, emailVerified: true, createdAt: new Date().toISOString() };
       st.users.push(user);
       demoBackend.seedNewUser(user.id, email, user.name);
     } else {
@@ -337,7 +337,9 @@ export const demoBackend: Backend & DemoExtras = {
   async updateProfile(patch) {
     const st = s();
     const id = requireUser();
-    st.profiles[id] = { ...st.profiles[id], ...patch };
+    const previous = st.profiles[id];
+    if (!previous) throw new BackendError("NOT_FOUND", "Account data missing");
+    st.profiles[id] = { ...previous, ...patch };
     save(st);
     return st.profiles[id];
   },
@@ -349,19 +351,25 @@ export const demoBackend: Backend & DemoExtras = {
   async saveGoals(goals) {
     const st = s();
     const id = requireUser();
-    st.goals[id] = { ...st.goals[id], ...goals, userId: id };
+    const previous = st.goals[id];
+    if (!previous) throw new BackendError("NOT_FOUND", "Account data missing");
+    st.goals[id] = { ...previous, ...goals, userId: id };
     save(st);
     return st.goals[id];
   },
 
   async getPreferences() {
-    return s().prefs[requireUser()];
+    const prefs = s().prefs[requireUser()];
+    if (!prefs) throw new BackendError("NOT_FOUND", "Preferences missing");
+    return prefs;
   },
 
   async savePreferences(patch) {
     const st = s();
     const id = requireUser();
-    st.prefs[id] = { ...st.prefs[id], ...patch };
+    const previous = st.prefs[id];
+    if (!previous) throw new BackendError("NOT_FOUND", "Account data missing");
+    st.prefs[id] = { ...previous, ...patch };
     save(st);
     return st.prefs[id];
   },
@@ -394,7 +402,7 @@ export const demoBackend: Backend & DemoExtras = {
             remote.push({
               id: null,
               name: p.brands ? `${p.product_name} (${String(p.brands).split(",")[0]})` : p.product_name,
-              brand: p.brands ? String(p.brands).split(",")[0].trim() : null,
+              brand: p.brands ? String(p.brands).split(",")[0]?.trim() ?? null : null,
               per100g: {
                 kcal: Math.round(n["energy-kcal_100g"] ?? 0),
                 protein: n.proteins_100g ?? null,
@@ -550,6 +558,7 @@ export const demoBackend: Backend & DemoExtras = {
     const idx = st.diary.findIndex((d) => d.id === id);
     if (idx < 0) throw new BackendError("NOT_FOUND", "Entry not found");
     const current = st.diary[idx];
+    if (!current) throw new BackendError("NOT_FOUND", "Diary entry missing");
     const base = patch.baseNutrients ?? current.baseNutrients;
     const pct = patch.portionPercent ?? current.portionPercent;
     st.diary[idx] = {
@@ -560,7 +569,7 @@ export const demoBackend: Backend & DemoExtras = {
       nutrients: applyPortionPercent(base, pct),
     };
     save(st);
-    return st.diary[idx];
+    return st.diary[idx]!;
   },
 
   async deleteEntry(id) {
@@ -707,7 +716,7 @@ export const demoBackend: Backend & DemoExtras = {
           createdAt: u.createdAt,
           entitlement: st.entitlements[u.id] ?? null,
           diaryCount30d: usage.length,
-          lastDiaryDate: usage.length ? usage.map((d) => d.entryDate).sort().slice(-1)[0] : null,
+          lastDiaryDate: usage.length ? usage.map((d) => d.entryDate).sort().at(-1) ?? null : null,
         };
       });
   },
@@ -764,7 +773,7 @@ export const demoBackend: Backend & DemoExtras = {
       reason: input.reason ?? input.note ?? null, createdAt: new Date().toISOString(),
     });
     save(st);
-    return { ok: true, entitlement: ent };
+    return ent ? { ok: true, entitlement: ent } : { ok: true };
   },
 
   async adminGetAudit(targetUserId) {

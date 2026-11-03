@@ -1,1 +1,15 @@
 project_id = "bocbelyaljgdclvqkowe"
+[functions.ai-scan]
+verify_jwt = false
+
+[functions.food-search]
+verify_jwt = false
+
+[functions.admin-action]
+verify_jwt = false
+
+[functions.admin-query]
+verify_jwt = false
+
+[functions.delete-account]
+verify_jwt = false

@@ -196,9 +196,9 @@ describe("week bucketing", () => {
   it("produces previous weeks and labels", () => {
     const weeks = lastNWeeks("2026-01-05", 4);
     expect(weeks).toHaveLength(4);
-    expect(weeks[3][0]).toBe("2026-01-05"); // current week Monday
-    expect(weeks[0][0]).toBe("2025-12-15");
-    expect(weekLabel(weeks[3])).toContain("Jan 5");
+    expect(weeks[3]![0]).toBe("2026-01-05"); // current week Monday
+    expect(weeks[0]![0]).toBe("2025-12-15");
+    expect(weekLabel(weeks[3]!)).toContain("Jan 5");
   });
 
   it("parses and shifts without timezone drift", () => {
@@ -219,8 +219,8 @@ describe("daysToKcal", () => {
       [entry("2026-01-01", 300), entry("2026-01-01", 200), entry("2026-01-02", 550)],
       ["2026-01-01", "2026-01-02", "2026-01-03"],
     );
-    expect(days[0].kcal).toBe(500);
-    expect(days[1].kcal).toBe(550);
-    expect(days[2].kcal).toBeNull();
+    expect(days[0]!.kcal).toBe(500);
+    expect(days[1]!.kcal).toBe(550);
+    expect(days[2]!.kcal).toBeNull();
   });
 });

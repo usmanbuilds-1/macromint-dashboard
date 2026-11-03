@@ -91,7 +91,7 @@ export function Diary() {
 
   const saveAsMeal = async (mealEntries: DiaryEntry[]) => {
     if (mealEntries.length === 0) return;
-    const name = `${MEAL_LABELS[mealEntries[0].mealType]} ${formatDateShort(date)}`;
+    const name = `${MEAL_LABELS[mealEntries[0]!.mealType]} ${formatDateShort(date)}`;
     await backend.saveMeal(name, mealEntries.map((e) => e.id));
     bumpData();
     toast.success(`Saved "${name}" — reuse it from any Add food search`);

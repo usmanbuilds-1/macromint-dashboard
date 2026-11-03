@@ -201,7 +201,7 @@ function CustomFoodDialog({ open, onClose, onCreated }: { open: boolean; onClose
       toast.error("Give the food a name");
       return;
     }
-    const kcal = Number(values.kcal);
+    const kcal = Number(values["kcal"]);
     if (!Number.isFinite(kcal) || kcal < 0) {
       toast.error("Calories are required (per 100 g)");
       return;
@@ -210,12 +210,12 @@ function CustomFoodDialog({ open, onClose, onCreated }: { open: boolean; onClose
     try {
       const per100g: Record<string, number | null> = {
         kcal,
-        protein: Number(values.protein) || 0,
-        carbs: Number(values.carbs) || 0,
-        fat: Number(values.fat) || 0,
-        fiber: values.fiber ? Number(values.fiber) : null,
-        sugar: values.sugar ? Number(values.sugar) : null,
-        sodium: values.sodium ? Number(values.sodium) : null,
+        protein: Number(values["protein"]) || 0,
+        carbs: Number(values["carbs"]) || 0,
+        fat: Number(values["fat"]) || 0,
+        fiber: values["fiber"] ? Number(values["fiber"]) : null,
+        sugar: values["sugar"] ? Number(values["sugar"]) : null,
+        sodium: values["sodium"] ? Number(values["sodium"]) : null,
       };
       const food = await backend.createCustomFood({
         name: name.trim(),

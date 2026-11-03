@@ -30,6 +30,7 @@
     "exactOptionalPropertyTypes": true,
     "noUncheckedSideEffectImports": true,
     "paths": {
+      "react-router-dom": ["./src/lib/router-compat.tsx"],
       "@/*": ["./src/*"]
     }
   }

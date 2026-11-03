@@ -76,7 +76,7 @@ export function ScanDialog({
       // Demo/local mode returns raw model items: ground them client-side
       // against the demo food database (production grounds server-side).
       let items = res.items as ScanItem[];
-      if (items.length > 0 && !("grounding" in items[0])) {
+      if (items[0] && !("grounding" in items[0])) {
         const foods = (await backend.getAllFoods?.()) ?? [];
         items = await groundScanItems(res.items as unknown as RawModelItem[], foods);
       }

@@ -1,3 +1,8 @@
+declare module "@tanstack/react-router" {
+  interface HistoryState {
+    from?: string;
+  }
+}
 import { createFileRoute, useLocation, useNavigate } from "@tanstack/react-router";
 import { useEffect } from "react";
 import { AppLayout } from "@/components/app/AppLayout";
@@ -43,7 +48,16 @@ function AppShell() {
   }, [loading, user, profile, hasAccess, location.pathname, navigate]);
 
   if (loading || !user) return <ShellGate />;
-  if (!profile) return <ShellGate />;
+  if (!profile)
+    return (
+      <div className="mx-auto max-w-md p-8">
+        <h1 className="text-xl font-semibold">Could not load your profile</h1>
+        <p className="my-4">Please refresh to try again.</p>
+        <button className="rounded border px-4 py-2" onClick={() => window.location.reload()}>
+          Refresh
+        </button>
+      </div>
+    );
   if (!profile.onboardedAt || !hasAccess) return <ShellGate />;
 
   // AppLayout renders <Outlet /> itself (it was ported as a react-router layout).

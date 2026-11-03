@@ -36,6 +36,13 @@
       "when": 1793628474959,
       "tag": "0004_macromint_0005_scan_events",
       "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "7",
+      "when": 1793730394228,
+      "tag": "0005_fix_signup_trial",
+      "breakpoints": true
     }
   ]
 }

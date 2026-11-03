@@ -66,9 +66,10 @@ export function Onboarding() {
         targetWeightKg: null,
         activityLevel,
         objective,
-        onboardedAt: new Date().toISOString(),
+
       });
       await backend.saveGoals(computed.goals);
+      await backend.updateProfile({ onboardedAt: new Date().toISOString() });
       await refresh();
       toast.success("Targets saved. You can adjust them any time in Goals.");
       navigate("/today", { replace: true });

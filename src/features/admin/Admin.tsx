@@ -83,7 +83,7 @@ function AdminUsers() {
 
   const act = async (action: string, row: AdminUserRow, extra?: Record<string, unknown>) => {
     try {
-      await backend.adminAction({ action, targetUserId: row.userId, reason: extra?.reason as string | undefined, ...extra });
+      await backend.adminAction({ action, targetUserId: row.userId, ...extra });
       bumpData();
       toast.success(`${action.replace(/_/g, " ")} applied to ${row.email}`);
     } catch (e) {

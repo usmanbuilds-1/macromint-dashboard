@@ -1,9 +1,17 @@
+import type { TablesUpdate, Json } from "@/integrations/supabase/types";
 // ── Production backend: Supabase ──────────────────────────────────────────
 // Maps the Backend contract onto RLS-protected tables and Edge Functions.
 // Ownership and access are re-checked by the database on every call.
 
 import { BackendError } from "./types";
-import type { Backend, AddEntryInput, AdminActionInput, CustomFoodInput, FoodSearchHit, RecipeInput } from "./types";
+import type {
+  Backend,
+  AddEntryInput,
+  AdminActionInput,
+  CustomFoodInput,
+  FoodSearchHit,
+  RecipeInput,
+} from "./types";
 import { getSupabase, mapFoodRow } from "@/lib/supabase";
 import { applyPortionPercent, sumNutrients } from "@/lib/nutrition/math";
 import type {
@@ -40,20 +48,20 @@ function n(v: unknown): number {
 
 function mapEntry(row: Record<string, unknown>): DiaryEntry {
   return {
-    id: String(row.id),
-    userId: String(row.user_id),
-    entryDate: String(row.entry_date),
-    mealType: row.meal_type as DiaryEntry["mealType"],
-    foodId: (row.food_id as string | null) ?? null,
-    recipeId: (row.recipe_id as string | null) ?? null,
-    name: String(row.name),
-    brand: (row.brand as string | null) ?? null,
-    grams: n(row.grams),
-    portionPercent: n(row.portion_percent),
-    baseNutrients: (row.base_nutrients ?? {}) as NutrientRecord,
-    nutrients: (row.nutrients ?? {}) as NutrientRecord,
-    source: row.source as DiaryEntry["source"],
-    loggedAt: String(row.logged_at ?? ""),
+    id: String(row["id"]),
+    userId: String(row["user_id"]),
+    entryDate: String(row["entry_date"]),
+    mealType: row["meal_type"] as DiaryEntry["mealType"],
+    foodId: (row["food_id"] as string | null) ?? null,
+    recipeId: (row["recipe_id"] as string | null) ?? null,
+    name: String(row["name"]),
+    brand: (row["brand"] as string | null) ?? null,
+    grams: n(row["grams"]),
+    portionPercent: n(row["portion_percent"]),
+    baseNutrients: (row["base_nutrients"] ?? {}) as NutrientRecord,
+    nutrients: (row["nutrients"] ?? {}) as NutrientRecord,
+    source: row["source"] as DiaryEntry["source"],
+    loggedAt: String(row["logged_at"] ?? ""),
   };
 }
 
@@ -86,7 +94,9 @@ export const supabaseBackend: Backend = {
   },
 
   async requestPasswordReset(email) {
-    const { error } = await getSupabase().auth.resetPasswordForEmail(email);
+    const { error } = await getSupabase().auth.resetPasswordForEmail(email, {
+      redirectTo: new URL("/reset?change=1", window.location.origin).href,
+    });
     if (error) throw new BackendError("AUTH", error.message);
   },
 
@@ -99,8 +109,11 @@ export const supabaseBackend: Backend = {
   },
 
   onAuthChange(cb) {
-    const { data } = getSupabase().auth.onAuthStateChange(async () => {
-      cb(await supabaseBackend.getSessionUser());
+    const { data } = getSupabase().auth.onAuthStateChange((_event, session) => {
+      const u = session?.user;
+      cb(
+        u ? { id: u.id, email: u.email ?? "", emailVerified: Boolean(u.email_confirmed_at) } : null,
+      );
     });
     return () => data.subscription.unsubscribe();
   },
@@ -112,7 +125,11 @@ export const supabaseBackend: Backend = {
 
   // ── Profile, goals, preferences ─────────────────────────────────────────
   async getProfile() {
-    const { data, error } = await getSupabase().from("profiles").select("*").maybeSingle();
+    const { data, error } = await getSupabase()
+      .from("profiles")
+      .select("*")
+      .eq("user_id", await currentUserId())
+      .maybeSingle();
     if (error) throw new BackendError("DB", error.message);
     if (!data) return null;
     return {
@@ -132,7 +149,7 @@ export const supabaseBackend: Backend = {
   },
 
   async updateProfile(patch) {
-    const col: Record<string, unknown> = {};
+    const col: TablesUpdate<"profiles"> = {};
     if (patch.name !== undefined) col.name = patch.name;
     if (patch.sex !== undefined) col.sex = patch.sex;
     if (patch.birthYear !== undefined) col.birth_year = patch.birthYear;
@@ -143,7 +160,12 @@ export const supabaseBackend: Backend = {
     if (patch.objective !== undefined) col.objective = patch.objective;
     if (patch.units !== undefined) col.units = patch.units;
     if (patch.onboardedAt !== undefined) col.onboarded_at = patch.onboardedAt;
-    const { data, error } = await getSupabase().from("profiles").update(col).select().maybeSingle();
+    const { data, error } = await getSupabase()
+      .from("profiles")
+      .update(col)
+      .eq("user_id", await currentUserId())
+      .select()
+      .maybeSingle();
     if (error) throw new BackendError("DB", error.message);
     const full = await supabaseBackend.getProfile();
     void data;
@@ -151,7 +173,11 @@ export const supabaseBackend: Backend = {
   },
 
   async getGoals() {
-    const { data, error } = await getSupabase().from("nutritional_goals").select("*").maybeSingle();
+    const { data, error } = await getSupabase()
+      .from("nutritional_goals")
+      .select("*")
+      .eq("user_id", await currentUserId())
+      .maybeSingle();
     if (error) throw new BackendError("DB", error.message);
     if (!data) return null;
     return {
@@ -168,7 +194,7 @@ export const supabaseBackend: Backend = {
   },
 
   async saveGoals(goals) {
-    const patch: Record<string, unknown> = {};
+    const patch: TablesUpdate<"nutritional_goals"> = {};
     if (goals.calorieTarget !== undefined) patch.calorie_target = goals.calorieTarget;
     if (goals.proteinG !== undefined) patch.protein_g = goals.proteinG;
     if (goals.carbsG !== undefined) patch.carbs_g = goals.carbsG;
@@ -177,7 +203,10 @@ export const supabaseBackend: Backend = {
     if (goals.waterMl !== undefined) patch.water_ml = goals.waterMl;
     if (goals.method !== undefined) patch.method = goals.method;
     if (goals.manuallyAdjusted !== undefined) patch.manually_adjusted = goals.manuallyAdjusted;
-    const { error } = await getSupabase().from("nutritional_goals").update(patch);
+    const { error } = await getSupabase()
+      .from("nutritional_goals")
+      .update(patch)
+      .eq("user_id", await currentUserId());
     if (error) throw new BackendError("DB", error.message);
     const full = await supabaseBackend.getGoals();
     if (!full) throw new BackendError("DB", "Goals missing after save");
@@ -185,7 +214,11 @@ export const supabaseBackend: Backend = {
   },
 
   async getPreferences() {
-    const { data, error } = await getSupabase().from("user_preferences").select("*").maybeSingle();
+    const { data, error } = await getSupabase()
+      .from("user_preferences")
+      .select("*")
+      .eq("user_id", await currentUserId())
+      .maybeSingle();
     if (error) throw new BackendError("DB", error.message);
     if (!data) throw new BackendError("DB", "Preferences missing");
     return {
@@ -198,12 +231,16 @@ export const supabaseBackend: Backend = {
   },
 
   async savePreferences(patch) {
-    const col: Record<string, unknown> = {};
+    const col: TablesUpdate<"user_preferences"> = {};
     if (patch.weekStart !== undefined) col.week_start = patch.weekStart;
-    if (patch.reminders !== undefined) col.reminders = patch.reminders;
+    if (patch.reminders !== undefined)
+      col.reminders = JSON.parse(JSON.stringify(patch.reminders)) as Json;
     if (patch.adConsent !== undefined) col.ad_consent = patch.adConsent;
     if (patch.analyticsConsent !== undefined) col.analytics_consent = patch.analyticsConsent;
-    const { error } = await getSupabase().from("user_preferences").update(col);
+    const { error } = await getSupabase()
+      .from("user_preferences")
+      .update(col)
+      .eq("user_id", await currentUserId());
     if (error) throw new BackendError("DB", error.message);
     return supabaseBackend.getPreferences();
   },
@@ -221,7 +258,9 @@ export const supabaseBackend: Backend = {
   },
 
   async lookupBarcode(barcode) {
-    const { data, error } = await getSupabase().functions.invoke("food-search", { body: { barcode } });
+    const { data, error } = await getSupabase().functions.invoke("food-search", {
+      body: { barcode },
+    });
     if (error) throw new BackendError("SERVER", error.message);
     return {
       local: ((data.local ?? []) as Record<string, unknown>[]).map(mapFoodRow),
@@ -234,6 +273,7 @@ export const supabaseBackend: Backend = {
     const { data, error } = await getSupabase()
       .from("foods")
       .insert({
+        owner_id: await currentUserId(),
         name: input.name,
         brand: input.brand ?? null,
         category: input.category ?? null,
@@ -256,7 +296,12 @@ export const supabaseBackend: Backend = {
       .order("created_at", { ascending: false });
     if (error) throw new BackendError("DB", error.message);
     return (data ?? []).map((row) => {
-      const r = row as unknown as { id: string; food_id: string; created_at: string; food: Record<string, unknown> | null };
+      const r = row as unknown as {
+        id: string;
+        food_id: string;
+        created_at: string;
+        food: Record<string, unknown> | null;
+      };
       return {
         id: r.id,
         userId: "",
@@ -277,7 +322,9 @@ export const supabaseBackend: Backend = {
       await getSupabase().from("favorites").delete().eq("id", String(existing.id));
       return false;
     }
-    const { error } = await getSupabase().from("favorites").insert({ user_id: await currentUserId(), food_id: foodId });
+    const { error } = await getSupabase()
+      .from("favorites")
+      .insert({ user_id: await currentUserId(), food_id: foodId });
     if (error) throw new BackendError("DB", error.message);
     return true;
   },
@@ -301,11 +348,14 @@ export const supabaseBackend: Backend = {
     const items = (entries ?? []).map((e) => {
       const row = e as Record<string, unknown>;
       return {
-        foodId: (row.food_id as string | null) ?? null,
-        name: String(row.name),
-        brand: (row.brand as string | null) ?? null,
-        grams: n(row.grams),
-        per100g: scaleBackToPer100g((row.base_nutrients ?? {}) as NutrientRecord, n(row.grams)),
+        foodId: (row["food_id"] as string | null) ?? null,
+        name: String(row["name"]),
+        brand: (row["brand"] as string | null) ?? null,
+        grams: n(row["grams"]),
+        per100g: scaleBackToPer100g(
+          (row["base_nutrients"] ?? {}) as NutrientRecord,
+          n(row["grams"]),
+        ),
       };
     });
     const { data: saved, error: insertError } = await getSupabase()
@@ -332,11 +382,11 @@ export const supabaseBackend: Backend = {
     return (data ?? []).map((s) => {
       const row = s as Record<string, unknown>;
       return {
-        id: String(row.id),
-        userId: String(row.user_id),
-        name: String(row.name),
-        items: (row.items ?? []) as SavedMeal["items"],
-        createdAt: String(row.created_at),
+        id: String(row["id"]),
+        userId: String(row["user_id"]),
+        name: String(row["name"]),
+        items: (row["items"] ?? []) as SavedMeal["items"],
+        createdAt: String(row["created_at"]),
       };
     });
   },
@@ -400,7 +450,7 @@ export const supabaseBackend: Backend = {
   },
 
   async updateEntry(id, patch) {
-    const col: Record<string, unknown> = {};
+    const col: TablesUpdate<"diary_entries"> = {};
     if (patch.grams !== undefined) col.grams = patch.grams;
     if (patch.mealType !== undefined) col.meal_type = patch.mealType;
     if (patch.name !== undefined) col.name = patch.name;
@@ -413,7 +463,8 @@ export const supabaseBackend: Backend = {
         .eq("id", id)
         .single();
       if (fetchError) throw new BackendError("DB", fetchError.message);
-      const base = (patch.baseNutrients ?? (current as { base_nutrients: NutrientRecord }).base_nutrients);
+      const base =
+        patch.baseNutrients ?? (current as { base_nutrients: NutrientRecord }).base_nutrients;
       const pct = patch.portionPercent ?? (current as { portion_percent: number }).portion_percent;
       col.base_nutrients = base;
       col.portion_percent = pct;
@@ -463,12 +514,12 @@ export const supabaseBackend: Backend = {
     return (data ?? []).map((r) => {
       const row = r as Record<string, unknown>;
       return {
-        id: String(row.id),
-        userId: String(row.user_id),
-        name: String(row.name),
-        servings: n(row.servings) || 1,
-        notes: (row.notes as string | null) ?? null,
-        createdAt: String(row.created_at),
+        id: String(row["id"]),
+        userId: String(row["user_id"]),
+        name: String(row["name"]),
+        servings: n(row["servings"]) || 1,
+        notes: (row["notes"] as string | null) ?? null,
+        createdAt: String(row["created_at"]),
       };
     });
   },
@@ -483,12 +534,12 @@ export const supabaseBackend: Backend = {
     return (data ?? []).map((i) => {
       const row = i as Record<string, unknown>;
       return {
-        id: String(row.id),
-        recipeId: String(row.recipe_id),
-        foodId: (row.food_id as string | null) ?? null,
-        name: String(row.name),
-        grams: n(row.grams),
-        per100g: (row.per100g ?? {}) as NutrientRecord,
+        id: String(row["id"]),
+        recipeId: String(row["recipe_id"]),
+        foodId: (row["food_id"] as string | null) ?? null,
+        name: String(row["name"]),
+        grams: n(row["grams"]),
+        per100g: (row["per100g"] ?? {}) as NutrientRecord,
       };
     });
   },
@@ -496,7 +547,12 @@ export const supabaseBackend: Backend = {
   async createRecipe(input: RecipeInput) {
     const { data: recipe, error } = await getSupabase()
       .from("recipes")
-      .insert({ user_id: await currentUserId(), name: input.name, servings: input.servings, notes: input.notes ?? null })
+      .insert({
+        user_id: await currentUserId(),
+        name: input.name,
+        servings: input.servings,
+        notes: input.notes ?? null,
+      })
       .select()
       .single();
     if (error) throw new BackendError("DB", error.message);
@@ -510,7 +566,10 @@ export const supabaseBackend: Backend = {
       position: idx,
     }));
     const { error: ingError } = await getSupabase().from("recipe_ingredients").insert(rows);
-    if (ingError) throw new BackendError("DB", ingError.message);
+    if (ingError) {
+      await getSupabase().from("recipes").delete().eq("id", recipeId);
+      throw new BackendError("DB", ingError.message);
+    }
     return {
       id: recipeId,
       userId: String(recipe.user_id),
@@ -531,7 +590,9 @@ export const supabaseBackend: Backend = {
     const recipe = recipes.find((r) => r.id === recipeId);
     if (!recipe) throw new BackendError("NOT_FOUND", "Recipe not found");
     const ingredients = await supabaseBackend.getRecipeIngredients(recipeId);
-    const total = sumNutrients(ingredients.map((i) => applyPortionPercent(scaleToBase(i.per100g, i.grams), 100)));
+    const total = sumNutrients(
+      ingredients.map((i) => applyPortionPercent(scaleToBase(i.per100g, i.grams), 100)),
+    );
     const perServing = applyPortionPercent(total, (servings / recipe.servings) * 100);
     return supabaseBackend.addEntry({
       entryDate,
@@ -556,12 +617,12 @@ export const supabaseBackend: Backend = {
     return (data ?? []).map((w) => {
       const row = w as Record<string, unknown>;
       return {
-        id: String(row.id),
-        userId: String(row.user_id),
-        entryDate: String(row.entry_date),
-        weightKg: n(row.weight_kg),
-        note: (row.note as string | null) ?? null,
-        createdAt: String(row.created_at),
+        id: String(row["id"]),
+        userId: String(row["user_id"]),
+        entryDate: String(row["entry_date"]),
+        weightKg: n(row["weight_kg"]),
+        note: (row["note"] as string | null) ?? null,
+        createdAt: String(row["created_at"]),
       };
     });
   },
@@ -570,7 +631,12 @@ export const supabaseBackend: Backend = {
     const { data, error } = await getSupabase()
       .from("weight_entries")
       .upsert(
-        { user_id: await currentUserId(), entry_date: entryDate, weight_kg: weightKg, note: note ?? null },
+        {
+          user_id: await currentUserId(),
+          entry_date: entryDate,
+          weight_kg: weightKg,
+          note: note ?? null,
+        },
         { onConflict: "user_id,entry_date" },
       )
       .select()
@@ -578,12 +644,12 @@ export const supabaseBackend: Backend = {
     if (error) throw new BackendError("DB", error.message);
     const row = data as Record<string, unknown>;
     return {
-      id: String(row.id),
-      userId: String(row.user_id),
-      entryDate: String(row.entry_date),
-      weightKg: n(row.weight_kg),
-      note: (row.note as string | null) ?? null,
-      createdAt: String(row.created_at),
+      id: String(row["id"]),
+      userId: String(row["user_id"]),
+      entryDate: String(row["entry_date"]),
+      weightKg: n(row["weight_kg"]),
+      note: (row["note"] as string | null) ?? null,
+      createdAt: String(row["created_at"]),
     };
   },
 
@@ -602,17 +668,19 @@ export const supabaseBackend: Backend = {
     return (data ?? []).map((w) => {
       const row = w as Record<string, unknown>;
       return {
-        id: String(row.id),
-        userId: String(row.user_id),
-        entryDate: String(row.entry_date),
-        amountMl: n(row.amount_ml),
-        createdAt: String(row.created_at),
+        id: String(row["id"]),
+        userId: String(row["user_id"]),
+        entryDate: String(row["entry_date"]),
+        amountMl: n(row["amount_ml"]),
+        createdAt: String(row["created_at"]),
       };
     });
   },
 
   async addWater(entryDate, amountMl) {
-    const { error } = await getSupabase().from("water_entries").insert({ user_id: await currentUserId(), entry_date: entryDate, amount_ml: amountMl });
+    const { error } = await getSupabase()
+      .from("water_entries")
+      .insert({ user_id: await currentUserId(), entry_date: entryDate, amount_ml: amountMl });
     if (error) throw new BackendError("DB", error.message);
   },
 
@@ -623,12 +691,12 @@ export const supabaseBackend: Backend = {
     const row = (data as Record<string, unknown>[] | null)?.[0];
     if (!row) return null;
     return {
-      userId: String(row.user_id),
-      state: row.state as Entitlement["state"],
-      trialStartedAt: String(row.trial_started_at),
-      trialEndsAt: String(row.trial_ends_at),
-      accessUntil: (row.access_until as string | null) ?? null,
-      updatedAt: String(row.updated_at),
+      userId: String(row["user_id"]),
+      state: row["state"] as Entitlement["state"],
+      trialStartedAt: String(row["trial_started_at"]),
+      trialEndsAt: String(row["trial_ends_at"]),
+      accessUntil: (row["access_until"] as string | null) ?? null,
+      updatedAt: String(row["updated_at"]),
     };
   },
 
@@ -645,15 +713,17 @@ export const supabaseBackend: Backend = {
   async reportScanCorrections(scanId, items) {
     if (!items.length) return;
     const userId = await currentUserId();
-    const { error } = await getSupabase().from("scan_corrections").insert(
-      items.map((i) => ({
-        user_id: userId,
-        scan_id: scanId,
-        item_label: i.label,
-        original: i.original as Record<string, unknown>,
-        corrected: i.corrected as Record<string, unknown>,
-      })),
-    );
+    const { error } = await getSupabase()
+      .from("scan_corrections")
+      .insert(
+        items.map((i) => ({
+          user_id: userId,
+          scan_id: scanId,
+          item_label: i.label,
+          original: i.original as Json,
+          corrected: i.corrected as Json,
+        })),
+      );
     if (error) throw new BackendError("DB", error.message);
   },
 
@@ -665,7 +735,9 @@ export const supabaseBackend: Backend = {
   },
 
   async adminListUsers(search) {
-    const { data, error } = await getSupabase().functions.invoke("admin-query", { body: { action: "list_users", search } });
+    const { data, error } = await getSupabase().functions.invoke("admin-query", {
+      body: { action: "list_users", search },
+    });
     if (error) throw new BackendError("SERVER", error.message);
     return (data.users ?? []) as AdminUserRow[];
   },
@@ -700,22 +772,27 @@ export const supabaseBackend: Backend = {
     return (data ?? []).map((x) => {
       const row = x as Record<string, unknown>;
       return {
-        id: String(row.id),
-        kind: String(row.kind),
-        title: String(row.title),
-        body: (row.body as string | null) ?? null,
-        readAt: (row.read_at as string | null) ?? null,
-        createdAt: String(row.created_at),
+        id: String(row["id"]),
+        kind: String(row["kind"]),
+        title: String(row["title"]),
+        body: (row["body"] as string | null) ?? null,
+        readAt: (row["read_at"] as string | null) ?? null,
+        createdAt: String(row["created_at"]),
       };
     });
   },
 
   async markNotificationRead(id) {
-    await getSupabase().from("notifications").update({ read_at: new Date().toISOString() }).eq("id", id);
+    await getSupabase()
+      .from("notifications")
+      .update({ read_at: new Date().toISOString() })
+      .eq("id", id);
   },
 
   async setConsent(kind, version) {
-    await getSupabase().from("user_consents").upsert({ user_id: await currentUserId(), kind, version }, { onConflict: "user_id,kind" });
+    await getSupabase()
+      .from("user_consents")
+      .upsert({ user_id: await currentUserId(), kind, version }, { onConflict: "user_id,kind" });
   },
 
   async exportAllData() {

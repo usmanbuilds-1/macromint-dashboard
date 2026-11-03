@@ -79,7 +79,7 @@ export async function groundScanItems(rawItems: RawModelItem[], foods: Food[]): 
   const unmatched = rawItems.filter((item) => !bestDbMatch(item.label, foods)).slice(0, 3);
   const offResults = await Promise.all(unmatched.map((item) => searchOffClient(item.label)));
   const offByLabel = new Map<string, Awaited<ReturnType<typeof searchOffClient>>>();
-  unmatched.forEach((item, i) => offByLabel.set(item.label, offResults[i]));
+  unmatched.forEach((item, i) => offByLabel.set(item.label, offResults[i] ?? null));
 
   return rawItems.map((item) => {
     const db = bestDbMatch(item.label, foods);

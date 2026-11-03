@@ -46,8 +46,8 @@ export function Settings() {
     setBusy(true);
     try {
       const patch: Record<string, unknown> = { name: name.trim() };
-      if (heightCm) patch.heightCm = Number(heightCm);
-      if (weightKg) patch.weightKg = Number(weightKg);
+      if (heightCm) patch["heightCm"] = Number(heightCm);
+      if (weightKg) patch["weightKg"] = Number(weightKg);
       await backend.updateProfile(patch);
       await refresh();
       bumpData();

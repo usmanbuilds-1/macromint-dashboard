@@ -30,7 +30,8 @@ export function Goals() {
     setForm((f) => ({ ...f, [key]: value }));
   };
 
-  const dirty = goals && form.calorieTarget !== undefined && String(form.calorieTarget) !== String(goals.calorieTarget);
+  const editableKeys = ["calorieTarget", "proteinG", "carbsG", "fatG", "fiberG", "waterMl"] as const;
+  const dirty = Boolean(goals && editableKeys.some(key => String(form[key]) !== String(goals[key])));
 
   const save = async () => {
     const sanitized = sanitizeGoalEdit({ ...form, userId: goals?.userId ?? "" });

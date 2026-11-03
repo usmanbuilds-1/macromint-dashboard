@@ -41,7 +41,7 @@ export function friendlyScanError(code: string): string {
 }
 
 export async function scanImage(dataUrl: string, hints: string): Promise<ScanResponse> {
-  const explicit = import.meta.env.VITE_SCAN_ENDPOINT;
+  const explicit = import.meta.env["VITE_SCAN_ENDPOINT"];
 
   if (!explicit && IS_SUPABASE_CONFIGURED) {
     const { data, error } = await getSupabase().functions.invoke<ScanResponse & { error?: string; message?: string }>("ai-scan", {

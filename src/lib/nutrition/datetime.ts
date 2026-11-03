@@ -37,8 +37,8 @@ export function weekDates(dateStr: string, weekOffset = 0): string[] {
 /** Human week label, e.g. "Oct 19 – Oct 25" (en dash when the span fits). */
 export function weekLabel(dates: string[]): string {
   if (dates.length !== 7) throw new Error("weekLabel expects exactly 7 dates");
-  const a = parseLocalDate(dates[0]);
-  const b = parseLocalDate(dates[6]);
+  const a = parseLocalDate(dates[0]!);
+  const b = parseLocalDate(dates[6]!);
   const sameMonth = a.getMonth() === b.getMonth();
   const sameYear = a.getFullYear() === b.getFullYear();
   const left = format(a, sameYear ? "MMM d" : "MMM d, yyyy");

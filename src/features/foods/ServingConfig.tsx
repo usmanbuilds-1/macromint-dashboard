@@ -12,9 +12,21 @@ import {
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { Separator } from "@/components/ui/separator";
-import { MEAL_LABELS, MEAL_TYPES, type DiaryEntry, type MealType, type NutrientRecord } from "@/types";
+import {
+  MEAL_LABELS,
+  MEAL_TYPES,
+  type DiaryEntry,
+  type MealType,
+  type NutrientRecord,
+} from "@/types";
 import { backend, bumpData, BackendError } from "@/lib/backend";
 import { scaleNutrients, applyPortionPercent } from "@/lib/nutrition/math";
 import { kcalOf } from "@/components/app/bits";
@@ -24,7 +36,17 @@ import type { FoodLogTarget, LoggableFood } from "./FoodLogProvider";
 
 const PORTION_PRESETS = [25, 50, 75, 100];
 
-function NutrientPreview({ label, value, unit, emphasize }: { label: string; value: number | null; unit: string; emphasize?: boolean }) {
+function NutrientPreview({
+  label,
+  value,
+  unit,
+  emphasize,
+}: {
+  label: string;
+  value: number | null;
+  unit: string;
+  emphasize?: boolean;
+}) {
   return (
     <div className="text-center">
       <p className={cn("text-lg font-semibold tabular-nums", emphasize && "text-primary")}>
@@ -74,11 +96,13 @@ export function ServingConfigDialog({
 
   const [mealType, setMealType] = useState<MealType>("breakfast");
   const [grams, setGrams] = useState("100");
+  const [unit, setUnit] = useState("g");
   const [pct, setPct] = useState(100);
   const [busy, setBusy] = useState(false);
 
   useEffect(() => {
     if (!view || !target) return;
+    setUnit("g");
     setMealType(target.mealType);
     if (entry) {
       setGrams(String(entry.grams));
@@ -89,8 +113,11 @@ export function ServingConfigDialog({
     }
   }, [view, target, entry]);
 
-  const gramsNum = Math.max(Number(grams) || 0, 0);
-  const base = useMemo(() => (view ? scaleNutrients(view.per100g, gramsNum, 100) : {}), [view, gramsNum]);
+  const gramsNum = Math.max(Number(grams) || 0, 0) * (unit === "oz" ? 28.349523125 : 1);
+  const base = useMemo(
+    () => (view ? scaleNutrients(view.per100g, gramsNum, 100) : {}),
+    [view, gramsNum],
+  );
   const eaten = useMemo(() => (view ? applyPortionPercent(base, pct) : {}), [view, base, pct]);
 
   if (!view || !target) return null;
@@ -162,7 +189,9 @@ export function ServingConfigDialog({
               </SelectTrigger>
               <SelectContent>
                 {MEAL_TYPES.map((m) => (
-                  <SelectItem key={m} value={m}>{MEAL_LABELS[m]}</SelectItem>
+                  <SelectItem key={m} value={m}>
+                    {MEAL_LABELS[m]}
+                  </SelectItem>
                 ))}
               </SelectContent>
             </Select>
@@ -170,16 +199,39 @@ export function ServingConfigDialog({
 
           <div className="grid grid-cols-2 gap-3">
             <div className="grid gap-1.5">
-              <Label htmlFor="sc-grams">Amount (g)</Label>
-              <Input id="sc-grams" inputMode="decimal" value={grams} onChange={(e) => setGrams(e.target.value)} />
+              <Label htmlFor="sc-grams">Amount ({unit})</Label>
+              <Input
+                id="sc-grams"
+                inputMode="decimal"
+                value={grams}
+                onChange={(e) => setGrams(e.target.value)}
+              />
             </div>
             <div className="grid gap-1.5">
-              <Label htmlFor="sc-serving">Standard serving</Label>
+              <Label htmlFor="sc-unit">Unit</Label>
+              <select
+                id="sc-unit"
+                value={unit}
+                onChange={(e) => {
+                  const next = e.target.value;
+                  setGrams(
+                    String(Number((gramsNum / (next === "oz" ? 28.349523125 : 1)).toFixed(4))),
+                  );
+                  setUnit(next);
+                }}
+                className="rounded-md border bg-background p-2"
+              >
+                <option value="g">Grams</option>
+                <option value="oz">Ounces</option>
+              </select>
               <Button
                 type="button"
                 variant="outline"
                 className="justify-start font-normal"
-                onClick={() => setGrams(String(view.servingGrams))}
+                onClick={() => {
+                  setUnit("g");
+                  setGrams(String(view.servingGrams));
+                }}
               >
                 {view.servingLabel}
               </Button>
@@ -244,33 +296,42 @@ export function ServingConfigDialog({
               className="text-destructive hover:text-destructive"
               onClick={async () => {
                 if (!target.editEntryId) return;
-                await backend.deleteEntry(target.editEntryId).catch(() => toast.error("Delete failed"));
+                await backend
+                  .deleteEntry(target.editEntryId)
+                  .catch(() => toast.error("Delete failed"));
                 bumpData();
                 toast("Entry deleted", {
-                  action: { label: "Undo", onClick: async () => {
-                    await backend.addEntry({
-                      entryDate: entry?.entryDate ?? target.entryDate,
-                      mealType: entry?.mealType ?? mealType,
-                      foodId: entry?.foodId ?? view.foodId,
-                      recipeId: entry?.recipeId ?? null,
-                      name: entry?.name ?? view.name,
-                      brand: entry?.brand ?? view.brand,
-                      grams: entry?.grams ?? gramsNum,
-                      portionPercent: entry?.portionPercent ?? pct,
-                      baseNutrients: entry?.baseNutrients ?? base,
-                      source: entry?.source ?? "search",
-                    });
-                    bumpData();
-                  } },
+                  action: {
+                    label: "Undo",
+                    onClick: async () => {
+                      await backend.addEntry({
+                        entryDate: entry?.entryDate ?? target.entryDate,
+                        mealType: entry?.mealType ?? mealType,
+                        foodId: entry?.foodId ?? view.foodId,
+                        recipeId: entry?.recipeId ?? null,
+                        name: entry?.name ?? view.name,
+                        brand: entry?.brand ?? view.brand,
+                        grams: entry?.grams ?? gramsNum,
+                        portionPercent: entry?.portionPercent ?? pct,
+                        baseNutrients: entry?.baseNutrients ?? base,
+                        source: entry?.source ?? "search",
+                      });
+                      bumpData();
+                    },
+                  },
                 });
                 onClose();
               }}
             >
               <Trash2 className="h-4 w-4" /> Delete
             </Button>
-          ) : <span />}
+          ) : (
+            <span />
+          )}
           <div className="flex gap-2">
-            <Button variant="outline" onClick={onClose}>Cancel</Button>
+            <Button variant="outline" onClick={onClose}>
+              Cancel
+            </Button>
             <Button onClick={submit} disabled={busy}>
               {busy && <Loader2 className="h-4 w-4 animate-spin" />}
               {editing ? "Save changes" : "Add to diary"}

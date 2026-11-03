@@ -50,9 +50,15 @@ export function Today() {
 
   const copyYesterday = async () => {
     const yesterday = addDaysStr(today, -1);
-    const count = await backend.copyDay(yesterday, today);
-    bumpData();
-    toast[count ? "success" : "info"](count ? `Copied ${count} items from yesterday` : "Nothing was logged yesterday");
+    try {
+      const count = await backend.copyDay(yesterday, today);
+      bumpData();
+      toast[count ? "success" : "info"](
+        count ? `Copied ${count} items from yesterday` : "Nothing was logged yesterday",
+      );
+    } catch {
+      toast.error("Could not copy your meals. Please try again.");
+    }
   };
 
   return (
@@ -76,9 +82,24 @@ export function Today() {
               </p>
             </div>
             <div className="mt-4 flex flex-col gap-3.5">
-              <MacroBar label="Protein" value={totals.protein ?? 0} target={goals?.proteinG ?? 100} colorClass="bg-macro-protein" />
-              <MacroBar label="Carbohydrates" value={totals.carbs ?? 0} target={goals?.carbsG ?? 200} colorClass="bg-macro-carbs" />
-              <MacroBar label="Fat" value={totals.fat ?? 0} target={goals?.fatG ?? 65} colorClass="bg-macro-fat" />
+              <MacroBar
+                label="Protein"
+                value={totals.protein ?? 0}
+                target={goals?.proteinG ?? 100}
+                colorClass="bg-macro-protein"
+              />
+              <MacroBar
+                label="Carbohydrates"
+                value={totals.carbs ?? 0}
+                target={goals?.carbsG ?? 200}
+                colorClass="bg-macro-carbs"
+              />
+              <MacroBar
+                label="Fat"
+                value={totals.fat ?? 0}
+                target={goals?.fatG ?? 65}
+                colorClass="bg-macro-fat"
+              />
             </div>
             {entries.length === 0 && (
               <p className="mt-4 text-xs text-muted-foreground">
@@ -91,15 +112,30 @@ export function Today() {
 
       {/* Quick actions */}
       <section aria-label="Quick actions" className="grid grid-cols-2 gap-3 sm:grid-cols-4">
-        <Button size="lg" variant="outline" className="flex-col gap-1.5 py-4" onClick={() => foodLog.openScan({ entryDate: today, mealType: currentMealType() })}>
+        <Button
+          size="lg"
+          variant="outline"
+          className="flex-col gap-1.5 py-4"
+          onClick={() => foodLog.openScan({ entryDate: today, mealType: currentMealType() })}
+        >
           <Camera className="h-5 w-5 text-primary" />
           <span className="text-xs font-medium">Scan meal</span>
         </Button>
-        <Button size="lg" variant="outline" className="flex-col gap-1.5 py-4" onClick={() => foodLog.open({ entryDate: today, mealType: currentMealType() })}>
+        <Button
+          size="lg"
+          variant="outline"
+          className="flex-col gap-1.5 py-4"
+          onClick={() => foodLog.open({ entryDate: today, mealType: currentMealType() })}
+        >
           <Plus className="h-5 w-5 text-primary" />
           <span className="text-xs font-medium">Add food</span>
         </Button>
-        <Button size="lg" variant="outline" className="flex-col gap-1.5 py-4" onClick={copyYesterday}>
+        <Button
+          size="lg"
+          variant="outline"
+          className="flex-col gap-1.5 py-4"
+          onClick={copyYesterday}
+        >
           <Copy className="h-5 w-5 text-primary" />
           <span className="text-xs font-medium">Copy yesterday</span>
         </Button>
@@ -124,19 +160,28 @@ export function Today() {
             </div>
           </div>
           <div className="flex gap-2">
-            <Button variant="outline" size="sm" onClick={() => void addWater(250)}>+250 ml</Button>
-            <Button variant="outline" size="sm" onClick={() => void addWater(500)}>+500 ml</Button>
+            <Button variant="outline" size="sm" onClick={() => void addWater(250)}>
+              +250 ml
+            </Button>
+            <Button variant="outline" size="sm" onClick={() => void addWater(500)}>
+              +500 ml
+            </Button>
           </div>
         </div>
         <div className="mt-3 h-1.5 overflow-hidden rounded-full bg-secondary">
-          <div className="h-full rounded-full bg-primary transition-all" style={{ width: `${Math.min((waterMl / waterTarget) * 100, 100)}%` }} />
+          <div
+            className="h-full rounded-full bg-primary transition-all"
+            style={{ width: `${Math.min((waterMl / waterTarget) * 100, 100)}%` }}
+          />
         </div>
       </section>
 
       {/* Meals */}
       <section aria-label="Meals">
         <div className="flex items-center justify-between">
-          <h2 className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">Meals</h2>
+          <h2 className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">
+            Meals
+          </h2>
           <Button variant="ghost" size="sm" asChild>
             <Link to="/diary">Edit diary</Link>
           </Button>
@@ -162,7 +207,12 @@ export function Today() {
                   <span className="text-sm tabular-nums text-muted-foreground">
                     {mealKcal > 0 ? `${formatNumber(mealKcal)} kcal` : ""}
                   </span>
-                  <Button variant="ghost" size="icon" aria-label={`Add to ${MEAL_LABELS[meal]}`} onClick={() => foodLog.open({ entryDate: today, mealType: meal })}>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    aria-label={`Add to ${MEAL_LABELS[meal]}`}
+                    onClick={() => foodLog.open({ entryDate: today, mealType: meal })}
+                  >
                     <Plus className="h-4 w-4" />
                   </Button>
                 </div>

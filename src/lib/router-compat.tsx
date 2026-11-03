@@ -12,7 +12,7 @@ import {
 
 // ── Link ────────────────────────────────────────────────────────────────────
 export function Link({ to, ...rest }: { to: string } & Record<string, unknown>) {
-  return <TanStackLink to={to as never} {...(rest as never)} />;
+  return <TanStackLink to={to as never} {...rest} />;
 }
 
 // ── NavLink (supports react-router's functional className) ──────────────────
@@ -33,7 +33,7 @@ export function NavLink({
     to === "/" ? location.pathname === "/" : location.pathname === to || location.pathname.startsWith(`${to}/`);
   const resolved = typeof className === "function" ? className({ isActive }) : className;
   return (
-    <TanStackLink to={to as never} className={resolved} {...(rest as never)}>
+    <TanStackLink to={to as never} className={resolved} {...rest}>
       {children}
     </TanStackLink>
   );
@@ -66,9 +66,9 @@ export function useLocation() {
   const location = useTanStackLocation();
   return {
     pathname: location.pathname,
-    search: typeof location.search === "string" ? location.search : "",
+    search: location.searchStr,
     hash: location.hash ?? "",
-    state: (location.state ?? null) as Record<string, unknown> | null,
+    state: (location.state ?? null) as unknown as { from?: string } | null,
     key: "",
   };
 }

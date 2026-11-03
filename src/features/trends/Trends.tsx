@@ -1,3 +1,4 @@
+import { addDaysStr as addDaysStrLocal } from "@/lib/nutrition/datetime";
 import { useMemo, useState } from "react";
 import {
   Bar,
@@ -77,6 +78,7 @@ export function Trends() {
     const sorted = [...weights].sort((a, b) => a.entryDate.localeCompare(b.entryDate));
     const first = sorted[0];
     const last = sorted[sorted.length - 1];
+    if (!first || !last) return null;
     const days = Math.max((Date.parse(last.entryDate) - Date.parse(first.entryDate)) / 86_400_000, 1);
     const perWeek = ((last.weightKg - first.weightKg) / days) * 7;
     return { perWeek, delta: last.weightKg - first.weightKg };
@@ -175,7 +177,7 @@ export function Trends() {
           </div>
           {weights.length === 0 ? (
             <div className="mt-4">
-              <EmptyChart message="No weigh-ins yet. Add one to start the trend." />
+              <EmptyChart message="No weights yet. Add one to start the trend." />
             </div>
           ) : (
             <>
@@ -322,7 +324,7 @@ function AddWeightButton() {
   return (
     <>
       <Button variant="outline" size="sm" onClick={() => setOpen(true)}>
-        <Plus className="h-3.5 w-3.5" /> Add weigh-in
+        <Plus className="h-3.5 w-3.5" /> Add weight
       </Button>
       <Dialog open={open} onOpenChange={(o) => (!o ? setOpen(false) : undefined)}>
         <DialogContent className="sm:max-w-xs">
@@ -332,7 +334,7 @@ function AddWeightButton() {
           <div className="grid gap-1.5">
             <Label htmlFor="w-kg">Weight (kg)</Label>
             <Input id="w-kg" inputMode="decimal" autoFocus value={value} onChange={(e) => setValue(e.target.value)} placeholder="78.4" />
-            <p className="text-xs text-muted-foreground">One entry per day; re-entering replaces today's value.</p>
+            <p className="text-xs text-muted-foreground">One entry per day; entering it again replaces today's value.</p>
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setOpen(false)}>Cancel</Button>
@@ -352,11 +354,6 @@ function EmptyChart({ message }: { message: string }) {
   );
 }
 
-function addDaysStrLocal(dateStr: string, days: number): string {
-  const [y, m, d] = dateStr.split("-").map(Number);
-  const dt = new Date(y, m - 1, d + days);
-  const pad = (n: number) => String(n).padStart(2, "0");
-  return `${dt.getFullYear()}-${pad(dt.getMonth() + 1)}-${pad(dt.getDate())}`;
-}
+
 
 export { weekDates };
