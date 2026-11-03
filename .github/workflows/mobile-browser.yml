@@ -21,7 +21,7 @@ jobs:
       - name: Install dependencies and browser
         run: |
           pnpm install --no-frozen-lockfile
-          pnpm add -D playwright@1.56.0 --no-frozen-lockfile
+          pnpm add -D playwright@1.56.0
           pnpm exec playwright install chromium --with-deps
       - name: Build production preview
         run: pnpm build
