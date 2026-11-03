@@ -36,10 +36,10 @@ function ProductScene() {
       <div className="mm-scene-light" aria-hidden="true" />
       <div className="mm-scene-food">
         <img
-          src="/images/food-bowl.webp"
+          src="/images/hero-chicken-generated.webp"
           alt="Grilled chicken and rice bowl with vegetables"
-          width={194}
-          height={190}
+          width={170}
+          height={210}
           decoding="async"
           fetchPriority="high"
         />
@@ -97,7 +97,7 @@ function ProductScene() {
         </div>
         <div className="mm-scan-head"><span>‹</span><strong>Review meal</strong><span>•••</span></div>
         <div className="mm-scan-photo">
-          <img src="/images/food-bowl.webp" alt="Example chicken and rice meal selected for review" width={194} height={190} loading="lazy" />
+          <img src="/images/hero-chicken-generated.webp" alt="Example chicken and rice meal selected for review" width={170} height={210} loading="lazy" />
           <span className="mm-scan-corner mm-scan-corner--tl" />
           <span className="mm-scan-corner mm-scan-corner--br" />
         </div>
@@ -175,7 +175,7 @@ export function Landing() {
 
         <section className="mm-story mm-container" id="how-it-works">
           <div className="mm-story-photo">
-            <img src="/images/food-bowl.webp" alt="Grilled chicken and rice bowl" width={194} height={190} loading="lazy" decoding="async" />
+            <img src="/images/hero-chicken-generated.webp" alt="Grilled chicken and rice bowl" width={170} height={210} loading="lazy" decoding="async" />
           </div>
           <div className="mm-story-copy">
             <span className="mm-eyebrow">FROM PLATE TO PROGRESS</span>
