@@ -66,10 +66,10 @@ for (const [width, height] of sizes) {
       await page.locator("#email").fill("mobile-preview@example.test");
       await page.locator("#password").fill("demo-password-only");
       await page.getByRole("button", { name: /^Sign in$/ }).click();
-      await page.waitForURL(/\\/(today|onboarding)(?:[?#]|$)/, { timeout: 15000 });
+      await page.waitForURL((u) => u.pathname === "/today" || u.pathname === "/onboarding", { timeout: 15000 });
       if (page.url().includes("/onboarding")) {
         await page.getByRole("button", { name: /Skip for now/ }).click();
-        await page.waitForURL(/\\/today(?:[?#]|$)/, { timeout: 15000 });
+        await page.waitForURL((u) => u.pathname === "/today", { timeout: 15000 });
       }
       await page.getByRole("heading", { name: "Today", exact: true }).waitFor({ timeout: 15000 });
       await page.locator(".mm-today-arc").waitFor({ timeout: 10000 });
