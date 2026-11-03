@@ -100,7 +100,7 @@ function Walkthrough() {
         <div className="mint2-walkthrough-layout">
           <div className="mint2-steps" role="group" aria-label="Explore food logging steps">
             {STEPS.map((s) => (
-              <button key={s.key} type="button" role="tab" id={`step-${s.key}`}
+              <button key={s.key} type="button" id={`step-${s.key}`}
                 aria-pressed={step === s.key} aria-controls="walkthrough-panel"
                 className={step === s.key ? "mint2-step is-current" : "mint2-step"}
                 onClick={() => choose(s.key)}>
@@ -110,7 +110,7 @@ function Walkthrough() {
               </button>
             ))}
           </div>
-          <div id="walkthrough-panel" className="mint2-step-panel" role="tabpanel" aria-labelledby={`step-${step}`}>
+          <div id="walkthrough-panel" className="mint2-step-panel" role="region" aria-label="Interactive food logging example">
             {step === "search" && (
               <div className="mint2-step-content">
                 <p className="mint2-preview-label">FOOD SEARCH · EXAMPLE</p>
