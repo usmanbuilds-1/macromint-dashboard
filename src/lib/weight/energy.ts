@@ -43,12 +43,16 @@ export function calculateAdultBmi(weightKg: number, heightCm: number): AdultBmi 
     throw new RangeError("BMI requires positive finite weight and height");
   }
   const bmi = weightKg / ((heightCm / 100) ** 2);
+  // Floating-point division can return 39.99999999999999 for a mathematically
+  // exact BMI of 40. Treat machine-scale error as equal to the boundary,
+  // without broadly rounding a real 39.999 result up.
+  const forCategory = bmi + Number.EPSILON * 32 * Math.max(1, Math.abs(bmi));
   let category: AdultBmiCategory;
-  if (bmi < 18.5) category = "underweight";
-  else if (bmi < 25) category = "healthy_range";
-  else if (bmi < 30) category = "overweight";
-  else if (bmi < 35) category = "obesity_class_1";
-  else if (bmi < 40) category = "obesity_class_2";
+  if (forCategory < 18.5) category = "underweight";
+  else if (forCategory < 25) category = "healthy_range";
+  else if (forCategory < 30) category = "overweight";
+  else if (forCategory < 35) category = "obesity_class_1";
+  else if (forCategory < 40) category = "obesity_class_2";
   else category = "obesity_class_3";
   return { value: Math.round(bmi * 100) / 100, category, interpretation: "adult_screening_only" };
 }
