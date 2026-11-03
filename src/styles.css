@@ -351,3 +351,12 @@
 .mm-today-macro-track { height:5px; margin-top:10px; border-radius:999px; background:var(--color-secondary); overflow:hidden; }
 .mm-today-macro-track i { display:block; height:100%; background:var(--color-primary); border-radius:inherit; }
 @media (max-width:360px) { .mm-today-macros>div { padding-inline:8px; } .mm-today-macros small { font-size:10px; } }
+
+/* Keep the first generated photo at editorial-thumbnail scale until the
+   high-resolution original has been committed; never upscale it into a blurry banner. */
+.mm-story-photo { width:min(100%,260px); height:260px; aspect-ratio:1; border-radius:50%; justify-self:center; }
+.mm-scene-food { width:33%; }
+@media (max-width:540px) {
+  .mm-story-photo { width:min(100%,250px); height:250px; }
+  .mm-scene-food { width:37%; }
+}
