@@ -99,11 +99,16 @@ export function ServingConfigDialog({
   const [unit, setUnit] = useState("g");
   const [pct, setPct] = useState(100);
   const [busy, setBusy] = useState(false);
+  const [manualValues, setManualValues] = useState<Record<"kcal" | "protein" | "carbs" | "fat", string>>({
+    kcal: "", protein: "", carbs: "", fat: "",
+  });
+  const quickAdd = Boolean(!editing && food && food.sourceLabel === "Quick add");
 
   useEffect(() => {
     if (!view || !target) return;
     setUnit("g");
     setMealType(target.mealType);
+    setManualValues({ kcal: "", protein: "", carbs: "", fat: "" });
     if (entry) {
       setGrams(String(entry.grams));
       setPct(entry.portionPercent);
@@ -114,15 +119,33 @@ export function ServingConfigDialog({
   }, [view, target, entry]);
 
   const gramsNum = Math.max(Number(grams) || 0, 0) * (unit === "oz" ? 28.349523125 : 1);
+  const per100g = useMemo<NutrientRecord>(() => {
+    if (!view) return {};
+    if (!quickAdd) return view.per100g;
+    const record: NutrientRecord = {};
+    (["kcal", "protein", "carbs", "fat"] as const).forEach((key) => {
+      const value = manualValues[key].trim();
+      record[key] = value === "" ? null : Number(value);
+    });
+    return record;
+  }, [view, quickAdd, manualValues]);
+  const invalidManual = quickAdd && (
+    manualValues.kcal.trim() === "" ||
+    Object.values(manualValues).some((value) => value !== "" && (!Number.isFinite(Number(value)) || Number(value) < 0))
+  );
   const base = useMemo(
-    () => (view ? scaleNutrients(view.per100g, gramsNum, 100) : {}),
-    [view, gramsNum],
+    () => (view ? scaleNutrients(per100g, gramsNum, 100) : {}),
+    [view, per100g, gramsNum],
   );
   const eaten = useMemo(() => (view ? applyPortionPercent(base, pct) : {}), [view, base, pct]);
 
   if (!view || !target) return null;
 
   const submit = async () => {
+    if (invalidManual) {
+      toast.error("Enter valid calories per 100 g. Leave other nutrients blank if unknown.");
+      return;
+    }
     if (gramsNum <= 0) {
       toast.error("Portion must be greater than zero");
       return;
@@ -171,7 +194,7 @@ export function ServingConfigDialog({
 
   return (
     <Dialog open onOpenChange={(o) => (!o ? onClose() : undefined)}>
-      <DialogContent className="sm:max-w-md">
+      <DialogContent className="max-h-[88dvh] overflow-y-auto sm:max-w-md">
         <DialogHeader>
           <DialogTitle className="pr-6">{editing ? "Edit entry" : view.name}</DialogTitle>
           <DialogDescription className="flex flex-wrap items-center gap-x-3 gap-y-1">
@@ -181,6 +204,27 @@ export function ServingConfigDialog({
         </DialogHeader>
 
         <div className="grid gap-4">
+          {quickAdd && (
+            <div className="border-b pb-4">
+              <p className="text-sm font-semibold">Enter nutrition per 100 g</p>
+              <p className="mt-1 text-xs leading-5 text-muted-foreground">
+                Calories are required for quick add. Leave protein, carbs or fat empty when the amount is unknown; an empty value does not mean zero.
+              </p>
+              <div className="mt-3 grid grid-cols-2 gap-3">
+                {(["kcal", "protein", "carbs", "fat"] as const).map((key) => (
+                  <div className="grid gap-1.5" key={key}>
+                    <Label htmlFor={`quick-${key}`}>{key === "kcal" ? "Calories (kcal)" : `${key.charAt(0).toUpperCase() + key.slice(1)} (g)`}</Label>
+                    <Input
+                      id={`quick-${key}`} inputMode="decimal"
+                      value={manualValues[key]}
+                      onChange={(e) => setManualValues((prev) => ({ ...prev, [key]: e.target.value }))}
+                      placeholder={key === "kcal" ? "Required" : "Unknown"}
+                    />
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
           <div className="grid gap-1.5">
             <Label>Meal</Label>
             <Select value={mealType} onValueChange={(v) => setMealType(v as MealType)}>
@@ -332,7 +376,7 @@ export function ServingConfigDialog({
             <Button variant="outline" onClick={onClose}>
               Cancel
             </Button>
-            <Button onClick={submit} disabled={busy}>
+            <Button onClick={submit} disabled={busy || invalidManual || gramsNum <= 0}>
               {busy && <Loader2 className="h-4 w-4 animate-spin" />}
               {editing ? "Save changes" : "Add to diary"}
             </Button>
