@@ -78,8 +78,23 @@ export function Landing() {
               <span className="text-xs text-muted-foreground">Example data</span>
             </div>
             <div className="pt-6">
-              <p className="text-sm font-semibold">{SAMPLE.name}</p>
-              <p className="mt-1 text-sm text-muted-foreground">Estimated meal · portions can be corrected</p>
+              <div className="flex items-center gap-4">
+                <img
+                  src="/images/food-bowl.webp"
+                  alt="Illustrative food photograph of a chicken rice bowl with vegetables"
+                  width={88}
+                  height={88}
+                  loading="lazy"
+                  decoding="async"
+                  className="h-[88px] w-[88px] shrink-0 rounded-md object-cover"
+                />
+                <div>
+                  <p className="text-sm font-semibold">{SAMPLE.name}</p>
+                  <p className="mt-1 text-xs leading-5 text-muted-foreground">
+                    Illustrative food image · example nutrition data · editable portion
+                  </p>
+                </div>
+              </div>
               <div className="mt-7 flex items-baseline justify-between tabular-nums">
                 <span className="text-sm text-muted-foreground">Calories</span>
                 <strong className="text-3xl font-semibold tracking-tight">{formatNumber(example.kcal)} <span className="text-sm font-normal text-muted-foreground">kcal</span></strong>
