@@ -37,8 +37,8 @@ for (const [width, height] of sizes) {
     await page.screenshot({ path: `mobile-audit/landing-${width}.png`, fullPage: true });
     console.log("PASS landing", width, dims.heading);
     if (width === 390) {
-      const slider = page.locator("#demo-grams");
-      if (!(await slider.count())) throw new Error("Demo portion slider missing");
+      const slider = page.locator("#portion-control");
+      if (!(await slider.count())) throw new Error("Interactive meal portion control missing");
       await slider.evaluate((input) => {
         input.value = "400";
         input.dispatchEvent(new Event("input", { bubbles: true }));
