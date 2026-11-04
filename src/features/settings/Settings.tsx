@@ -136,7 +136,7 @@ export function Settings() {
   };
 
   return (
-    <div className="flex flex-col gap-6">
+    <div className="mm6-subpage mm6-page-settings flex flex-col gap-6">
       <header>
         <h1 className="text-2xl font-semibold tracking-tight">Settings</h1>
         <p className="mt-0.5 text-sm text-muted-foreground">{publicAccountLabel(profile ?? {})}</p>

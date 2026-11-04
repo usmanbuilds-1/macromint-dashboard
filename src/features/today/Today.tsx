@@ -80,22 +80,22 @@ export function Today() {
   };
 
   return (
-    <div className="mm-live-page mx-auto flex w-full max-w-2xl flex-col gap-7 pb-2">
-      <header className="mm-live-enter flex items-end justify-between gap-3">
+    <div className="mm-live-page mm6-today mx-auto flex w-full max-w-2xl flex-col gap-7 pb-2">
+      <header className="mm-live-enter mm6-today-header flex items-end justify-between gap-3">
         <div>
           <p className="text-sm text-muted-foreground">{formatDateLong(today)}</p>
-          <h1 className="mt-1 text-2xl font-semibold tracking-tight">Today</h1>
+          <h1 className="mt-1 text-2xl font-semibold tracking-tight">Your day.</h1>
         </div>
         <Link to="/diary" className="inline-flex min-h-11 items-center gap-1 text-sm font-medium text-muted-foreground hover:text-foreground">
           Diary <ChevronRight className="h-4 w-4" aria-hidden="true" />
         </Link>
       </header>
 
-      <section aria-labelledby="energy-heading" className="mm-today-summary mm-live-enter" style={{ animationDelay: "75ms" }}>
+      <section aria-labelledby="energy-heading" className="mm-today-summary mm6-today-summary mm-live-enter" style={{ animationDelay: "75ms" }}>
         <div className="mm-today-summary-head">
           <div>
-            <p className="text-xs font-medium text-muted-foreground">DAILY NUTRITION</p>
-            <h2 id="energy-heading" className="text-base font-semibold tracking-tight">Your progress</h2>
+            <p className="text-xs font-medium text-muted-foreground">THE DAILY PICTURE</p>
+            <h2 id="energy-heading" className="text-base font-semibold tracking-tight">A look at the day</h2>
           </div>
           {target === null && <Link className="text-xs font-medium text-primary underline underline-offset-4" to="/goals">Set a target</Link>}
         </div>
@@ -135,7 +135,7 @@ export function Today() {
         </div>
       </section>
 
-      <section aria-label="Log food" className="mm-live-enter relative" style={{ animationDelay: "155ms" }}>
+      <section aria-label="Log food" className="mm-live-enter mm6-today-log relative" style={{ animationDelay: "155ms" }}>
         <Button
           size="lg"
           className="h-12 w-full justify-center gap-2 text-sm font-semibold shadow-none"
@@ -157,7 +157,7 @@ export function Today() {
         )}
       </section>
 
-      <section aria-labelledby="meals-heading" className="mm-live-enter" style={{ animationDelay: "230ms" }}>
+      <section aria-labelledby="meals-heading" className="mm-live-enter mm6-today-diary" style={{ animationDelay: "230ms" }}>
         <div className="flex items-center justify-between gap-2">
           <h2 id="meals-heading" className="text-base font-semibold">Meals</h2>
           <Link to="/diary" className="inline-flex min-h-11 items-center text-sm text-muted-foreground underline underline-offset-4">View full diary</Link>
@@ -224,7 +224,7 @@ export function Today() {
         )}
       </section>
 
-      <section aria-label="Other quick actions" className="flex flex-col gap-3 border-t pt-4">
+      <section aria-label="Other quick actions" className="mm6-today-utilities flex flex-col gap-3 border-t pt-4">
         <div className="flex flex-wrap items-center justify-between gap-2">
           <p className="inline-flex items-center gap-2 text-sm text-muted-foreground">
             <Droplets className="h-4 w-4" aria-hidden="true" />

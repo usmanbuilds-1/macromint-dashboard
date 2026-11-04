@@ -118,7 +118,7 @@ export function Diary() {
   };
 
   return (
-    <div className="flex flex-col gap-6">
+    <div className="mm6-subpage mm6-page-diary flex flex-col gap-6">
       <header className="flex items-center justify-between gap-3">
         <div>
           <h1 className="text-2xl font-semibold tracking-tight">Diary</h1>
