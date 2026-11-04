@@ -1666,3 +1666,46 @@
  .ref-live-settings{gap:20px}
  .ref-settings-links a,.ref-settings-links button{min-height:62px}
 }
+
+/* Completing the approved app-screen language with real saved data. */
+.ref-live-progress>header{border-bottom:0;padding-bottom:0}
+.ref-progress-categories{display:flex;align-items:center;gap:8px;padding:3px 0 23px;border-bottom:1px solid #dfe7db}
+.ref-progress-categories a{display:flex;min-height:36px;align-items:center;justify-content:center;font-size:13px;font-weight:650;border-radius:999px;padding:0 18px;color:#294c36;background:#f1f3eb;text-decoration:none}
+.ref-progress-categories a:first-child{background:#c7dfc1;color:#16402c}
+.ref-progress-categories a:hover{background:#e0ebdb}
+.ref-live-progress #ref-weight-trend{scroll-margin-top:110px}
+.ref-live-progress #ref-calorie-trend,.ref-live-progress #ref-macro-trend{scroll-margin-top:110px}
+.ref-live-weight{gap:23px}
+.ref-live-weight>header{border-bottom:1px solid #dbe4d8;padding-bottom:18px}
+.ref-live-weight>header h2{font-family:"Instrument Sans",Arial,sans-serif!important;font-size:30px!important;font-weight:740!important}
+.ref-live-weight>header p{font-size:13px;line-height:1.5}
+.ref-weight-current{padding:18px 0 26px;display:flex;flex-direction:column;gap:8px;border-bottom:1px solid #dfe5db}
+.ref-weight-current>span{font-size:10px;font-weight:750;letter-spacing:.12em;color:#3e7956}
+.ref-weight-current>div{display:flex;align-items:baseline;gap:8px}
+.ref-weight-current strong{font-size:clamp(63px,9vw,96px);letter-spacing:-.072em;line-height:1;font-weight:720;font-variant-numeric:tabular-nums}
+.ref-weight-current small{font-size:26px;font-weight:510;color:#3f6851}
+.ref-weight-current p{font-size:13px;color:#627764}
+.ref-live-weight form{border-bottom-color:#dce5d9;padding-bottom:32px}
+.ref-live-weight form label{font-size:12px;font-weight:670;color:#3e5e47}
+.ref-live-weight form input{background:#fff;border-radius:8px;min-height:46px}
+.ref-live-weight form button[type=submit]{min-height:47px;border-radius:8px;padding-inline:24px}
+.ref-live-weight>section{border-color:#dfe7df;padding-bottom:28px}
+.ref-live-weight h3{font-family:"Instrument Sans",Arial,sans-serif!important;font-size:19px!important;letter-spacing:-.025em;font-weight:730!important}
+.ref-live-settings>header{border:0}
+.ref-settings-links{border-top:1px solid #dfe6dc;border-bottom:1px solid #dfe6dc;display:flex;flex-direction:column;gap:0;margin-bottom:10px}
+.ref-settings-links>a,.ref-settings-links>button{text-decoration:none;text-align:left;display:flex;align-items:center;justify-content:space-between;gap:18px;padding:19px 3px;border-bottom:1px solid #e1e8dd;background:transparent;color:#1d4030;min-height:64px;font-size:15px;font-weight:700}
+.ref-settings-links>*:last-child{border-bottom:0!important}
+.ref-settings-links span{color:#6d826f;font-size:12px;font-weight:480}
+.ref-settings-links>a:hover,.ref-settings-links>button:hover{color:#0d7245;background:#f2f5ee}
+.ref-live-settings>section{scroll-margin-top:90px}
+.ref-live-settings>section h2{font-size:20px}
+.mm-app-shell aside nav[aria-label="Primary"] .mm-app-navitem>svg{display:none}
+.mm-app-shell aside nav[aria-label="Primary"] .mm-app-navitem{padding:13px 14px;font-weight:640}
+@media(max-width:640px){
+ .ref-live-progress>header>div:first-child{width:100%}
+ .ref-progress-categories{gap:7px;padding-bottom:16px}
+ .ref-progress-categories a{font-size:12px;padding:0 16px;min-height:34px}
+ .ref-settings-links>a,.ref-settings-links>button{flex-direction:column;align-items:flex-start;gap:5px;justify-content:center;padding:15px 2px}
+ .ref-weight-current strong{font-size:72px}
+ .ref-weight-current small{font-size:22px}
+}
