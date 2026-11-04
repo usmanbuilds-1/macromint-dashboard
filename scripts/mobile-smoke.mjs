@@ -47,35 +47,29 @@ for (const [width, height] of sizes) {
     if (breakfastImageWidth < 600) throw new Error("Breakfast photo is broken or too small: " + breakfastImageWidth + "px");
     await page.locator("#mint4-hero-title").scrollIntoViewIfNeeded();
     await page.screenshot({ path: `mobile-audit/landing-${width}.png`, fullPage: true });
-    // Example dashboard controls must work, without pretending to update a real account.
-    const water = page.getByRole("progressbar", { name: "Example water intake" });
-    const beforeWater = Number(await water.getAttribute("aria-valuenow"));
-    await page.getByRole("button", { name: "Add 250 ml to example" }).click();
-    const afterWater = Number(await water.getAttribute("aria-valuenow"));
-    if (afterWater !== beforeWater + 250) throw new Error("Interactive dashboard water controls broken");
-    await page.getByRole("button", { name: "Remove 250 ml from example" }).click();
-    if (Number(await water.getAttribute("aria-valuenow")) !== beforeWater) throw new Error("Water reset failed");
+    // Public interactive demo is DEFERRED by owner (2026-11-04).
+    // The example day preview is intentionally read-only until reactivation is requested.
+    const water = page.getByRole("progressbar", { name: "Sample water intake" });
+    if (Number(await water.getAttribute("aria-valuenow")) !== 1250) throw new Error("Static sample preview changed unexpectedly");
+    if (await page.getByRole("button", { name: /Add 250 ml to example|Remove 250 ml from example/i }).count()) {
+      throw new Error("Interactive dashboard controls should remain deferred");
+    }
+    if (await page.locator("#how-it-works, #portion-control").count()) {
+      throw new Error("Deferred interactive walkthrough is still rendered");
+    }
+    if (await page.getByRole("link", { name: /Try the interactive demo|How it works/i }).count()) {
+      throw new Error("Deferred walkthrough still has an active public link");
+    }
     const forbiddenText = await page.locator("body").innerText();
     for (const claim of ["Trust Score", "80+ nutrients", "Speak to a dietician", "verified grade", "Free forever", "No ads"]) {
       if (forbiddenText.toLowerCase().includes(claim.toLowerCase())) throw new Error("Unsupported GLM claim on landing: " + claim);
     }
     console.log("PASS landing", width, dims.heading);
     if (width === 390) {
-      // The primary CTA must lead to a usable walkthrough, not a decorative anchor.
-      await page.getByRole("link", { name: /Try the interactive demo/i }).first().click();
-      await page.waitForURL((u) => u.hash === "#how-it-works", { timeout: 10000 });
-      await page.getByRole("heading", { name: /From your plate to your diary/i }).waitFor();
-
-      await page.getByRole("button", { name: /Review your meal/i }).click();
-      await page.getByRole("button", { name: /Review portion/i }).click();
-      const slider = page.locator("#portion-control");
-      await slider.waitFor();
-      await slider.fill("400");
-      await page.getByText("640 kcal", { exact: true }).waitFor();
-      await page.getByRole("button", { name: "Add to diary" }).click();
-      await page.getByRole("button", { name: "Added in this example" }).waitFor();
-      await page.screenshot({ path: "mobile-audit/portion-390.png", fullPage: true });
-      console.log("PASS interactive 3-step walkthrough", width);
+      await page.getByRole("link", { name: /Explore features/i }).click();
+      await page.waitForURL((u) => u.hash === "#features", { timeout: 10000 });
+      await page.getByRole("heading", { name: /A food diary that stays useful/i }).waitFor();
+      console.log("PASS features CTA; deferred demo remains hidden", width);
     }
     const reg = await page.goto(url + "/register", { waitUntil: "networkidle", timeout: 30000 });
     if (!reg || reg.status() >= 400) throw new Error("Registration HTTP status " + reg?.status());
