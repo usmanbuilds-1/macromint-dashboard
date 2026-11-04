@@ -35,32 +35,32 @@ for (const [width, height] of sizes) {
     if (dims.document > dims.viewport + 1) throw new Error("Horizontal overflow: " + JSON.stringify(dims));
     if (!dims.heading) throw new Error("Missing h1");
     // Catch low-resolution or broken imagery before a public release.
-    const heroImage = page.locator(".mint5-story-image img");
+    const heroImage = page.locator(".mint6-photo-frame img");
     await heroImage.waitFor();
     await heroImage.evaluate((img) => img.decode());
     const renderedImageWidth = await heroImage.evaluate((img) => img.naturalWidth);
     if (renderedImageWidth < 600) throw new Error("Hero photo is broken or too small: " + renderedImageWidth + "px");
-    const breakfastImage = page.locator(".mint5-breakfast-image img");
+    const breakfastImage = page.locator(".mint6-process-photo img");
     await breakfastImage.scrollIntoViewIfNeeded();
     await breakfastImage.evaluate((img) => img.decode());
     const breakfastImageWidth = await breakfastImage.evaluate((img) => img.naturalWidth);
     if (breakfastImageWidth < 600) throw new Error("Breakfast photo is broken or too small: " + breakfastImageWidth + "px");
-    await page.locator("#mint5-main-title").scrollIntoViewIfNeeded();
+    await page.locator("#mint6-hero-title").scrollIntoViewIfNeeded();
     await page.screenshot({ path: `mobile-audit/landing-${width}.png`, fullPage: true });
     if (width === 390) {
       await page.emulateMedia({ reducedMotion: "reduce" });
-      const reducedOpacity = await page.locator(".mint5-feature").first().evaluate((node) => getComputedStyle(node).opacity);
+      const reducedOpacity = await page.locator(".mint6-process-food").first().evaluate((node) => getComputedStyle(node).opacity);
       if (Number(reducedOpacity) !== 1) throw new Error("Reduced motion makes content invisible");
       await page.emulateMedia({ reducedMotion: "no-preference" });
     }
     // Public interactive demo is DEFERRED by owner (2026-11-04).
     // The example day preview is intentionally read-only until reactivation is requested.
-    const sample = page.getByRole("region", { name: "Illustrative daily nutrition dashboard using sample values" });
-    if (!await sample.count()) throw new Error("Static, honestly labelled sample diary not found");
-    if (!await page.getByText(/ILLUSTRATIVE VALUES/i).count()) throw new Error("Example values are not disclosed");
+    const sample = page.locator(".mint6-product");
+    if (await sample.count() < 2) throw new Error("Editable, honestly labelled sample diary is missing");
+    if (!await page.getByText(/Illustrative values, not a real person/i).count()) throw new Error("Example values are not disclosed");
     if (width >= 1001) {
-      const railPosition = await page.locator(".mint5-stage").evaluate((node) => getComputedStyle(node).position);
-      if (railPosition !== "sticky") throw new Error("Desktop GLM sticky product stage is missing");
+      const heroLayout = await page.locator(".mint6-hero").evaluate((node) => getComputedStyle(node).display);
+      if (heroLayout !== "grid") throw new Error("Editorial desktop layout is missing");
     }
     if (await page.getByRole("button", { name: /Add 250 ml to example|Remove 250 ml from example/i }).count()) {
       throw new Error("Interactive dashboard controls should remain deferred");
@@ -68,7 +68,7 @@ for (const [width, height] of sizes) {
     if (await page.locator("#portion-control, .mint2-walkthrough").count()) {
       throw new Error("Deferred interactive walkthrough is still rendered");
     }
-    if (!await page.locator("#how-it-works").count()) throw new Error("Static how-it-works section is missing");
+    if (await page.locator("#inside, #approach, #questions").count() !== 3) throw new Error("One or more editorial sections are missing");
     if (await page.getByRole("link", { name: /Try the interactive demo/i }).count()) {
       throw new Error("Deferred walkthrough still has an active public link");
     }
@@ -78,10 +78,10 @@ for (const [width, height] of sizes) {
     }
     console.log("PASS landing", width, dims.heading);
     if (width === 390) {
-      await page.getByRole("link", { name: /Explore the product/i }).click();
-      await page.waitForURL((u) => u.hash === "#features", { timeout: 10000 });
-      await page.getByRole("heading", { name: /Everything in its place/i }).waitFor();
-      console.log("PASS features CTA; deferred demo remains hidden", width);
+      await page.getByRole("link", { name: /See what.s inside/i }).click();
+      await page.waitForURL((u) => u.hash === "#inside", { timeout: 10000 });
+      await page.getByRole("heading", { name: /A good day starts/i }).waitFor();
+      console.log("PASS product section CTA; deferred demo remains hidden", width);
     }
     const reg = await page.goto(url + "/register", { waitUntil: "networkidle", timeout: 30000 });
     if (!reg || reg.status() >= 400) throw new Error("Registration HTTP status " + reg?.status());
@@ -114,7 +114,7 @@ for (const [width, height] of sizes) {
         await page.getByRole("button", { name: /Skip for now/ }).click();
         await page.waitForURL((u) => u.pathname === "/today", { timeout: 15000 });
       }
-      await page.getByRole("heading", { name: "Today", exact: true }).waitFor({ timeout: 15000 });
+      await page.getByRole("heading", { name: "Your day.", exact: true }).waitFor({ timeout: 15000 });
       await page.locator(".mm-today-arc").waitFor({ timeout: 10000 });
       const todayOverflow = await page.evaluate(() => document.documentElement.scrollWidth - window.innerWidth);
       if (todayOverflow > 1) throw new Error("Today screen horizontal overflow: " + todayOverflow);
