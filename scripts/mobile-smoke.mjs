@@ -35,29 +35,41 @@ for (const [width, height] of sizes) {
     if (dims.document > dims.viewport + 1) throw new Error("Horizontal overflow: " + JSON.stringify(dims));
     if (!dims.heading) throw new Error("Missing h1");
     // Catch low-resolution or broken imagery before a public release.
-    const heroImage = page.locator(".mint4-photo img").first();
+    const heroImage = page.locator(".mint5-story-image img");
     await heroImage.waitFor();
     await heroImage.evaluate((img) => img.decode());
     const renderedImageWidth = await heroImage.evaluate((img) => img.naturalWidth);
     if (renderedImageWidth < 600) throw new Error("Hero photo is broken or too small: " + renderedImageWidth + "px");
-    const breakfastImage = page.locator(".mint4-photo img").last();
+    const breakfastImage = page.locator(".mint5-breakfast-image img");
     await breakfastImage.scrollIntoViewIfNeeded();
     await breakfastImage.evaluate((img) => img.decode());
     const breakfastImageWidth = await breakfastImage.evaluate((img) => img.naturalWidth);
     if (breakfastImageWidth < 600) throw new Error("Breakfast photo is broken or too small: " + breakfastImageWidth + "px");
-    await page.locator("#mint4-hero-title").scrollIntoViewIfNeeded();
+    await page.locator("#mint5-main-title").scrollIntoViewIfNeeded();
     await page.screenshot({ path: `mobile-audit/landing-${width}.png`, fullPage: true });
+    if (width === 390) {
+      await page.emulateMedia({ reducedMotion: "reduce" });
+      const reducedOpacity = await page.locator(".mint5-feature").first().evaluate((node) => getComputedStyle(node).opacity);
+      if (Number(reducedOpacity) !== 1) throw new Error("Reduced motion makes content invisible");
+      await page.emulateMedia({ reducedMotion: "no-preference" });
+    }
     // Public interactive demo is DEFERRED by owner (2026-11-04).
     // The example day preview is intentionally read-only until reactivation is requested.
-    const water = page.getByRole("progressbar", { name: "Sample water intake" });
-    if (Number(await water.getAttribute("aria-valuenow")) !== 1250) throw new Error("Static sample preview changed unexpectedly");
+    const sample = page.getByRole("region", { name: "Illustrative daily nutrition dashboard using sample values" });
+    if (!await sample.count()) throw new Error("Static, honestly labelled sample diary not found");
+    if (!await page.getByText(/ILLUSTRATIVE VALUES/i).count()) throw new Error("Example values are not disclosed");
+    if (width >= 1001) {
+      const railPosition = await page.locator(".mint5-stage").evaluate((node) => getComputedStyle(node).position);
+      if (railPosition !== "sticky") throw new Error("Desktop GLM sticky product stage is missing");
+    }
     if (await page.getByRole("button", { name: /Add 250 ml to example|Remove 250 ml from example/i }).count()) {
       throw new Error("Interactive dashboard controls should remain deferred");
     }
-    if (await page.locator("#how-it-works, #portion-control").count()) {
+    if (await page.locator("#portion-control, .mint2-walkthrough").count()) {
       throw new Error("Deferred interactive walkthrough is still rendered");
     }
-    if (await page.getByRole("link", { name: /Try the interactive demo|How it works/i }).count()) {
+    if (!await page.locator("#how-it-works").count()) throw new Error("Static how-it-works section is missing");
+    if (await page.getByRole("link", { name: /Try the interactive demo/i }).count()) {
       throw new Error("Deferred walkthrough still has an active public link");
     }
     const forbiddenText = await page.locator("body").innerText();
@@ -66,9 +78,9 @@ for (const [width, height] of sizes) {
     }
     console.log("PASS landing", width, dims.heading);
     if (width === 390) {
-      await page.getByRole("link", { name: /Explore features/i }).click();
+      await page.getByRole("link", { name: /Explore the product/i }).click();
       await page.waitForURL((u) => u.hash === "#features", { timeout: 10000 });
-      await page.getByRole("heading", { name: /A food diary that stays useful/i }).waitFor();
+      await page.getByRole("heading", { name: /Everything in its place/i }).waitFor();
       console.log("PASS features CTA; deferred demo remains hidden", width);
     }
     const reg = await page.goto(url + "/register", { waitUntil: "networkidle", timeout: 30000 });
@@ -91,7 +103,7 @@ for (const [width, height] of sizes) {
       // Enable this block only with a purpose-built local demo environment.
       // The smoke environment is the isolated demo adapter, never a live account.
       await page.goto(url + "/login", { waitUntil: "networkidle" });
-      await page.locator("#email").fill("demo@macromint.app");
+      await page.locator("#identifier").fill("demo@macromint.app");
       await page.locator("#password").fill("demo-password-only");
       await page.getByRole("button", { name: /^Sign in$/ }).click();
       await page.waitForTimeout(300);
