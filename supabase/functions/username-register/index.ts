@@ -52,7 +52,14 @@ Deno.serve(async (request) => {
   const email = `${normalizedUsername}@macromint.internal`;
   const admin = createClient(url, key, { auth: { persistSession: false } });
 
-  // Fail closed if the SQL rate-limit RPC, trusted IP forwarding, or HMAC\n  // secret is not configured. This complements verified edge-gateway throttling.\n  const budget = await checkUsernameAuthBudget(request, "register", inviteCode,\n    (args) => admin.rpc("consume_username_auth_budget", args));\n  if (budget === "unavailable") return errorResponse("NOT_CONFIGURED", "Registration security checks unavailable", 503);\n  if (budget === "limited") return errorResponse("RATE_LIMIT", "Too many registration attempts. Try again later.", 429);\n\n  // Check invite availability before invoking privileged account creation.
+  // Fail closed if the SQL rate-limit RPC, trusted IP forwarding, or HMAC
+  // secret is not configured. This complements verified edge-gateway throttling.
+  const budget = await checkUsernameAuthBudget(request, "register", inviteCode,
+    (args) => admin.rpc("consume_username_auth_budget", args));
+  if (budget === "unavailable") return errorResponse("NOT_CONFIGURED", "Registration security checks unavailable", 503);
+  if (budget === "limited") return errorResponse("RATE_LIMIT", "Too many registration attempts. Try again later.", 429);
+
+  // Check invite availability before invoking privileged account creation.
   // The auth.users BEFORE INSERT trigger is still the FINAL atomic authority.
   const hashBytes = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(inviteCode.toLowerCase()));
   const hash = Array.from(new Uint8Array(hashBytes), (n) => n.toString(16).padStart(2, "0")).join("");

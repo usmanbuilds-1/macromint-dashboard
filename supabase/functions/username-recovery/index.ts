@@ -41,7 +41,14 @@ Deno.serve(async (req) => {
   }
 
   const admin = createClient(url, key, { auth: { persistSession: false } });
-  // Throttle before database username lookups or any recovery-code redemption.\n  // Missing infrastructure fails closed; never permit a bypass through a flag.\n  const budget = await checkUsernameAuthBudget(req, "recover", username,\n    (args) => admin.rpc("consume_username_auth_budget", args));\n  if (budget === "unavailable") return errorResponse("NOT_CONFIGURED", "Recovery security checks unavailable", 503);\n  if (budget === "limited") return errorResponse("RATE_LIMIT", "Too many recovery attempts. Try again later.", 429);\n\n  const email = `${username}@macromint.internal`;
+  // Throttle before database username lookups or any recovery-code redemption.
+  // Missing infrastructure fails closed; never permit a bypass through a flag.
+  const budget = await checkUsernameAuthBudget(req, "recover", username,
+    (args) => admin.rpc("consume_username_auth_budget", args));
+  if (budget === "unavailable") return errorResponse("NOT_CONFIGURED", "Recovery security checks unavailable", 503);
+  if (budget === "limited") return errorResponse("RATE_LIMIT", "Too many recovery attempts. Try again later.", 429);
+
+  const email = `${username}@macromint.internal`;
   const { data: profile, error: lookupError } = await admin.from("profiles")
     .select("user_id").eq("email", email).maybeSingle();
   if (lookupError || !profile) return errorResponse("INVALID_CODE", INVALID, 400);
