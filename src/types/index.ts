@@ -238,6 +238,7 @@ export interface NotificationItem {
 export interface Profile {
   userId: string;
   email: string;
+  username?: string;
   name: string;
   sex: Sex | null;
   birthYear: number | null;
