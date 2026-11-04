@@ -92,6 +92,8 @@ export interface SessionUser {
   id: string;
   email: string;
   emailVerified: boolean;
+  /** Username identity, only for accounts enrolled without a contact email. */
+  username?: string;
 }
 
 export type Unsubscribe = () => void;
@@ -99,10 +101,11 @@ export type Unsubscribe = () => void;
 export interface Backend {
   // Auth
   getSessionUser(): Promise<SessionUser | null>;
-  signIn(email: string, password: string): Promise<void>;
-  signUp(email: string, password: string, name: string, inviteCode: string): Promise<{ needsVerification: boolean }>;
+  signIn(usernameOrEmail: string, password: string): Promise<void>;
+  signUp(usernameOrEmail: string, password: string, name: string, inviteCode: string): Promise<{ needsVerification: boolean; recoveryCodes?: string[] }>;
   signOut(): Promise<void>;
   requestPasswordReset(email: string): Promise<void>;
+  recoverUsernamePassword(username: string, recoveryCode: string, newPassword: string): Promise<void>;
   resendVerification(): Promise<void>;
   onAuthChange(cb: (user: SessionUser | null) => void): Unsubscribe;
   deleteAccount(): Promise<void>;

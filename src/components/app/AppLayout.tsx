@@ -1,3 +1,4 @@
+import { publicAccountLabel } from "@/lib/auth/username";
 import { NavLink, Outlet, useNavigate } from "react-router-dom";
 import {
   CalendarDays,
@@ -122,7 +123,7 @@ export function AppLayout() {
           <div className="flex items-center justify-between gap-2">
             <div className="min-w-0">
               <p className="truncate text-sm font-medium">{profile?.name || "You"}</p>
-              <p className="truncate text-xs text-muted-foreground">{profile?.email}</p>
+              <p className="truncate text-xs text-muted-foreground">{publicAccountLabel(profile ?? {})}</p>
             </div>
             <Button variant="ghost" size="icon" onClick={signOut} aria-label="Sign out">
               <LogOut className="h-4 w-4" />

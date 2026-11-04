@@ -24,6 +24,7 @@ import type { Units } from "@/types";
 import { LIMITS, validateNumeric } from "@/lib/validation/limits";
 import { estimateWeightTimeline } from "@/lib/weight/timeline";
 import { diaryExportCsv, weightExportCsv } from "@/lib/export/csv";
+import { publicAccountLabel } from "@/lib/auth/username";
 
 export function Settings() {
   const { profile, isAdmin, refresh, setAuthUser } = useSession();
@@ -138,7 +139,7 @@ export function Settings() {
     <div className="flex flex-col gap-6">
       <header>
         <h1 className="text-2xl font-semibold tracking-tight">Settings</h1>
-        <p className="mt-0.5 text-sm text-muted-foreground">{profile?.email}</p>
+        <p className="mt-0.5 text-sm text-muted-foreground">{publicAccountLabel(profile ?? {})}</p>
       </header>
 
       {IS_DEMO && (

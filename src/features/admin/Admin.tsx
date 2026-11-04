@@ -1,3 +1,4 @@
+import { publicAccountLabel } from "@/lib/auth/username";
 import { LIMITS, validateNumeric } from "@/lib/validation/limits";
 import { useEffect, useState } from "react";
 import { getSupabase } from "@/lib/supabase";
@@ -232,7 +233,7 @@ function AdminUsers() {
     try {
       await backend.adminAction({ action, targetUserId: row.userId, ...extra });
       bumpData();
-      toast.success(`${action.replace(/_/g, " ")} applied to ${row.email}`);
+      toast.success(`${action.replace(/_/g, " ")} applied to ${publicAccountLabel({ email: row.email })}`);
     } catch (e) {
       toast.error(e instanceof Error ? e.message : "Action failed");
     }
@@ -246,7 +247,7 @@ function AdminUsers() {
         <Input
           value={search}
           onChange={(e) => setSearch(e.target.value)}
-          placeholder="Search by email or name…"
+          placeholder="Search by username, email or name…"
           className="pl-9"
           aria-label="Search users"
         />
@@ -263,7 +264,7 @@ function AdminUsers() {
                   {row.entitlement && <StateBadge state={row.entitlement.state} />}
                 </div>
                 <p className="truncate text-xs text-muted-foreground">
-                  {row.email} · joined {formatDateShort(row.createdAt.slice(0, 10))}
+                  {publicAccountLabel({ email: row.email, name: row.name })} · joined {formatDateShort(row.createdAt.slice(0, 10))}
                   {row.entitlement?.state === "trial_active" && ` · trial ends ${formatDateShort(row.entitlement.trialEndsAt.slice(0, 10))}`}
                   {row.diaryCount30d > 0 && ` · ${row.diaryCount30d} entries (30d, last ${formatDateShort(row.lastDiaryDate ?? todayStr())})`}
                 </p>
@@ -302,7 +303,7 @@ function AdminUsers() {
       <Dialog open={Boolean(noteTarget)} onOpenChange={(o) => (!o ? setNoteTarget(null) : undefined)}>
         <DialogContent className="sm:max-w-sm">
           <DialogHeader>
-            <DialogTitle>Internal note — {noteTarget?.email}</DialogTitle>
+            <DialogTitle>Internal note — {publicAccountLabel({ email: noteTarget?.email })}</DialogTitle>
           </DialogHeader>
           <div className="grid gap-1.5">
             <Label htmlFor="adm-note">Note (recorded in the audit log)</Label>

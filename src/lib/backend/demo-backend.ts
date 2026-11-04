@@ -6,6 +6,8 @@
 
 import type { Backend, AddEntryInput, CustomFoodInput, FoodSearchHit, RecipeInput, SessionUser } from "./types";
 import { BackendError } from "./types";
+import { USERNAME_AUTH_ENABLED } from "@/lib/auth/username-config";
+import { canonicalUsername, identifierToAuthEmail, usernameFromAuthEmail, isValidUsername } from "@/lib/auth/username";
 import { applyPortionPercent, scaleNutrients, sumNutrients } from "@/lib/nutrition/math";
 import { todayStr } from "@/lib/nutrition/datetime";
 import type {
@@ -34,7 +36,7 @@ let idCounter = 0;
 const uid = (prefix: string) => `${prefix}-${Date.now().toString(36)}-${(idCounter++).toString(36)}`;
 
 interface DemoStore {
-  users: Array<{ id: string; email: string; name: string; emailVerified: boolean; createdAt: string }>;
+  users: Array<{ id: string; email: string; name: string; emailVerified: boolean; createdAt: string; username?: string }>;
   sessionUserId: string | null;
   profiles: Record<string, Profile>;
   prefs: Record<string, UserPreferences>;
@@ -251,13 +253,25 @@ export const demoBackend: Backend & DemoExtras = {
     const st = s();
     if (!st.sessionUserId) return null;
     const u = st.users.find((x) => x.id === st.sessionUserId);
-    return u ? { id: u.id, email: u.email, emailVerified: u.emailVerified } : null;
+    return u ? {
+      id: u.id, email: u.email, emailVerified: u.emailVerified,
+      ...(usernameFromAuthEmail(u.email) ? { username: usernameFromAuthEmail(u.email)! } : {}),
+    } : null;
   },
 
-  async signIn(email) {
+  async signIn(identifier) {
     const st = s();
+    let email: string;
+    try {
+      email = USERNAME_AUTH_ENABLED ? identifierToAuthEmail(identifier) : identifier;
+    } catch {
+      throw new BackendError("VALIDATION", "Invalid account identifier");
+    }
     let user = st.users.find((x) => x.email.toLowerCase() === email.toLowerCase());
+    // Demo is deliberately credential-free. Do not allow a guess to create a
+    // new username account by signing in; registration must precede login.
     if (!user) {
+      if (USERNAME_AUTH_ENABLED) throw new BackendError("AUTH", "Demo account not found. Register first.");
       user = { id: uid("user"), email, name: email.split("@")[0] || email, emailVerified: true, createdAt: new Date().toISOString() };
       st.users.push(user);
       demoBackend.seedNewUser(user.id, email, user.name);
@@ -275,8 +289,22 @@ export const demoBackend: Backend & DemoExtras = {
     save(st);
   },
 
-  async signUp(email, _password, name, _inviteCode) {
-    await demoBackend.signIn(email, "");
+  async signUp(identifier, _password, name, _inviteCode) {
+    if (!USERNAME_AUTH_ENABLED) {
+      await demoBackend.signIn(identifier, "");
+      return { needsVerification: false };
+    }
+    if (!isValidUsername(identifier)) throw new BackendError("VALIDATION", "Invalid username");
+    const username = canonicalUsername(identifier);
+    const email = identifierToAuthEmail(username);
+    const st = s();
+    if (st.users.some((u) => u.email.toLowerCase() === email)) throw new BackendError("AUTH", "Username unavailable");
+    const user = { id: uid("user"), email, username, name, emailVerified: true, createdAt: new Date().toISOString() };
+    st.users.push(user);
+    demoBackend.seedNewUser(user.id, email, name);
+    st.sessionUserId = user.id;
+    save(st);
+    // Demo mode is not a secure password provider: never use it for real users.
     return { needsVerification: false };
   },
 
@@ -288,6 +316,11 @@ export const demoBackend: Backend & DemoExtras = {
 
   async requestPasswordReset() {
     // Demo mode: nothing to reset.
+  },
+
+  async recoverUsernamePassword() {
+    // The local demo deliberately has no secure credential recovery.
+    throw new BackendError("RECOVERY_UNAVAILABLE", "Recovery codes are only available with the configured server.");
   },
 
   async resendVerification() {},
@@ -308,7 +341,7 @@ export const demoBackend: Backend & DemoExtras = {
 
   seedNewUser(userId: string, email: string, name: string) {
     const st = s();
-    st.profiles[userId] = { userId, email, name, sex: null, birthYear: null, heightCm: null, weightKg: null, targetWeightKg: null, activityLevel: null, objective: null, units: "metric", onboardedAt: null };
+    st.profiles[userId] = { userId, email, name, ...(usernameFromAuthEmail(email) ? { username: usernameFromAuthEmail(email)! } : {}), sex: null, birthYear: null, heightCm: null, weightKg: null, targetWeightKg: null, activityLevel: null, objective: null, units: "metric", onboardedAt: null };
     st.goals[userId] = { userId, calorieTarget: 2000, proteinG: 100, carbsG: 220, fatG: 67, fiberG: 28, waterMl: 2500, method: "placeholder", manuallyAdjusted: false };
     st.prefs[userId] = { userId, weekStart: 1, reminders: {}, adConsent: false, analyticsConsent: false };
     st.entitlements[userId] = { userId, state: "trial_active", trialStartedAt: new Date().toISOString(), trialEndsAt: new Date(Date.now() + st.appSettings.trialDays * 86_400_000).toISOString(), accessUntil: null, updatedAt: new Date().toISOString() };

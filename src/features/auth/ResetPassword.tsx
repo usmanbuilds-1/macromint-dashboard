@@ -8,6 +8,8 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { AuthShell } from "./AuthShell";
 import { backend, BackendError, IS_DEMO } from "@/lib/backend";
+import { USERNAME_AUTH_ENABLED } from "@/lib/auth/username-config";
+import { isValidUsername } from "@/lib/auth/username";
 
 export function ResetPassword() {
   const { user } = useSession();
@@ -17,6 +19,10 @@ export function ResetPassword() {
   const [email, setEmail] = useState("");
   const [sent, setSent] = useState(false);
   const [busy, setBusy] = useState(false);
+  const [username, setUsername] = useState("");
+  const [recoveryCode, setRecoveryCode] = useState("");
+  const [newPassword, setNewPassword] = useState("");
+  const [legacyEmailRecovery, setLegacyEmailRecovery] = useState(false);
 
   const submit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -63,6 +69,67 @@ export function ResetPassword() {
           />
           <Button disabled={busy}>Save password</Button>
         </form>
+      </AuthShell>
+    );
+  }
+
+  if (USERNAME_AUTH_ENABLED && !legacyEmailRecovery) {
+    return (
+      <AuthShell title="Recover your account" subtitle="Use one of the backup codes you saved during signup. No email address is needed.">
+        <form className="grid gap-4" onSubmit={async (event) => {
+          event.preventDefault();
+          if (!isValidUsername(username)) {
+            toast.error("Enter a valid username");
+            return;
+          }
+          if (newPassword.length < 12) {
+            toast.error("The new password must contain at least 12 characters");
+            return;
+          }
+          setBusy(true);
+          try {
+            await backend.recoverUsernamePassword(username.trim(), recoveryCode.trim(), newPassword);
+            setRecoveryCode("");
+            setNewPassword("");
+            toast.success("Password updated. Sign in with your new password.");
+            navigate("/login", { replace: true });
+          } catch (error) {
+            toast.error(error instanceof BackendError ? error.message : "Account recovery failed");
+          } finally {
+            setBusy(false);
+          }
+        }}>
+          <div className="grid gap-1.5">
+            <Label htmlFor="recovery-username">Username</Label>
+            <Input id="recovery-username" autoComplete="username" autoCapitalize="none"
+              spellCheck={false} maxLength={20} required value={username}
+              onChange={event => setUsername(event.target.value)} />
+          </div>
+          <div className="grid gap-1.5">
+            <Label htmlFor="recovery-code">Unused recovery code</Label>
+            <Input id="recovery-code" autoComplete="off" spellCheck={false}
+              className="font-mono text-xs" required value={recoveryCode}
+              onChange={event => setRecoveryCode(event.target.value)} placeholder="MMR-XXXXXXXX-XXXXXXXX-XXXXXXXX-XXXXXXXX" />
+          </div>
+          <div className="grid gap-1.5">
+            <Label htmlFor="recovery-new-password">New password</Label>
+            <Input id="recovery-new-password" type="password" required minLength={12}
+              autoComplete="new-password" value={newPassword}
+              onChange={event => setNewPassword(event.target.value)} />
+          </div>
+          <Button type="submit" disabled={busy}>{busy ? "Updating password…" : "Reset password"}</Button>
+          <p className="text-xs leading-5 text-muted-foreground">
+            Each backup code works once. If you lost all codes, contact the beta
+            administrator to discuss identity verification; automatic recovery is not possible.
+          </p>
+        </form>
+        <div className="mt-5 flex flex-col gap-3 text-sm">
+          <button type="button" className="text-left underline underline-offset-4"
+            onClick={() => setLegacyEmailRecovery(true)}>
+            Recover an existing email-based administrator account
+          </button>
+          <Link className="underline underline-offset-4" to="/login">Back to sign in</Link>
+        </div>
       </AuthShell>
     );
   }
