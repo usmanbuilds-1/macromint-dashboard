@@ -38,7 +38,7 @@ async function createPrivateData() {
 }
 
 beforeEach(async () => {
-  await backend.resetDemoData();
+  await backend.resetDemoData!();
 });
 
 describe("demo backend isolation mirrors the production RLS intent", () => {
