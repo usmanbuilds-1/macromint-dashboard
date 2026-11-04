@@ -11,6 +11,7 @@ import { formatDateLong, todayStr, addDaysStr } from "@/lib/nutrition/datetime";
 import { MEAL_LABELS, MEAL_TYPES, type DiaryEntry, type MealType } from "@/types";
 import { useFoodLog } from "@/features/foods/FoodLogProvider";
 import { formatNumber } from "@/lib/utils";
+import { useAnimatedNumber, useEntered } from "@/lib/motion";
 import { toast } from "sonner";
 
 function mealForCurrentHour(): MealType {
@@ -31,6 +32,8 @@ export function Today() {
   const entries = diary.data ?? [];
   const totals = useMemo(() => dailyTotals(entries), [entries]);
   const consumed = totals.kcal ?? 0;
+  const displayedConsumed = useAnimatedNumber(consumed);
+  const entered = useEntered();
   const target = goals?.calorieTarget ?? null;
   const remaining = target === null ? null : target - consumed;
   const protein = totals.protein ?? 0;
@@ -77,8 +80,8 @@ export function Today() {
   };
 
   return (
-    <div className="mx-auto flex w-full max-w-2xl flex-col gap-7 pb-2">
-      <header className="flex items-end justify-between gap-3">
+    <div className="mm-live-page mx-auto flex w-full max-w-2xl flex-col gap-7 pb-2">
+      <header className="mm-live-enter flex items-end justify-between gap-3">
         <div>
           <p className="text-sm text-muted-foreground">{formatDateLong(today)}</p>
           <h1 className="mt-1 text-2xl font-semibold tracking-tight">Today</h1>
@@ -88,7 +91,7 @@ export function Today() {
         </Link>
       </header>
 
-      <section aria-labelledby="energy-heading" className="mm-today-summary">
+      <section aria-labelledby="energy-heading" className="mm-today-summary mm-live-enter" style={{ animationDelay: "75ms" }}>
         <div className="mm-today-summary-head">
           <div>
             <p className="text-xs font-medium text-muted-foreground">DAILY NUTRITION</p>
@@ -100,10 +103,10 @@ export function Today() {
           <svg viewBox="0 0 240 135" aria-hidden="true">
             <path d="M 19 119 A 101 101 0 0 1 221 119" pathLength="100" stroke="var(--color-secondary)" strokeWidth="14" strokeLinecap="round" fill="none" />
             <path d="M 19 119 A 101 101 0 0 1 221 119" pathLength="100" stroke="var(--color-primary)" strokeWidth="14" strokeLinecap="round" fill="none"
-              strokeDasharray={`${target !== null && target > 0 ? Math.min(100, (consumed / target) * 100) : 0} 100`} />
+              strokeDasharray={String(entered && target !== null && target > 0 ? Math.min(100, (consumed / target) * 100) : 0) + " 100"} />
           </svg>
           <div className="mm-today-arc-label">
-            <strong className="tabular-nums">{diary.loading && !diary.data ? "—" : formatNumber(consumed)}</strong>
+            <strong className="tabular-nums">{diary.loading && !diary.data ? "—" : formatNumber(Math.round(displayedConsumed))}</strong>
             <span className="tabular-nums">{target === null ? "kcal logged" : `of ${formatNumber(target)} kcal`}</span>
           </div>
         </div>
@@ -132,7 +135,7 @@ export function Today() {
         </div>
       </section>
 
-      <section aria-label="Log food" className="relative">
+      <section aria-label="Log food" className="mm-live-enter relative" style={{ animationDelay: "155ms" }}>
         <Button
           size="lg"
           className="h-12 w-full justify-center gap-2 text-sm font-semibold shadow-none"
@@ -154,7 +157,7 @@ export function Today() {
         )}
       </section>
 
-      <section aria-labelledby="meals-heading">
+      <section aria-labelledby="meals-heading" className="mm-live-enter" style={{ animationDelay: "230ms" }}>
         <div className="flex items-center justify-between gap-2">
           <h2 id="meals-heading" className="text-base font-semibold">Meals</h2>
           <Link to="/diary" className="inline-flex min-h-11 items-center text-sm text-muted-foreground underline underline-offset-4">View full diary</Link>
