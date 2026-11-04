@@ -47,7 +47,7 @@ describe("demo backend isolation mirrors the production RLS intent", () => {
     await backend.signOut();
     await login(SECOND);
 
-    expect((await backend.getAllFoods()).some((food) => food.id === first.food.id)).toBe(false);
+    expect((await backend.getAllFoods!()).some((food) => food.id === first.food.id)).toBe(false);
     expect((await backend.getDiary(DAY)).some((item) => item.id === first.diary.id)).toBe(false);
     expect((await backend.getRecipes()).some((item) => item.id === first.recipe.id)).toBe(false);
     expect((await backend.getWeights(20)).some((item) => item.id === first.weight.id)).toBe(false);
@@ -84,7 +84,7 @@ describe("demo backend isolation mirrors the production RLS intent", () => {
     expect((await backend.getDiary(DAY))[0]?.portionPercent).toBe(50);
     expect((await backend.getRecipeIngredients(first.recipe.id))).toHaveLength(1);
     await backend.logRecipe(first.recipe.id, DAY, "dinner", 1);
-    await backend.logSavedMeal(first.meal.id, DAY, "snack");
+    await backend.logSavedMeal(first.meal.id, DAY, "snacks");
     expect((await backend.getDiary(DAY)).length).toBeGreaterThanOrEqual(3);
     await backend.deleteRecipe(first.recipe.id);
     await backend.deleteWeight(first.weight.id);
@@ -103,7 +103,7 @@ describe("demo backend isolation mirrors the production RLS intent", () => {
 
     await backend.signIn(SECOND, "demo only");
     expect((await backend.getWeights(20)).find((item) => item.id === other.id)?.weightKg).toBe(75);
-    expect((await backend.getAllFoods()).some((food) => food.id === first.food.id)).toBe(false);
+    expect((await backend.getAllFoods!()).some((food) => food.id === first.food.id)).toBe(false);
     expect((await backend.getRecipes()).some((r) => r.id === first.recipe.id)).toBe(false);
     expect((await backend.getSavedMeals()).some((meal) => meal.id === first.meal.id)).toBe(false);
   });
