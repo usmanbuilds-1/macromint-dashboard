@@ -3,6 +3,30 @@
 **State of this document:** preparation only. Nothing in this repository deploys a database
 migration, sets a Cloud secret, deploys an Edge Function, or republishes the app.
 
+**Live preflight, November 4, 2026:** Lovable Cloud reports **zero auth accounts** and
+**zero admin accounts**. Direct read-only SQL confirms the invite tables and
+signup triggers from `0006` are still absent, while `0007`, `0008`, and
+`0009` have already been applied and verified. The owner reported that all
+three Edge Functions were deployed, but the committed source for the public
+handlers contained invalid literal newline escapes; this release repairs the
+handlers and the formerly malformed/duplicated `0006` SQL. **Redeploy
+`username-register` and `username-recovery` from the corrected merged
+source before trying to activate them.** Seeing a 503 while the flags are
+off is not a syntax, gateway or end-to-end security test.
+
+**Current safe order:** 1. Merge repaired source and pass CI. 2. Owner
+redeploys just the two corrected Edge Functions (a Lovable AI credit action,
+never triggered automatically). 3. Owner privately configures
+`USERNAME_AUTH_RATE_LIMIT_SECRET` in Lovable Cloud Secrets, leaving all
+activation/verification flags false. 4. Verify the IP forwarding trust
+boundary and the rate-limiting RPC under authenticated and unauthenticated
+requests. 5. Apply corrected `0006` in Cloud SQL and create a private,
+random one-use invite visible only in the owner's SQL editor. 6. Verify
+the invite trigger and then enable the necessary backend flags. 7. Enable
+the two frontend `VITE_` flags only after the backend passes acceptance
+checks, sign up, store recovery codes privately, and promote the verified
+owner UUID. 8. Run a two-account real RLS and login/recovery test.
+
 **Owner constraint:** Do not invoke the Lovable agent or any operation consuming Lovable
 build credits automatically. Ask the owner to initiate such a step.
 
