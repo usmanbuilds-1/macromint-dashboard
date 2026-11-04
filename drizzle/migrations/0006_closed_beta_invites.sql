@@ -3,11 +3,14 @@
 -- IMPORTANT: applying this migration immediately closes ALL NEW Supabase Auth registrations
 -- without an invitation, including public Auth signup API calls.
 -- Codes have the MM- prefix followed by 40 random hexadecimal digits.
--- Do not reuse a static invitation from a public deployment guide. Apply only after an admin
--- invitation generator is deployed, and ensure the project owner has an existing admin login.
+-- Do not reuse a static invitation from a public deployment guide. Before activating
+-- registration, prepare a private single-use owner invitation in Cloud SQL and verify
+-- that the signup flow, Edge functions and rate limiter are deployed. The first
+-- verified owner account must be promoted to admin only after registration.
 --
--- Invitations are admission tickets only. Testers still set email/password (or
--- equivalent proper credentials) during onboarding; invitation codes are never logins.
+-- Invitations are admission tickets only. Username-only testers set a username
+-- and a strong password; GoTrue stores a synthetic email internally. Invitation
+-- codes are not login credentials.
 --
 -- We use PostgreSQL's built-in SHA-256 (Postgres 14+) to avoid extensions and
 -- preserve compatibility with Deno WebCrypto's SHA-256 implementation.
@@ -56,7 +59,7 @@ begin
   account_name := btrim(coalesce(new.raw_user_meta_data ->> 'name', ''));
 
   if char_length(account_name) < 2 or char_length(account_name) > 100
-     or submitted_code !~ '^MM-[A-F0-9]{40} then
+     or submitted_code !~ '^MM-[A-F0-9]{40}
     raise exception 'A valid beta invitation and name are required'
       using errcode = 'P0001';
   end if;
@@ -89,7 +92,7 @@ create trigger beta_check_before_signup
 
 -- AFTER INSERT: link the identity to the invite for audit and admin controls.
 -- Existing handle_new_user trigger continues to provision their ordinary
--- 14-day registered trial and existing profile/diary access policies.
+-- trial and existing profile/diary access policies.
 create or replace function public.beta_record_signup()
 returns trigger
 language plpgsql security definer set search_path = public, pg_catalog as $$
