@@ -190,7 +190,7 @@ export function Landing() {
         <Logo />
         <p>Nutrition estimates are a starting point, not a diagnosis. Review portions and values before saving.</p>
         <nav aria-label="Legal and account"><Link to="/privacy">Privacy</Link><Link to="/terms">Terms</Link><Link to="/login">Sign in</Link></nav>
-        <small>© {new Date().getFullYear()} Macro Mint</small>
+        <small>Copyright {new Date().getFullYear()} Macro Mint</small>
       </footer>
     </div>
   );
