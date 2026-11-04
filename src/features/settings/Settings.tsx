@@ -136,11 +136,18 @@ export function Settings() {
   };
 
   return (
-    <div className="mm6-subpage mm6-page-settings flex flex-col gap-6">
+    <div className="mm6-subpage mm6-page-settings ref-live-settings flex flex-col gap-6">
       <header>
-        <h1 className="text-2xl font-semibold tracking-tight">Settings</h1>
+        <h1 className="text-2xl font-semibold tracking-tight">More</h1>
         <p className="mt-0.5 text-sm text-muted-foreground">{publicAccountLabel(profile ?? {})}</p>
       </header>
+
+      <nav aria-label="Settings sections" className="ref-settings-links">
+        <a href="#ref-profile">My account <span>Manage your profile</span></a>
+        <button type="button" onClick={() => navigate("/goals")}>Goals <span>Calorie and macro targets</span></button>
+        <a href="#ref-export">Exports <span>Download your data</span></a>
+        <a href="#ref-privacy">Privacy <span>Your preferences and consent</span></a>
+      </nav>
 
       {IS_DEMO && (
         <section className="rounded-xl border border-warning/30 bg-warning/10 p-5">
@@ -167,7 +174,7 @@ export function Settings() {
         </section>
       )}
 
-      <section className="border-b pb-6" aria-label="Profile">
+      <section id="ref-profile" className="border-b pb-6" aria-label="Profile">
         <h2 className="text-sm font-semibold">Profile</h2>
         <div className="mt-4 grid gap-4 sm:grid-cols-3">
           <div className="grid gap-1.5">
@@ -206,7 +213,7 @@ export function Settings() {
         </div>
       </section>
 
-      <section className="border-b pb-6" aria-label="Privacy">
+      <section id="ref-privacy" className="border-b pb-6" aria-label="Privacy">
         <h2 className="text-sm font-semibold">Privacy</h2>
         <div className="mt-4 flex flex-col gap-4">
           <ConsentRow
@@ -224,7 +231,7 @@ export function Settings() {
         </div>
       </section>
 
-      <section className="border-b pb-6" aria-label="Account">
+      <section id="ref-export" className="border-b pb-6" aria-label="Account">
         <h2 className="text-sm font-semibold">Account</h2>
         <div className="mt-4 flex flex-col gap-3">
           <Button variant="outline" className="min-h-11 justify-start gap-2" onClick={() => void exportData()}>

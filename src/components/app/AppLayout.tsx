@@ -31,6 +31,13 @@ const NAV = [
   { to: "/trends", label: "Trends", icon: ChartLine },
 ];
 
+const MOBILE_NAV = [
+  { to: "/today", label: "Today" },
+  { to: "/foods", label: "Food" },
+  { to: "/trends", label: "Progress" },
+  { to: "/settings", label: "Settings" },
+];
+
 const SECONDARY = [
   { to: "/goals", label: "Goals", icon: Target },
   { to: "/settings", label: "Settings", icon: SettingsIcon },
@@ -172,38 +179,15 @@ export function AppLayout() {
           <Outlet />
         </main>
 
-        {/* Mobile bottom nav */}
-        <nav
-          className="fixed inset-x-0 bottom-0 z-40 grid grid-cols-5 border-t bg-background pb-[env(safe-area-inset-bottom)] md:hidden"
-          aria-label="Primary"
-        >
-          {NAV.map((n) => (
-            <NavLink
-              key={n.to}
-              to={n.to}
-              className={({ isActive }) =>
-                cn(
-                  "flex min-h-[52px] flex-col items-center justify-center gap-1 text-[11px] font-medium text-muted-foreground",
-                  isActive && "text-primary",
-                )
-              }
-            >
-              <n.icon className="h-[18px] w-[18px]" />
-              {n.label}
+        {/* Fast five-destination navigation. Text-only rather than decorative glyphs. */}
+        <nav className="ref-mobile-tabs fixed inset-x-0 bottom-0 z-40 grid grid-cols-4 border-t bg-background pb-[env(safe-area-inset-bottom)] md:hidden" aria-label="Primary">
+          {MOBILE_NAV.map((item) => (
+            <NavLink key={item.to} to={item.to} className={({ isActive }) =>
+              cn("ref-mobile-tab", isActive && "ref-mobile-tab--active")
+            }>
+              <span>{item.label}</span>
             </NavLink>
           ))}
-          <NavLink
-            to="/settings"
-            className={({ isActive }) =>
-              cn(
-                "flex min-h-[52px] flex-col items-center justify-center gap-1 text-[11px] font-medium text-muted-foreground",
-                isActive && "text-primary",
-              )
-            }
-          >
-            <SettingsIcon className="h-[18px] w-[18px]" />
-            More
-          </NavLink>
         </nav>
       </div>
     </div>

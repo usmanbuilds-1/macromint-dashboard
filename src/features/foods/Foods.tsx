@@ -67,6 +67,7 @@ export function Foods() {
   const [hit, setHit] = useState<Awaited<ReturnType<typeof backend.searchFoods>> | null>(null);
   const [searching, setSearching] = useState(false);
   const [customOpen, setCustomOpen] = useState(false);
+  const [activeTab, setActiveTab] = useState("search");
   const today = todayStr();
 
   const favorites = useAsyncData(() => backend.getFavorites(), [version]);
@@ -91,26 +92,19 @@ export function Foods() {
   };
 
   return (
-    <div className="mm6-subpage mm6-page-foods flex flex-col gap-6">
+    <div className="mm6-subpage mm6-page-foods ref-live-foods flex flex-col gap-6">
       <header className="flex flex-wrap items-center justify-between gap-3">
         <div>
-          <h1 className="text-2xl font-semibold tracking-tight">Foods</h1>
-          <p className="mt-0.5 text-sm text-muted-foreground">Search the database, reuse favourites, or add your own.</p>
+          <h1 className="text-2xl font-semibold tracking-tight">Log food</h1>
+          <p className="mt-0.5 text-sm text-muted-foreground">Find what you ate. Review the portion before logging.</p>
         </div>
-        <div className="flex gap-2">
-          <Button variant="outline" onClick={() => foodLog.openScan({ entryDate: today, mealType: "snacks" })} className="gap-2">
-            <Camera className="h-4 w-4" /> Scan
-          </Button>
-          <Button onClick={() => setCustomOpen(true)} className="gap-2">
-            <Plus className="h-4 w-4" /> Custom food
-          </Button>
-        </div>
+
       </header>
 
-      <Tabs defaultValue="search">
+      <Tabs value={activeTab} onValueChange={setActiveTab}>
         <TabsList className="w-full justify-start">
           <TabsTrigger value="search">Search</TabsTrigger>
-          <TabsTrigger value="favorites">Favourites</TabsTrigger>
+          <TabsTrigger value="favorites">Saved foods</TabsTrigger>
         </TabsList>
 
         <TabsContent value="search" className="mt-4 flex flex-col gap-4">
@@ -127,13 +121,24 @@ export function Foods() {
                 value={q}
                 onChange={(e) => setQ(e.target.value)}
                 onKeyDown={(e) => e.key === "Enter" && void runSearch(q)}
-                placeholder="Chicken breast, biryani, branded products…"
+                placeholder="Search for a food or meal"
                 className="pl-9"
                 aria-label="Search foods"
               />
             </div>
             <Button type="submit" disabled={searching}>{searching ? "Searching…" : "Search"}</Button>
           </form>
+          <div className="ref-food-shortcuts" aria-label="Food logging options">
+            <button type="button" onClick={() => foodLog.openScan({ entryDate: today, mealType: "snacks" })}>
+              <span>Scan photo</span><small>Review a meal image</small>
+            </button>
+            <button type="button" onClick={() => setActiveTab("favorites")}>
+              <span>Saved foods</span><small>Log a favourite</small>
+            </button>
+            <button type="button" onClick={() => setCustomOpen(true)}>
+              <span>Custom food</span><small>Add your own entry</small>
+            </button>
+          </div>
 
           {hit && (
             <div className="overflow-hidden rounded-xl border">

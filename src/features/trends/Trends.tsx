@@ -105,11 +105,11 @@ export function Trends() {
     : null;
 
   return (
-    <div className="mm6-subpage mm6-page-trends flex flex-col gap-6">
+    <div className="mm6-subpage mm6-page-trends ref-live-progress flex flex-col gap-6">
       <header className="flex flex-wrap items-end justify-between gap-3">
         <div>
-          <h1 className="text-2xl font-semibold tracking-tight">Trends</h1>
-          <p className="mt-0.5 text-sm text-muted-foreground">How your nutrition behaves over time, from real logged data.</p>
+          <h1 className="text-2xl font-semibold tracking-tight">Progress</h1>
+          <p className="mt-0.5 text-sm text-muted-foreground">Your nutrition and weight, seen in the longer view.</p>
         </div>
         <Tabs value={String(range)} onValueChange={(v) => setRange(Number(v))}>
           <TabsList>
@@ -136,8 +136,10 @@ export function Trends() {
         </div>
       )}
 
+      <nav className="ref-progress-categories" aria-label="Progress categories"><a href="#ref-weight-trend">Weight</a><a href="#ref-calorie-trend">Calories</a><a href="#ref-macro-trend">Macros</a></nav>
+
       {/* Calorie trend */}
-      <section className="border-b bg-card/0 pb-6" aria-label="Calorie trend">
+      <section id="ref-calorie-trend" className="border-b bg-card/0 pb-6" aria-label="Calorie trend">
         <div className="flex flex-wrap items-center justify-between gap-2">
           <h2 className="text-sm font-semibold">Daily calories</h2>
           {adherence.adherencePct !== null ? (
@@ -184,7 +186,7 @@ export function Trends() {
 
       <div className="grid gap-6 lg:grid-cols-2">
         {/* Weight */}
-        <section className="border-b pb-6" aria-label="Weight trend">
+        <section id="ref-weight-trend" className="border-b pb-6" aria-label="Weight trend">
           <div className="flex items-center justify-between gap-2">
             <h2 className="text-sm font-semibold">Weight</h2>
             <Link to="/weight" className="inline-flex min-h-10 items-center text-xs font-medium text-primary underline underline-offset-4">Weight log &amp; goals</Link>
@@ -221,7 +223,7 @@ export function Trends() {
         </section>
 
         {/* Macro distribution */}
-        <section className="border-b pb-6" aria-label="Macro distribution">
+        <section id="ref-macro-trend" className="border-b pb-6" aria-label="Macro distribution">
           <h2 className="text-sm font-semibold">Energy from macros</h2>
           <p className="mt-0.5 text-xs text-muted-foreground">Share of logged energy in this range</p>
           {macroShare ? (
