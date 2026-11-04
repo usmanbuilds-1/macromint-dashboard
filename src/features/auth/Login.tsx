@@ -54,7 +54,9 @@ export function Login() {
         <div className="grid gap-1.5">
           <div className="flex items-center justify-between">
             <Label htmlFor="password">Password</Label>
-            {!USERNAME_AUTH_ENABLED && <Link to="/reset" className="text-xs text-muted-foreground underline underline-offset-2">Forgot?</Link>}
+            <Link to="/reset" className="text-xs text-muted-foreground underline underline-offset-2">
+              {USERNAME_AUTH_ENABLED ? "Use recovery code" : "Forgot?"}
+            </Link>
           </div>
           <Input id="password" type="password" required autoComplete="current-password" value={password} onChange={(e) => setPassword(e.target.value)} />
         </div>
