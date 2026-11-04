@@ -13,3 +13,8 @@ verify_jwt = false
 
 [functions.delete-account]
 verify_jwt = false
+
+# Username-only signup is publicly callable but rejects all requests until
+# server-side rollout flags and the database beta invitation trigger are ready.
+[functions.username-register]
+verify_jwt = false
