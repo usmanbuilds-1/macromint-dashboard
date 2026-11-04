@@ -223,7 +223,7 @@ export function Trends() {
         </section>
 
         {/* Macro distribution */}
-        <section className="border-b pb-6" aria-label="Macro distribution">
+        <section id="ref-macro-trend" className="border-b pb-6" aria-label="Macro distribution">
           <h2 className="text-sm font-semibold">Energy from macros</h2>
           <p className="mt-0.5 text-xs text-muted-foreground">Share of logged energy in this range</p>
           {macroShare ? (
