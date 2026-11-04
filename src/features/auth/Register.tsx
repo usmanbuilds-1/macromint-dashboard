@@ -8,10 +8,13 @@ import { AuthShell } from "./AuthShell";
 import { backend, BackendError, IS_DEMO } from "@/lib/backend";
 import { useSession } from "@/context/Session";
 import { INVITE_REGISTRATION_ENABLED } from "@/lib/beta/config";
+import { USERNAME_AUTH_ENABLED, USERNAME_MIN_PASSWORD_LENGTH } from "@/lib/auth/username-config";
+import { isValidUsername } from "@/lib/auth/username";
 
 export function Register() {
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
+  const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [inviteCode, setInviteCode] = useState("");
   const [busy, setBusy] = useState(false);
@@ -32,13 +35,20 @@ export function Register() {
       toast.error("Enter your beta invitation code");
       return;
     }
-    if (password.length < 8) {
-      toast.error("Password must be at least 8 characters");
+    if (USERNAME_AUTH_ENABLED && !isValidUsername(username)) {
+      toast.error("Username must be 3–20 letters, numbers, or underscores");
+      return;
+    }
+    if (password.length < (USERNAME_AUTH_ENABLED ? USERNAME_MIN_PASSWORD_LENGTH : 8)) {
+      toast.error(`Password must be at least ${USERNAME_AUTH_ENABLED ? USERNAME_MIN_PASSWORD_LENGTH : 8} characters`);
       return;
     }
     setBusy(true);
     try {
-      const { needsVerification } = await backend.signUp(email.trim(), password, name.trim(), inviteCode.trim());
+      const { needsVerification } = await backend.signUp(
+        USERNAME_AUTH_ENABLED ? username.trim() : email.trim(),
+        password, name.trim(), inviteCode.trim(),
+      );
       if (needsVerification && !IS_DEMO) {
         navigate("/verify", { state: { email: email.trim() } });
         return;
@@ -72,7 +82,9 @@ export function Register() {
   }
 
   return (
-    <AuthShell title="Join the private beta" subtitle="Enter your name and personal invitation. Add an email and password so you can securely return to your diary.">
+    <AuthShell title="Join the private beta" subtitle={USERNAME_AUTH_ENABLED
+      ? "Choose a username and a strong password. No email address is required."
+      : "Enter your name and personal invitation. Add an email and password so you can securely return to your diary."}>
       <form onSubmit={submit} className="flex flex-col gap-4">
         <div className="grid gap-1.5">
           <Label htmlFor="invite">Invitation code</Label>
@@ -83,16 +95,33 @@ export function Register() {
         </div>
         <div className="grid gap-1.5">
           <Label htmlFor="name">Name</Label>
-          <Input id="name" required autoComplete="name" value={name} onChange={(e) => setName(e.target.value)} placeholder="Your name" />
+          <Input id="name" required maxLength={100} autoComplete="name" value={name} onChange={(e) => setName(e.target.value)} placeholder="Your name" />
         </div>
-        <div className="grid gap-1.5">
-          <Label htmlFor="email">Email</Label>
-          <Input id="email" type="email" required autoComplete="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="you@example.com" />
-        </div>
+        {USERNAME_AUTH_ENABLED ? (
+          <div className="grid gap-1.5">
+            <Label htmlFor="username">Username</Label>
+            <Input id="username" type="text" required autoComplete="username" maxLength={20}
+              autoCapitalize="none" spellCheck={false}
+              value={username} onChange={(e) => setUsername(e.target.value)}
+              placeholder="e.g. alex_mint" aria-describedby="username-help" />
+            <p id="username-help" className="text-xs leading-5 text-muted-foreground">
+              3–20 letters, numbers, or underscores. No email is collected.
+            </p>
+          </div>
+        ) : (
+          <div className="grid gap-1.5">
+            <Label htmlFor="email">Email</Label>
+            <Input id="email" type="email" required autoComplete="email"
+              value={email} onChange={(e) => setEmail(e.target.value)} placeholder="you@example.com" />
+          </div>
+        )}
         <div className="grid gap-1.5">
           <Label htmlFor="password">Password</Label>
-          <Input id="password" type="password" required minLength={8} autoComplete="new-password" value={password} onChange={(e) => setPassword(e.target.value)} />
-          <p className="text-xs text-muted-foreground">At least 8 characters.</p>
+          <Input id="password" type="password" required minLength={USERNAME_AUTH_ENABLED ? USERNAME_MIN_PASSWORD_LENGTH : 8} autoComplete="new-password" value={password} onChange={(e) => setPassword(e.target.value)} />
+          <p className="text-xs text-muted-foreground">
+            At least {USERNAME_AUTH_ENABLED ? USERNAME_MIN_PASSWORD_LENGTH : 8} characters.
+            {USERNAME_AUTH_ENABLED && " Email-based password recovery is unavailable for username accounts."}
+          </p>
         </div>
         <Button type="submit" disabled={busy}>{busy ? "Creating account…" : "Create beta account"}</Button>
         <p className="text-center text-sm text-muted-foreground">
