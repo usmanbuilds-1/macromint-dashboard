@@ -30,10 +30,12 @@ not for your local demo or a separate Supabase project.
 ## 1. Locate backend and preserve a recovery point (owner, manual)
 
 Open [the Macro Mint Lovable project](https://lovable.dev/projects/faa9bf14-f641-4129-94e2-d944468e6688)
-and choose **Cloud → Database → Backups / SQL editor**. Verify which environment
-you are viewing (Test vs Live, if available). Export/retain a verified backup
-before applying anything. The built-in backend is managed by Lovable; it is
-**not** guaranteed to be accessible from your own Supabase dashboard or CLI.
+and inspect the Cloud backend type first. **If it is Lovable Cloud**, use
+**Cloud → Database → Backups / SQL editor**, verifying Test vs Live where
+applicable. **If it is an external Supabase connection you own**, use that
+project's Supabase dashboard instead. Do not assume the pasted CLI command
+can access a managed backend. Back up the exact environment before editing.
+This document's instructions below assume a Lovable-managed backend.
 
 Run these **read-only** SQL queries in Cloud → SQL editor, and inspect the
 result before continuing:
