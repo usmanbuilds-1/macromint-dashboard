@@ -20,6 +20,7 @@ import { useSession } from "@/context/Session";
 import { backend } from "@/lib/backend";
 import { useAsyncData, useDataVersion } from "@/hooks/useData";
 import { adherenceStats, daysToKcal } from "@/lib/nutrition/math";
+import { summarizeNutrientCoverage } from "@/lib/nutrition/coverage";
 import { lastNWeeks, weekDates, weekLabel, formatDateShort, todayStr } from "@/lib/nutrition/datetime";
 import { formatNumber } from "@/lib/utils";
 import { cn } from "@/lib/utils";
@@ -81,20 +82,21 @@ export function Trends() {
   }, [weights]);
 
   const macroTotals = useMemo(() => {
-    if (!diaryData.data) return { protein: 0, carbs: 0, fat: 0 };
-    let protein = 0;
-    let carbs = 0;
-    let fat = 0;
-    for (const e of diaryData.data.all) {
-      protein += e.nutrients.protein ?? 0;
-      carbs += e.nutrients.carbs ?? 0;
-      fat += e.nutrients.fat ?? 0;
-    }
+    const entries = diaryData.data?.all ?? [];
+    if (!entries.length) return null;
+    const protein = summarizeNutrientCoverage(entries, "protein").completeDayAmount;
+    const carbs = summarizeNutrientCoverage(entries, "carbs").completeDayAmount;
+    const fat = summarizeNutrientCoverage(entries, "fat").completeDayAmount;
+    // Missing nutrient fields are unknown, not zero: do not misrepresent
+    // an incomplete diary as a trustworthy macro energy distribution.
+    if (protein === null || carbs === null || fat === null) return null;
     return { protein, carbs, fat };
   }, [diaryData.data]);
 
-  const macroEnergy = macroTotals.protein * 4 + macroTotals.carbs * 4 + macroTotals.fat * 9;
-  const macroShare = macroEnergy > 0
+  const macroEnergy = macroTotals
+    ? macroTotals.protein * 4 + macroTotals.carbs * 4 + macroTotals.fat * 9
+    : 0;
+  const macroShare = macroTotals && macroEnergy > 0
     ? {
         protein: Math.round(((macroTotals.protein * 4) / macroEnergy) * 100),
         carbs: Math.round(((macroTotals.carbs * 4) / macroEnergy) * 100),
@@ -246,7 +248,13 @@ export function Trends() {
             </>
           ) : (
             <div className="mt-4">
-              <EmptyChart message="Log meals to see your macro split." />
+              <EmptyChart message={
+                diaryData.data?.all.length && !macroTotals
+                  ? "Some logged foods are missing macro values. The breakdown is unavailable until those values are recorded."
+                  : diaryData.data?.all.length
+                    ? "No calculable macro energy was logged in this range."
+                    : "Log meals to see your macro split."
+              } />
             </div>
           )}
         </section>
