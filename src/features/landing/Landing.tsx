@@ -1,214 +1,194 @@
 import { Link } from "react-router-dom";
-import { ArrowRight, Droplets } from "lucide-react";
 import { Logo } from "@/components/app/AppLayout";
 import { Reveal } from "@/lib/motion";
 
-const PHOTO_MEAL = "/images/meal-hero-hq.webp";
-const PHOTO_BREAKFAST = "/images/breakfast-hero-hq.webp";
+const heroPhoto = "/images/meal-hero-hq.webp";
+const breakfastPhoto = "/images/breakfast-hero-hq.webp";
 
-const sampleMeals = [
-  { meal: "Breakfast", name: "Overnight oats and fruit", kcal: 320 },
-  { meal: "Lunch", name: "Chicken, rice and greens", kcal: 610 },
-  { meal: "Dinner", name: "Vegetable and grain bowl", kcal: 500 },
+const sampleMacros = [
+  { name: "Protein", value: 96, target: 130 },
+  { name: "Carbs", value: 148, target: 220 },
+  { name: "Fat", value: 48, target: 70 },
 ];
 
-const features = [
-  {
-    number: "01",
-    title: "A diary you'll want to keep.",
-    detail: "Find a food, choose your serving and add it to a day that makes sense at a glance.",
-  },
-  {
-    number: "02",
-    title: "Your numbers, without the clutter.",
-    detail: "Follow calories and macros. See additional nutrient information when the food data includes it.",
-  },
-  {
-    number: "03",
-    title: "Meals that get easier to log.",
-    detail: "Save your own foods and favourite combinations, then use them again without starting over.",
-  },
-  {
-    number: "04",
-    title: "Progress with perspective.",
-    detail: "Look back at nutrition trends, record your weight, adjust targets and export your history.",
-  },
-];
-
-/** A clearly labelled static example. No imaginary verified scores, customers or live data. */
-function StageDiary() {
+function ProductPreview({ compact = false }: { compact?: boolean }) {
   return (
-    <div className="mint5-stage-card" role="region" aria-label="Illustrative daily nutrition dashboard using sample values">
-      <div className="mint5-stage-heading">
-        <div><span className="mint5-micro">DAILY VIEW</span><h2>Today</h2></div>
-        <span className="mint5-stage-date">Example diary</span>
+    <div className={`mint6-product ${compact ? "mint6-product--compact" : ""}`} aria-label="Illustrative preview of the nutrition diary">
+      <div className="mint6-product-top">
+        <span className="mint6-overline">MACRO MINT / SAMPLE DAY</span>
+        <span className="mint6-product-dots" aria-hidden="true"><i /><i /><i /></span>
       </div>
-      <div className="mint5-energy">
-        <div className="mint5-energy-ring" aria-hidden="true">
-          <svg viewBox="0 0 120 120" focusable="false">
-            <circle cx="60" cy="60" r="46" className="mint5-ring-track" fill="none" strokeWidth="9" />
-            <circle cx="60" cy="60" r="46" className="mint5-ring-progress" fill="none" strokeWidth="9" strokeLinecap="round"
-              pathLength="100" strokeDasharray="68.1 100" />
-          </svg>
-          <span>68%</span>
-        </div>
-        <div className="mint5-energy-caption">
-          <span>Calories logged</span>
-          <strong>1,430</strong>
-          <span>of 2,100 kcal</span>
-        </div>
+      <div className="mint6-product-title">
+        <div><small>Tuesday's diary</small><strong>Today.</strong></div>
+        <span>01 / 03</span>
       </div>
-      <div className="mint5-macro-lines">
-        {[
-          { label: "Protein", actual: 96, goal: 130 },
-          { label: "Carbs", actual: 148, goal: 220 },
-          { label: "Fat", actual: 48, goal: 70 },
-        ].map((macro, index) => (
-          <div className="mint5-macro-line" key={macro.label} style={{ animationDelay: String(index * 90 + 180) + "ms" }}>
-            <div className="mint5-macro-title"><span>{macro.label}</span><strong>{macro.actual} <small>/ {macro.goal} g</small></strong></div>
-            <div className="mint5-track"><i style={{ width: String((macro.actual / macro.goal) * 100) + "%" }} /></div>
+      <div className="mint6-energy">
+        <div className="mint6-energy-main"><strong>1,430</strong><span>kcal logged</span></div>
+        <div className="mint6-energy-detail"><span>Daily target</span><strong>2,100 kcal</strong><small>670 kcal remaining</small></div>
+      </div>
+      <div className="mint6-energy-track" role="img" aria-label="Example: 1430 of 2100 calories logged"><span /></div>
+      <div className="mint6-macros">
+        {sampleMacros.map((macro) => (
+          <div className="mint6-macro" key={macro.name}>
+            <div><span>{macro.name}</span><strong>{macro.value} <small>/ {macro.target} g</small></strong></div>
+            <i><b style={{ width: `${Math.round((macro.value / macro.target) * 100)}%` }} /></i>
           </div>
         ))}
       </div>
-      <div className="mint5-diary-list">
-        <div className="mint5-diary-title"><strong>Food diary</strong><span>kcal</span></div>
-        {sampleMeals.map((item, index) => (
-          <div className="mint5-diary-row" key={item.meal} style={{ animationDelay: String(index * 100 + 360) + "ms" }}>
-            <div><strong>{item.meal}</strong><small>{item.name}</small></div>
-            <span>{item.kcal}</span>
-          </div>
-        ))}
+      <div className="mint6-product-footer">
+        <span>Food diary</span><span>3 meals logged</span>
       </div>
-      <div className="mint5-water">
-        <div><span><Droplets size={15} aria-hidden="true" />Water</span><strong>1.25 <small>/ 2.00 L</small></strong></div>
-        <div className="mint5-water-segments" aria-label="Example hydration: five of eight segments filled">
-          {Array.from({ length: 8 }, (_, index) => <i key={index} className={index < 5 ? "is-filled" : ""} />)}
-        </div>
+      <div className="mint6-meal-rows">
+        <div><span>01</span><strong>Breakfast</strong><small>320 kcal</small></div>
+        <div><span>02</span><strong>Lunch</strong><small>610 kcal</small></div>
+        <div><span>03</span><strong>Dinner</strong><small>500 kcal</small></div>
       </div>
+      <p className="mint6-example-note">Illustrative values, not a real person's diary.</p>
     </div>
   );
 }
 
+function WeightIllustration() {
+  return (
+    <div className="mint6-weight-illustration" aria-label="Illustrative weight logging trend">
+      <div className="mint6-weight-top"><span>WEIGHT HISTORY / EXAMPLE</span><span>LAST 30 DAYS</span></div>
+      <div className="mint6-weight-value"><strong>72.4</strong><span>kg</span></div>
+      <svg viewBox="0 0 560 220" role="img" aria-label="Sample weight line varying over a month">
+        <g stroke="#d2dacd" strokeWidth="1">
+          <line x1="0" y1="45" x2="560" y2="45" />
+          <line x1="0" y1="107" x2="560" y2="107" />
+          <line x1="0" y1="170" x2="560" y2="170" />
+        </g>
+        <path d="M 3 51 C 58 46, 76 82, 119 76 S 198 125, 249 110 S 320 117, 359 140 S 450 141, 492 158 S 535 168, 557 176"
+          fill="none" stroke="#125e3f" strokeWidth="3.5" strokeLinecap="round" />
+        <circle cx="557" cy="176" r="7" fill="#125e3f" stroke="#f4f3ed" strokeWidth="4" />
+      </svg>
+      <div className="mint6-weight-bottom"><span>Day 1</span><span>Day 30</span></div>
+      <p>See the longer view, not just today's number.</p>
+    </div>
+  );
+}
+
+const benefits = [
+  { mark: "01", heading: "Food, without the friction.", copy: "Search for a food, save a favourite or review a meal photo. Then decide what belongs in your diary." },
+  { mark: "02", heading: "Numbers with context.", copy: "Calories and macros stay close to the food that produced them. Unknown nutrient values aren't quietly turned into zeros." },
+  { mark: "03", heading: "A record that stays yours.", copy: "Review your weight over time, change your targets and export your history when you want it." },
+];
+
 export function Landing() {
   return (
-    <div className="mint5-site">
-      <a className="mint5-skip" href="#main-content">Skip to content</a>
-      <div className="mint5-shell">
-        <aside className="mint5-stage">
-          <div className="mint5-stage-sticky">
-            <StageDiary />
-            <p className="mint5-stage-footnote">PRODUCT PREVIEW <span>•</span> ILLUSTRATIVE VALUES</p>
+    <div className="mint6-site">
+      <a className="mint6-skip" href="#main-content">Skip to content</a>
+      <header className="mint6-header">
+        <Link to="/" className="mint6-brand" aria-label="Macro Mint home"><Logo /></Link>
+        <nav aria-label="Site navigation" className="mint6-nav">
+          <a href="#approach">The approach</a>
+          <a href="#inside">Inside the app</a>
+          <a href="#questions">Questions</a>
+        </nav>
+        <Link to="/login" className="mint6-header-action">Member sign in <span aria-hidden="true">↗</span></Link>
+      </header>
+
+      <main id="main-content">
+        <section className="mint6-hero" aria-labelledby="mint6-hero-title">
+          <div className="mint6-hero-copy">
+            <p className="mint6-overline mint6-hero-eyebrow"><span className="mint6-tiny-circle" />A FOOD DIARY FOR REAL LIFE</p>
+            <h1 id="mint6-hero-title">Eat well.<br />Know <em>why.</em></h1>
+            <p className="mint6-hero-lede">The meals you eat. The numbers behind them. Your progress in one quieter, clearer place.</p>
+            <div className="mint6-hero-actions">
+              <Link to="/login" className="mint6-primary">Open your diary <span aria-hidden="true">↗</span></Link>
+              <a href="#inside" className="mint6-text-link">See what’s inside <span aria-hidden="true">↓</span></a>
+            </div>
+            <p className="mint6-access">Existing members can sign in. New accounts are invitation only during setup.</p>
           </div>
-        </aside>
+          <div className="mint6-hero-visual">
+            <div className="mint6-photo-frame">
+              <img src={heroPhoto} alt="Chicken, grains and fresh vegetables arranged in a ceramic bowl" fetchPriority="high" width={1200} height={900} decoding="async" />
+            </div>
+            <div className="mint6-floating-preview"><ProductPreview compact /></div>
+            <div className="mint6-image-caption"><span>Good food.</span><span>Good information.</span></div>
+          </div>
+          <div className="mint6-hero-bottom"><span>YOUR DIARY / REIMAGINED</span><a href="#approach">SCROLL TO EXPLORE <span aria-hidden="true">↓</span></a><span>001 — 006</span></div>
+        </section>
 
-        <div className="mint5-reading">
-          <header className="mint5-header">
-            <Link to="/" className="mint5-header-logo" aria-label="Macro Mint home"><Logo compact /></Link>
-            <nav className="mint5-nav" aria-label="Site navigation">
-              <a href="#features">Features</a>
-              <a href="#how-it-works">How it works</a>
-              <a href="#questions">FAQ</a>
-            </nav>
-            <Link to="/login" className="mint5-header-signin">Sign in <ArrowRight size={15} aria-hidden="true" /></Link>
-          </header>
+        <section className="mint6-ticker" aria-label="Core product capabilities">
+          {["Food diary", "Calories & macros", "Weight history", "Saved meals", "Data export"].map((item, i) =>
+            <span key={item}>{item}{i !== 4 && <i aria-hidden="true">✳</i>}</span>
+          )}
+        </section>
 
-          <main id="main-content">
-            <section className="mint5-hero" aria-labelledby="mint5-main-title">
-              <Reveal as="header">
-                <p className="mint5-eyebrow">A MORE THOUGHTFUL FOOD DIARY</p>
-                <h2>Your nutrition, with room to think.</h2>
-                <p className="mint5-hero-lede">Know what you eat, see your progress and make informed choices—without having to decode a dashboard.</p>
-                <div className="mint5-actions">
-                  <Link to="/login" className="mint5-button">Open your diary <ArrowRight size={17} aria-hidden="true" /></Link>
-                  <a href="#features" className="mint5-underlined">Explore the product</a>
-                </div>
-              </Reveal>
-              <div className="mint5-wordmark-wrap">
-                <h1 id="mint5-main-title" className="mint5-wordmark">macromint<span>.</span></h1>
-                <p>Good nutrition starts with a clearer picture.</p>
-              </div>
-            </section>
+        <section className="mint6-manifesto" id="approach" aria-labelledby="mint6-manifesto-title">
+          <Reveal>
+            <span className="mint6-overline">01 / THE APPROACH</span>
+            <h2 id="mint6-manifesto-title">Not another screen<br />full of <em>numbers.</em><br /><span>A better view of yours.</span></h2>
+          </Reveal>
+          <Reveal>
+            <p>Nutrition tracking should answer a simple question: <strong>what's happening with the food I eat?</strong> Macro Mint gives the details enough room to make sense, without turning every meal into a project.</p>
+          </Reveal>
+        </section>
 
-            <section className="mint5-section mint5-features" id="features" aria-labelledby="mint5-features-title">
-              <Reveal>
-                <p className="mint5-eyebrow">DESIGNED FOR REAL DAYS</p>
-                <h2 id="mint5-features-title">Everything in its place.</h2>
-                <p className="mint5-intro">The essentials are easy to find. Your diary stays the center of the experience.</p>
-              </Reveal>
-              <div className="mint5-feature-list">
-                {features.map((feature, index) => (
-                  <Reveal as="article" className="mint5-feature" delay={index * 75} key={feature.number}>
-                    <span className="mint5-feature-number">{feature.number}</span>
-                    <div><h3>{feature.title}</h3><p>{feature.detail}</p></div>
-                  </Reveal>
-                ))}
-              </div>
-            </section>
-
-            <section className="mint5-section mint5-story" aria-labelledby="mint5-story-title">
-              <Reveal as="figure" className="mint5-story-image">
-                <img src={PHOTO_MEAL} width={1200} height={900} alt="A meal bowl with grains, chicken and fresh vegetables" loading="lazy" decoding="async" />
-                <figcaption>Start with a meal. Keep the details in view.</figcaption>
-              </Reveal>
-              <Reveal>
-                <p className="mint5-eyebrow">FROM PLATE TO DIARY</p>
-                <h2 id="mint5-story-title">Log what matters. Skip the busywork.</h2>
-                <p className="mint5-intro">Search foods, set a portion, or begin with a photo. Review the entry before it becomes part of your day.</p>
-              </Reveal>
-            </section>
-
-            <section className="mint5-section mint5-how" id="how-it-works" aria-labelledby="mint5-how-title">
-              <Reveal>
-                <p className="mint5-eyebrow">A SIMPLE DAILY LOOP</p>
-                <h2 id="mint5-how-title">Three steps. A habit you can keep.</h2>
-              </Reveal>
-              <div className="mint5-how-list">
-                {[
-                  ["01", "Find your food", "Search, select a saved food or start with a meal photo."],
-                  ["02", "Review the portion", "Adjust the quantity and check the available nutrition values."],
-                  ["03", "Understand the day", "See your diary, macros, water and weight history over time."],
-                ].map(([number, heading, copy], index) => (
-                  <Reveal className="mint5-how-row" key={number} delay={index * 85}>
-                    <span>{number}</span><div><h3>{heading}</h3><p>{copy}</p></div>
-                  </Reveal>
-                ))}
-              </div>
-            </section>
-
-            <section className="mint5-section mint5-breakfast" aria-labelledby="mint5-breakfast-title">
-              <Reveal>
-                <p className="mint5-eyebrow">THE EVERYDAY, NOT THE EXCEPTION</p>
-                <h2 id="mint5-breakfast-title">Breakfast counts, too.</h2>
-                <p className="mint5-intro">A familiar breakfast, your usual lunch, a meal you've cooked before. Build an accurate record without starting from scratch every day.</p>
-              </Reveal>
-              <Reveal as="figure" className="mint5-breakfast-image">
-                <img src={PHOTO_BREAKFAST} width={900} height={1100} alt="Yogurt, fresh berries and oats in a breakfast bowl" loading="lazy" decoding="async" />
-              </Reveal>
-            </section>
-
-            <section className="mint5-section mint5-faq" id="questions" aria-labelledby="mint5-faq-title">
-              <Reveal><p className="mint5-eyebrow">JUST THE ANSWERS</p><h2 id="mint5-faq-title">Good to know.</h2></Reveal>
-              <dl>
-                <Reveal as="div"><dt>Do I need to photograph every meal?</dt><dd>No. You can search foods, create your own entries and reuse saved meals.</dd></Reveal>
-                <Reveal as="div"><dt>Can I change my nutrition targets?</dt><dd>Yes. Review your starting estimates and adjust your goals in the app.</dd></Reveal>
-                <Reveal as="div"><dt>Can I get my information back out?</dt><dd>Yes. Account settings include downloadable JSON and CSV exports.</dd></Reveal>
-                <Reveal as="div"><dt>Where do I sign in?</dt><dd>Use the member sign in link. New accounts are managed through invitations while registration is configured.</dd></Reveal>
-              </dl>
-            </section>
-
-            <Reveal as="section" className="mint5-last" >
-              <p className="mint5-eyebrow">READY WHEN YOU ARE</p>
-              <h2>A clearer way to track.</h2>
-              <Link to="/login" className="mint5-button">Member sign in <ArrowRight size={17} aria-hidden="true" /></Link>
+        <section className="mint6-process" id="inside" aria-labelledby="mint6-inside-title">
+          <div className="mint6-process-heading">
+            <Reveal>
+              <span className="mint6-overline">02 / INSIDE MACRO MINT</span>
+              <h2 id="mint6-inside-title">A good day starts<br />with a simple log.</h2>
             </Reveal>
-          </main>
-        </div>
-      </div>
+            <p>Three things worth getting right. Nothing you don't need.</p>
+          </div>
+          <div className="mint6-process-grid">
+            <Reveal as="article" className="mint6-process-food">
+              <div className="mint6-process-photo">
+                <img src={breakfastPhoto} alt="Breakfast bowl with oats, yogurt and fresh berries" width={900} height={1100} loading="lazy" decoding="async" />
+                <span>01 / LOG THE FOOD</span>
+              </div>
+              <h3>Start with what you ate.</h3>
+              <p>Search, save or scan. Pick the portion yourself before you add it.</p>
+            </Reveal>
+            <Reveal as="article" className="mint6-process-data" delay={100}>
+              <div className="mint6-process-panel"><ProductPreview /></div>
+              <h3>Understand the day.</h3>
+              <p>Calories, macros and meals laid out so you can actually read them.</p>
+            </Reveal>
+          </div>
+          <Reveal as="article" className="mint6-process-trend">
+            <div className="mint6-trend-copy"><span className="mint6-overline">03 / THE LONG VIEW</span><h3>Progress is a pattern, not a single day.</h3><p>Record your weight and follow the trend without losing sight of what changed along the way.</p><Link to="/login" className="mint6-text-link">Go to your diary <span aria-hidden="true">↗</span></Link></div>
+            <WeightIllustration />
+          </Reveal>
+        </section>
 
-      <footer className="mint5-footer">
+        <section className="mint6-benefits" aria-labelledby="mint6-benefits-title">
+          <div className="mint6-benefits-heading"><span className="mint6-overline">03 / MADE FOR THE EVERYDAY</span><h2 id="mint6-benefits-title">Useful by design.<br /><em>Not loud by default.</em></h2></div>
+          <div className="mint6-benefits-rows">
+            {benefits.map((item, index) =>
+              <Reveal as="article" className="mint6-benefit" key={item.mark} delay={index * 70}>
+                <span>{item.mark}</span><h3>{item.heading}</h3><p>{item.copy}</p>
+              </Reveal>
+            )}
+          </div>
+        </section>
+
+        <section className="mint6-questions" id="questions" aria-labelledby="mint6-questions-title">
+          <div><span className="mint6-overline">04 / A FEW GOOD QUESTIONS</span><h2 id="mint6-questions-title">The details matter.</h2></div>
+          <dl>
+            <div><dt>Do I have to photograph meals?</dt><dd>No. You can search foods, create your own entries or reuse saved meals. A photo is just another way to begin.</dd></div>
+            <div><dt>Can I adjust my goals?</dt><dd>Yes. The initial targets are estimates you can review and change in Goals.</dd></div>
+            <div><dt>What happens to my data?</dt><dd>Download your account information and diary history from Settings. Nutrition values from photos are estimates, so review them before saving.</dd></div>
+            <div><dt>Can I join today?</dt><dd>Existing members can sign in. New beta invitations will be available once account registration is enabled.</dd></div>
+          </dl>
+        </section>
+
+        <section className="mint6-finale" aria-labelledby="mint6-finale-title">
+          <span className="mint6-overline">05 / MAKE SPACE FOR CLARITY</span>
+          <h2 id="mint6-finale-title">Less guessing.<br /><em>More knowing.</em></h2>
+          <div><p>Start with a meal. See the whole day.</p><Link to="/login" className="mint6-primary mint6-primary--light">Member sign in <span aria-hidden="true">↗</span></Link></div>
+        </section>
+      </main>
+
+      <footer className="mint6-footer">
         <Logo />
-        <p>Photo-based meal suggestions and energy targets are estimates. Review portions and values before saving.</p>
+        <p>Nutrition estimates are a starting point, not a diagnosis. Review portions and values before saving.</p>
         <nav aria-label="Legal and account"><Link to="/privacy">Privacy</Link><Link to="/terms">Terms</Link><Link to="/login">Sign in</Link></nav>
+        <small>© {new Date().getFullYear()} Macro Mint</small>
       </footer>
     </div>
   );
