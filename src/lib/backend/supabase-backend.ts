@@ -21,6 +21,7 @@ import type {
 } from "./types";
 import { getSupabase, mapFoodRow } from "@/lib/supabase";
 import { applyPortionPercent, sumNutrients } from "@/lib/nutrition/math";
+import { fetchEveryExportPage } from "@/lib/export/pagination";
 import type {
   AdminUserRow,
   AppSettings,
@@ -861,26 +862,74 @@ export const supabaseBackend: Backend = {
   },
 
   async exportAllData() {
+    // All exports are scoped to the authenticated user's ID. RLS remains the
+    // database authority; explicit filters are an additional safety layer.
     const sb = getSupabase();
-    const [profile, goals, diary, recipes, weights, water, favorites] = await Promise.all([
-      sb.from("profiles").select("*"),
-      sb.from("nutritional_goals").select("*"),
-      sb.from("diary_entries").select("*").order("entry_date"),
-      sb.from("recipes").select("*"),
-      sb.from("weight_entries").select("*").order("entry_date"),
-      sb.from("water_entries").select("*"),
-      sb.from("favorites").select("*"),
+    const uid = await currentUserId();
+    const [
+      profile, goals, preferences, customFoods, diary, savedMeals, recipes,
+      weights, water, favorites, entitlements, trialRecords, subscriptions,
+      payments, scanCorrections, scanEvents, rewardedAds, consents, notifications,
+    ] = await Promise.all([
+      fetchEveryExportPage("profile", (a, z) => sb.from("profiles").select("*").eq("user_id", uid).order("user_id").range(a, z)),
+      fetchEveryExportPage("goals", (a, z) => sb.from("nutritional_goals").select("*").eq("user_id", uid).order("user_id").range(a, z)),
+      fetchEveryExportPage("preferences", (a, z) => sb.from("user_preferences").select("*").eq("user_id", uid).order("user_id").range(a, z)),
+      fetchEveryExportPage("custom foods", (a, z) => sb.from("foods").select("*").eq("owner_id", uid).order("id").range(a, z)),
+      fetchEveryExportPage("diary", (a, z) => sb.from("diary_entries").select("*").eq("user_id", uid).order("entry_date").order("id").range(a, z)),
+      fetchEveryExportPage("saved meals", (a, z) => sb.from("saved_meals").select("*").eq("user_id", uid).order("id").range(a, z)),
+      fetchEveryExportPage("recipes", (a, z) => sb.from("recipes").select("*").eq("user_id", uid).order("id").range(a, z)),
+      fetchEveryExportPage("weight", (a, z) => sb.from("weight_entries").select("*").eq("user_id", uid).order("entry_date").order("id").range(a, z)),
+      fetchEveryExportPage("water", (a, z) => sb.from("water_entries").select("*").eq("user_id", uid).order("entry_date").order("id").range(a, z)),
+      fetchEveryExportPage("favorites", (a, z) => sb.from("favorites").select("*").eq("user_id", uid).order("id").range(a, z)),
+      fetchEveryExportPage("entitlements", (a, z) => sb.from("entitlements").select("*").eq("user_id", uid).order("user_id").range(a, z)),
+      fetchEveryExportPage("trial records", (a, z) => sb.from("trial_records").select("*").eq("user_id", uid).order("id").range(a, z)),
+      fetchEveryExportPage("subscriptions", (a, z) => sb.from("subscriptions").select("*").eq("user_id", uid).order("id").range(a, z)),
+      fetchEveryExportPage("payments", (a, z) => sb.from("payments").select("*").eq("user_id", uid).order("id").range(a, z)),
+      fetchEveryExportPage("scan corrections", (a, z) => sb.from("scan_corrections").select("*").eq("user_id", uid).order("id").range(a, z)),
+      fetchEveryExportPage("scan events", (a, z) => sb.from("scan_events").select("*").eq("user_id", uid).order("id").range(a, z)),
+      fetchEveryExportPage("rewarded ads", (a, z) => sb.from("rewarded_ad_events").select("*").eq("user_id", uid).order("id").range(a, z)),
+      fetchEveryExportPage("consents", (a, z) => sb.from("user_consents").select("*").eq("user_id", uid).order("id").range(a, z)),
+      fetchEveryExportPage("notifications", (a, z) => sb.from("notifications").select("*").eq("user_id", uid).order("id").range(a, z)),
     ]);
+
+    // recipe_ingredients has no user_id. Scope through the owner's recipe IDs,
+    // in small batches so URLs stay bounded and each page remains deterministic.
+    const recipeIngredients: unknown[] = [];
+    const ids = recipes.map((r) => r.id);
+    for (let i = 0; i < ids.length; i += 60) {
+      const part = ids.slice(i, i + 60);
+      recipeIngredients.push(...await fetchEveryExportPage("recipe ingredients", (a, z) =>
+        sb.from("recipe_ingredients").select("*").in("recipe_id", part).order("id").range(a, z),
+      ));
+    }
+
+    // Recovery code hashes and other users' data are deliberately excluded.
+    // Never report success if ANY required collection failed to load.
     return {
       exportedAt: new Date().toISOString(),
-      profile: profile.data,
-      goals: goals.data,
-      diary: diary.data,
-      recipes: recipes.data,
-      weightEntries: weights.data,
-      waterEntries: water.data,
-      favorites: favorites.data,
+      formatVersion: 2,
+      profile,
+      goals,
+      preferences,
+      customFoods,
+      diary,
+      savedMeals,
+      recipes,
+      recipeIngredients,
+      weightEntries: weights,
+      waterEntries: water,
+      favorites,
+      entitlements,
+      trialRecords,
+      subscriptions,
+      payments,
+      scanCorrections,
+      scanEvents,
+      rewardedAdEvents: rewardedAds,
+      consents,
+      notifications,
     };
+
   },
 };
 

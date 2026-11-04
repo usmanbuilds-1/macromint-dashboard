@@ -51,7 +51,7 @@ interface DemoStore {
   weights: WeightEntry[];
   water: WaterEntry[];
   scanCorrections: Array<{ id: string; userId: string; scanId: string; label: string; original: unknown; corrected: unknown; createdAt: string }>;
-  notifications: NotificationItem[];
+  notifications: Array<NotificationItem & { userId: string }>;
   consents: Array<{ id: string; userId: string; kind: string; version: string; grantedAt: string }>;
   auditLogs: AuditLogEntry[];
   adminUserIds: string[];
@@ -356,7 +356,21 @@ export const demoBackend: Backend & DemoExtras = {
     delete st.goals[id];
     delete st.prefs[id];
     delete st.entitlements[id];
+    const ownRecipeIds = new Set(st.recipes.filter((r) => r.userId === id).map((r) => r.id));
+    const ownFoodIds = new Set(st.foods.filter((food) => food.ownerId === id).map((food) => food.id));
     st.diary = st.diary.filter((d) => d.userId !== id);
+    st.weights = st.weights.filter((entry) => entry.userId !== id);
+    st.water = st.water.filter((entry) => entry.userId !== id);
+    st.favorites = st.favorites.filter((fav) => fav.userId !== id && !ownFoodIds.has(fav.foodId));
+    st.savedMeals = st.savedMeals.filter((meal) => meal.userId !== id);
+    st.recipes = st.recipes.filter((recipe) => recipe.userId !== id);
+    st.recipeIngredients = st.recipeIngredients.filter((ingredient) => !ownRecipeIds.has(ingredient.recipeId));
+    st.foods = st.foods.filter((food) => food.ownerId !== id);
+    st.scanCorrections = st.scanCorrections.filter((entry) => entry.userId !== id);
+    st.notifications = st.notifications.filter((entry) => entry.userId !== id);
+    st.consents = st.consents.filter((entry) => entry.userId !== id);
+    st.auditLogs = st.auditLogs.filter((entry) => entry.adminId !== id && entry.targetUserId !== id);
+    st.adminUserIds = st.adminUserIds.filter((userId) => userId !== id);
     st.sessionUserId = null;
     save(st);
     window.dispatchEvent(new Event("macromint:auth"));
@@ -412,8 +426,8 @@ export const demoBackend: Backend & DemoExtras = {
     const st = s();
     const term = q.trim().toLowerCase();
     const local = term
-      ? st.foods.filter((fd) => fd.name.toLowerCase().includes(term)).slice(0, 8)
-      : st.foods.slice(0, 8);
+      ? st.foods.filter((fd) => canReadFood(fd, requireUser()) && fd.name.toLowerCase().includes(term)).slice(0, 8)
+      : st.foods.filter((fd) => canReadFood(fd, requireUser())).slice(0, 8);
 
     // Demo mode also tries Open Food Facts directly (CORS-enabled, keyless)
     // so branded search works in the preview. Failures degrade silently.
@@ -490,13 +504,16 @@ export const demoBackend: Backend & DemoExtras = {
     const userId = requireUser();
     return st.favorites
       .filter((x) => x.userId === userId)
-      .map((fav) => ({ ...fav, food: st.foods.find((fd) => fd.id === fav.foodId)! }))
+      .map((fav) => ({ ...fav, food: st.foods.find((fd) => fd.id === fav.foodId && canReadFood(fd, userId))! }))
       .filter((x) => x.food);
   },
 
   async toggleFavorite(foodId) {
     const st = s();
     const userId = requireUser();
+    if (!st.foods.some((fd) => fd.id === foodId && canReadFood(fd, userId))) {
+      throw new BackendError("NOT_FOUND", "Food not found");
+    }
     const existing = st.favorites.find((x) => x.userId === userId && x.foodId === foodId);
     if (existing) {
       st.favorites = st.favorites.filter((x) => x.id !== existing.id);
@@ -517,8 +534,11 @@ export const demoBackend: Backend & DemoExtras = {
   async saveMeal(name, entryIds) {
     const st = s();
     const userId = requireUser();
+    if (!entryIds.length || entryIds.some((id) => !st.diary.some((d) => d.id === id && d.userId === userId))) {
+      throw new BackendError("NOT_FOUND", "Select entries from your own diary");
+    }
     const items = st.diary
-      .filter((d) => entryIds.includes(d.id))
+      .filter((d) => d.userId === userId && entryIds.includes(d.id))
       .map((d) => ({
         foodId: d.foodId,
         name: d.name,
@@ -541,7 +561,7 @@ export const demoBackend: Backend & DemoExtras = {
   async logSavedMeal(id, entryDate, mealType) {
     const st = s();
     const userId = requireUser();
-    const meal = st.savedMeals.find((m) => m.id === id);
+    const meal = st.savedMeals.find((m) => m.id === id && m.userId === userId);
     if (!meal) throw new BackendError("NOT_FOUND", "Saved meal not found");
     for (const item of meal.items) {
       const base = scaleNutrients(item.per100g, item.grams);
@@ -550,7 +570,6 @@ export const demoBackend: Backend & DemoExtras = {
         grams: item.grams, portionPercent: 100, baseNutrients: base, source: "favorite",
       });
     }
-    void userId;
   },
 
   // ── Diary ───────────────────────────────────────────────────────────────
@@ -587,8 +606,8 @@ export const demoBackend: Backend & DemoExtras = {
 
   async updateEntry(id, patch) {
     const st = s();
-    requireUser();
-    const idx = st.diary.findIndex((d) => d.id === id);
+    const userId = requireUser();
+    const idx = st.diary.findIndex((d) => d.id === id && d.userId === userId);
     if (idx < 0) throw new BackendError("NOT_FOUND", "Entry not found");
     const current = st.diary[idx];
     if (!current) throw new BackendError("NOT_FOUND", "Diary entry missing");
@@ -607,8 +626,11 @@ export const demoBackend: Backend & DemoExtras = {
 
   async deleteEntry(id) {
     const st = s();
-    requireUser();
-    st.diary = st.diary.filter((d) => d.id !== id);
+    const userId = requireUser();
+    if (!st.diary.some((d) => d.id === id && d.userId === userId)) {
+      throw new BackendError("NOT_FOUND", "Diary entry not found");
+    }
+    st.diary = st.diary.filter((d) => !(d.id === id && d.userId === userId));
     save(st);
   },
 
@@ -631,7 +653,12 @@ export const demoBackend: Backend & DemoExtras = {
   },
 
   async getRecipeIngredients(recipeId) {
-    return s().recipeIngredients.filter((i) => i.recipeId === recipeId);
+    const st = s();
+    const userId = requireUser();
+    if (!st.recipes.some((r) => r.id === recipeId && r.userId === userId)) {
+      throw new BackendError("NOT_FOUND", "Recipe not found");
+    }
+    return st.recipeIngredients.filter((i) => i.recipeId === recipeId);
   },
 
   async createRecipe(input: RecipeInput) {
@@ -648,7 +675,11 @@ export const demoBackend: Backend & DemoExtras = {
 
   async deleteRecipe(id) {
     const st = s();
-    st.recipes = st.recipes.filter((r) => r.id !== id);
+    const userId = requireUser();
+    if (!st.recipes.some((r) => r.id === id && r.userId === userId)) {
+      throw new BackendError("NOT_FOUND", "Recipe not found");
+    }
+    st.recipes = st.recipes.filter((r) => !(r.id === id && r.userId === userId));
     st.recipeIngredients = st.recipeIngredients.filter((i) => i.recipeId !== id);
     save(st);
   },
@@ -656,7 +687,7 @@ export const demoBackend: Backend & DemoExtras = {
   async logRecipe(recipeId, entryDate, mealType, servings) {
     const st = s();
     const userId = requireUser();
-    const recipe = st.recipes.find((r) => r.id === recipeId);
+    const recipe = st.recipes.find((r) => r.id === recipeId && r.userId === userId);
     if (!recipe) throw new BackendError("NOT_FOUND", "Recipe not found");
     const ingredients = st.recipeIngredients.filter((i) => i.recipeId === recipeId);
     const total = sumNutrients(ingredients.map((i) => scaleNutrients(i.per100g, i.grams)));
@@ -692,7 +723,11 @@ export const demoBackend: Backend & DemoExtras = {
 
   async deleteWeight(id) {
     const st = s();
-    st.weights = st.weights.filter((w) => w.id !== id);
+    const userId = requireUser();
+    if (!st.weights.some((w) => w.id === id && w.userId === userId)) {
+      throw new BackendError("NOT_FOUND", "Weight entry not found");
+    }
+    st.weights = st.weights.filter((w) => !(w.id === id && w.userId === userId));
     save(st);
   },
 
@@ -730,13 +765,14 @@ export const demoBackend: Backend & DemoExtras = {
 
   // ── Admin ───────────────────────────────────────────────────────────────
   async amIAdmin() {
-    // Demo mode: every demo user can preview the admin panel. In production
-    // this is decided by the admin_users table through the SQL is_admin().
-    return Boolean(s().sessionUserId);
+    const st = s();
+    return st.sessionUserId !== null && st.adminUserIds.includes(st.sessionUserId);
   },
 
   async adminListUsers(search) {
     const st = s();
+    const adminId = requireUser();
+    if (!st.adminUserIds.includes(adminId)) throw new BackendError("FORBIDDEN", "Administrator access required");
     const term = search.trim().toLowerCase();
     return st.users
       .filter((u) => !term || u.email.toLowerCase().includes(term) || u.name.toLowerCase().includes(term))
@@ -757,10 +793,8 @@ export const demoBackend: Backend & DemoExtras = {
   async adminAction(input) {
     const st = s();
     const adminId = requireUser();
-    // Demo mode: any signed-in demo user administers the sample data, in
-    // line with amIAdmin(). Production authorises this in admin-action Edge
-    // Function via the admin_users table.
-    if (!adminId) throw new BackendError("FORBIDDEN", "Administrator access required");
+    // Mirror production admin authorization even in local preview mode.
+    if (!st.adminUserIds.includes(adminId)) throw new BackendError("FORBIDDEN", "Administrator access required");
     const { action, targetUserId, days } = input;
 
     if (action === "set_trial_days") {
@@ -811,27 +845,31 @@ export const demoBackend: Backend & DemoExtras = {
 
   async adminGetAudit(targetUserId) {
     const st = s();
+    const adminId = requireUser();
+    if (!st.adminUserIds.includes(adminId)) throw new BackendError("FORBIDDEN", "Administrator access required");
     return st.auditLogs.filter((a) => !targetUserId || a.targetUserId === targetUserId).slice(0, 200);
   },
 
   async adminGetSettings() {
-    return s().appSettings;
+    const st = s();
+    const adminId = requireUser();
+    if (!st.adminUserIds.includes(adminId)) throw new BackendError("FORBIDDEN", "Administrator access required");
+    return st.appSettings;
   },
 
   // ── Notifications, consents, export ─────────────────────────────────────
   async getNotifications() {
     const st = s();
     const userId = requireUser();
-    return st.notifications.filter((n) => {
-      void userId;
-      return true;
-    }).slice(0, 30);
+    return st.notifications.filter((n) => n.userId === userId).slice(0, 30);
   },
 
   async markNotificationRead(id) {
     const st = s();
-    const n = st.notifications.find((x) => x.id === id);
-    if (n) n.readAt = new Date().toISOString();
+    const userId = requireUser();
+    const n = st.notifications.find((x) => x.id === id && x.userId === userId);
+    if (!n) throw new BackendError("NOT_FOUND", "Notification not found");
+    n.readAt = new Date().toISOString();
     save(st);
   },
 
@@ -845,16 +883,32 @@ export const demoBackend: Backend & DemoExtras = {
   async exportAllData() {
     const st = s();
     const userId = requireUser();
+    const recipes = st.recipes.filter((r) => r.userId === userId);
+    const recipeIds = new Set(recipes.map((r) => r.id));
     return {
       exportedAt: new Date().toISOString(),
+      formatVersion: 2,
       demo: true,
-      profile: st.profiles[userId],
-      goals: st.goals[userId],
+      profile: st.profiles[userId] ? [st.profiles[userId]] : [],
+      goals: st.goals[userId] ? [st.goals[userId]] : [],
+      preferences: st.prefs[userId] ? [st.prefs[userId]] : [],
+      customFoods: st.foods.filter((food) => food.ownerId === userId),
       diary: st.diary.filter((d) => d.userId === userId),
-      recipes: st.recipes.filter((r) => r.userId === userId),
+      savedMeals: st.savedMeals.filter((meal) => meal.userId === userId),
+      recipes,
+      recipeIngredients: st.recipeIngredients.filter((item) => recipeIds.has(item.recipeId)),
       weightEntries: st.weights.filter((w) => w.userId === userId),
       waterEntries: st.water.filter((w) => w.userId === userId),
       favorites: st.favorites.filter((x) => x.userId === userId),
+      entitlements: st.entitlements[userId] ? [st.entitlements[userId]] : [],
+      trialRecords: [],
+      subscriptions: [],
+      payments: [],
+      scanCorrections: st.scanCorrections.filter((x) => x.userId === userId),
+      scanEvents: [],
+      rewardedAdEvents: [],
+      consents: st.consents.filter((x) => x.userId === userId),
+      notifications: st.notifications.filter((x) => x.userId === userId),
     };
   },
 
@@ -865,9 +919,15 @@ export const demoBackend: Backend & DemoExtras = {
   },
 
   async getAllFoods() {
-    return s().foods;
+    const userId = requireUser();
+    return s().foods.filter((fd) => canReadFood(fd, userId));
   },
 };
+
+/** Seed foods are public; user-created foods are private to their owner. */
+function canReadFood(food: Food, userId: string): boolean {
+  return food.ownerId === null || food.ownerId === userId;
+}
 
 function hasAccess(st: DemoStore, userId: string): boolean {
   const e = st.entitlements[userId];
