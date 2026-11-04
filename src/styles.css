@@ -769,7 +769,7 @@
 .mint5-button{min-height:49px;display:inline-flex;align-items:center;justify-content:center;gap:12px;border-radius:30px;background:var(--mm5-deep);color:white;padding:0 24px;font-size:15px;font-weight:650;transition:transform .26s cubic-bezier(.2,.85,.3,1.15),background .16s ease}
 .mint5-button:hover{background:#073e2b;color:#fff;transform:translateY(-2px)}
 .mint5-underlined{min-height:42px;display:inline-flex;align-items:center;color:var(--mm5-ink);font-weight:600;text-decoration:underline !important;text-decoration-color:#3e9c73 !important;text-decoration-thickness:2px !important;text-underline-offset:6px;font-size:15px}
-.mint5-wordmark-wrap{position:absolute;bottom:45px;left:calc(-47vw / .53);width:calc(100% + 47vw / .53);padding:0 clamp(22px,2vw,36px);pointer-events:none}
+.mint5-wordmark-wrap{position:absolute;bottom:45px;left:-47vw;width:calc(100% + 47vw);padding:0 clamp(22px,2vw,36px);pointer-events:none}
 .mint5-wordmark{font-family:"Fraunces",Georgia,serif;font-weight:300;line-height:1;letter-spacing:-.087em;font-size:clamp(84px,13.4vw,220px);white-space:nowrap}
 .mint5-wordmark span{color:var(--mm5-deep)}
 .mint5-wordmark-wrap>p{text-align:right;font-size:15px;color:#456252;margin-top:18px;padding-right:clamp(10px,2vw,28px)}
@@ -870,6 +870,7 @@
 .mm-app-shell main h1{font-family:"Fraunces",Georgia,serif;font-weight:400;letter-spacing:-.038em;font-size:clamp(29px,3vw,39px)}
 .mm-app-shell main h2{letter-spacing:-.024em}
 .mm-app-shell .mm-live-enter{animation:mm5-row 480ms cubic-bezier(.2,.8,.25,1) both}
+@media(prefers-reduced-motion:no-preference){.mm-app-main>div:not(.mm-live-page){animation:mm5-row 370ms cubic-bezier(.2,.8,.25,1) both}}
 .mm-today-arc svg path:last-child{transition:stroke-dasharray 720ms cubic-bezier(.2,.8,.25,1)}
 .mm-today-macro-track i{transition:width 720ms cubic-bezier(.2,.8,.25,1)}
 .mm-app-shell a,.mm-app-shell button{transition-property:color,background-color,border-color,transform;transition-duration:160ms}
