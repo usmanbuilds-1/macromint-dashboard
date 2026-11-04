@@ -79,8 +79,8 @@ export const supabaseBackend: Backend = {
     const u = data.session?.user;
     if (!u) return null;
     const username = usernameFromAuthEmail(u.email) ?? (
-      typeof u.user_metadata?.username === "string" && isValidUsername(u.user_metadata.username)
-        ? canonicalUsername(u.user_metadata.username) : undefined
+      typeof u.user_metadata?.["username"] === "string" && isValidUsername(u.user_metadata["username"])
+        ? canonicalUsername(u.user_metadata["username"]) : undefined
     );
     return {
       id: u.id, email: u.email ?? "", emailVerified: Boolean(u.email_confirmed_at),
@@ -199,7 +199,7 @@ export const supabaseBackend: Backend = {
     return {
       userId: String(data.user_id),
       email: String(data.email ?? ""),
-      username: usernameFromAuthEmail(String(data.email ?? "")) ?? undefined,
+      ...(usernameFromAuthEmail(String(data.email ?? "")) ? { username: usernameFromAuthEmail(String(data.email ?? ""))! } : {}),
       name: String(data.name ?? ""),
       sex: (data.sex as Profile["sex"]) ?? null,
       birthYear: (data.birth_year as number | null) ?? null,
