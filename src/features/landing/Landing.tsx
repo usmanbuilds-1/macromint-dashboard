@@ -109,15 +109,10 @@ export function Landing() {
             <p>Check the food and quantity before logging. Keep the rest of your day in view.</p>
           </section>
           {/* DEFERRED BY OWNER: Interactive demo is intentionally hidden. See DeferredWalkthrough.tsx. */}
-          <section className="mint4-nutrients mint4-section" aria-labelledby="mint4-nutrient-title">
-            <p className="mint4-eyebrow">THE DETAILS BEHIND THE DAY</p>
-            <h2 id="mint4-nutrient-title">Track what your food data actually provides.</h2>
-            <p>Macro totals stay easy to find, while available vitamins and minerals add context. Missing nutrient data stays missing instead of turning into a made-up number.</p>
-            <div className="mint4-nutrient-example">
-              <span>SAMPLE NUTRIENTS</span>
-              {[["Fiber","18 g",61],["Iron","9 mg",74],["Vitamin C","67 mg",82]].map(([name,value,pct])=><div key={name}><strong>{name}</strong><span>{value}</span><div><i style={{width:`${pct}%`}} /></div></div>)}
-            </div>
-          </section>
+          {/* Deferred by owner: illustrative Fiber/Iron/Vitamin C bars were static
+              marketing figures without diary provenance, so this section is
+              intentionally removed until per-nutrient source coverage and
+              missing-data handling are demonstrated end-to-end. */}
           <section className="mint4-photo mint4-section" aria-labelledby="mint4-breakfast-title">
             <img src={BREAKFAST_PHOTO} alt="Yogurt bowl with berries and oats" width={600} height={750} loading="lazy" />
             <h2 id="mint4-breakfast-title">Make the ordinary meals count.</h2>
