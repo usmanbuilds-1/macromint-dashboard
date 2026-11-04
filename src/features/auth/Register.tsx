@@ -25,45 +25,6 @@ export function Register() {
 
   const submit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (recoveryCodes) {
-    return (
-      <AuthShell title="Save your recovery codes" subtitle="These codes are shown once. Keep them somewhere private and offline. Each code works only once.">
-        <div className="grid gap-4">
-          <p className="text-sm leading-6 text-muted-foreground">
-            Your account was created as <strong>@{username.trim().toLowerCase()}</strong>.
-            There is no recovery email. These codes are the only self-service method to reset a forgotten password.
-          </p>
-          <div className="max-h-64 overflow-auto rounded-md border bg-muted/30 p-3 font-mono text-xs leading-8" aria-label="One-time account recovery codes">
-            {recoveryCodes.map((code, index) => <div className="select-all" key={code}>{index + 1}. {code}</div>)}
-          </div>
-          <Button type="button" variant="outline" onClick={() => {
-            void navigator.clipboard.writeText(recoveryCodes.join("\n"))
-              .then(() => toast.success("Recovery codes copied"))
-              .catch(() => toast.error("Copy unavailable. Save the codes manually."));
-          }}>Copy recovery codes</Button>
-          <label className="flex items-start gap-2 text-sm leading-6">
-            <input type="checkbox" className="mt-1.5 accent-primary" checked={acknowledged}
-              onChange={event => setAcknowledged(event.target.checked)} />
-            I have saved these recovery codes somewhere secure.
-          </label>
-          <Button disabled={!acknowledged || busy} onClick={() => {
-            setBusy(true);
-            void backend.signIn(username.trim(), password)
-              .then(async () => {
-                const user = await backend.getSessionUser();
-                setAuthUser(user);
-                setRecoveryCodes(null);
-                setPassword("");
-                navigate("/onboarding", { replace: true });
-              })
-              .catch(() => toast.error("Account created, but sign-in failed. Save your codes and sign in manually."))
-              .finally(() => setBusy(false));
-          }}>{busy ? "Signing in…" : "Continue to onboarding"}</Button>
-        </div>
-      </AuthShell>
-    );
-  }
-
   if (!INVITE_REGISTRATION_ENABLED && !IS_DEMO) {
       toast.error("New account invitations are temporarily unavailable.");
       return;
@@ -113,6 +74,46 @@ export function Register() {
     }
     return;
   };
+
+  if (recoveryCodes) {
+    return (
+      <AuthShell title="Save your recovery codes" subtitle="These codes are shown once. Keep them somewhere private and offline. Each code works only once.">
+        <div className="grid gap-4">
+          <p className="text-sm leading-6 text-muted-foreground">
+            Your account was created as <strong>@{username.trim().toLowerCase()}</strong>.
+            There is no recovery email. These codes are the only self-service method to reset a forgotten password.
+          </p>
+          <div className="max-h-64 overflow-auto rounded-md border bg-muted/30 p-3 font-mono text-xs leading-8" aria-label="One-time account recovery codes">
+            {recoveryCodes.map((code, index) => <div className="select-all" key={code}>{index + 1}. {code}</div>)}
+          </div>
+          <Button type="button" variant="outline" onClick={() => {
+            void navigator.clipboard.writeText(recoveryCodes.join("\n"))
+              .then(() => toast.success("Recovery codes copied"))
+              .catch(() => toast.error("Copy unavailable. Save the codes manually."));
+          }}>Copy recovery codes</Button>
+          <label className="flex items-start gap-2 text-sm leading-6">
+            <input type="checkbox" className="mt-1.5 accent-primary" checked={acknowledged}
+              onChange={event => setAcknowledged(event.target.checked)} />
+            I have saved these recovery codes somewhere secure.
+          </label>
+          <Button disabled={!acknowledged || busy} onClick={() => {
+            setBusy(true);
+            void backend.signIn(username.trim(), password)
+              .then(async () => {
+                const user = await backend.getSessionUser();
+                setAuthUser(user);
+                setRecoveryCodes(null);
+                setPassword("");
+                navigate("/onboarding", { replace: true });
+              })
+              .catch(() => toast.error("Account created, but sign-in failed. Save your codes and sign in manually."))
+              .finally(() => setBusy(false));
+          }}>{busy ? "Signing in…" : "Continue to onboarding"}</Button>
+        </div>
+      </AuthShell>
+    );
+  }
+
 
   if (!INVITE_REGISTRATION_ENABLED && !IS_DEMO) {
     return (
