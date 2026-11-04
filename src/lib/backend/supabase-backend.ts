@@ -110,16 +110,19 @@ export const supabaseBackend: Backend = {
       if (password.length < 12) {
         throw new BackendError("VALIDATION", "Password must contain at least 12 characters");
       }
-      const { data, error } = await getSupabase().functions.invoke<{ needsVerification: boolean; error?: string }>(
+      const { data, error } = await getSupabase().functions.invoke<{ needsVerification: boolean; recoveryCodes: string[]; error?: string }>(
         "username-register",
         { body: { username: canonicalUsername(identifier), name: name.trim(), password, inviteCode: inviteCode.trim() } },
       );
       if (error || !data || data.error) {
         throw new BackendError("AUTH", "Could not create account. Check the invitation and username, or contact the administrator.");
       }
-      // A server-confirmed identity can now sign in without an email inbox.
-      await supabaseBackend.signIn(identifier, password);
-      return { needsVerification: false };
+      if (!Array.isArray(data.recoveryCodes) || data.recoveryCodes.length !== 8 ||
+          !data.recoveryCodes.every(code => /^MMR-(?:[A-F0-9]{8}-){3}[A-F0-9]{8}$/.test(code))) {
+        throw new BackendError("AUTH", "Account recovery was not prepared. Contact the beta administrator.");
+      }
+      // Do NOT auto-login: first show the codes once and require acknowledgement.
+      return { needsVerification: false, recoveryCodes: data.recoveryCodes };
     }
     const { data, error } = await getSupabase().auth.signUp({
       email: identifier.trim(),
@@ -142,6 +145,20 @@ export const supabaseBackend: Backend = {
       redirectTo: new URL("/reset?change=1", window.location.origin).href,
     });
     if (error) throw new BackendError("AUTH", error.message);
+  },
+
+  async recoverUsernamePassword(username, recoveryCode, newPassword) {
+    if (!USERNAME_AUTH_ENABLED) throw new BackendError("RECOVERY_UNAVAILABLE", "Username recovery is disabled");
+    if (!isValidUsername(username) || newPassword.length < 12) {
+      throw new BackendError("VALIDATION", "Enter a valid username and a new password of at least 12 characters");
+    }
+    const { data, error } = await getSupabase().functions.invoke<{ ok?: boolean; error?: string }>(
+      "username-recovery",
+      { body: { username: canonicalUsername(username), recoveryCode: recoveryCode.trim(), newPassword } },
+    );
+    if (error || !data?.ok) {
+      throw new BackendError("AUTH", "Recovery failed. Check your unused code or contact the beta administrator.");
+    }
   },
 
   async resendVerification() {
