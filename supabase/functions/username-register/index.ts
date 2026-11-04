@@ -25,7 +25,8 @@ Deno.serve(async (request) => {
 
   // The feature MUST be deliberately enabled in both backend and frontend.
   if (Deno.env.get("USERNAME_REGISTRATION_ENABLED") !== "true" ||
-      Deno.env.get("USERNAME_INVITE_TRIGGER_VERIFIED") !== "true") {
+      Deno.env.get("USERNAME_INVITE_TRIGGER_VERIFIED") !== "true" ||
+      Deno.env.get("USERNAME_REGISTRATION_RATE_LIMIT_VERIFIED") !== "true") {
     return errorResponse("NOT_CONFIGURED", "Username registration is not enabled", 503);
   }
   const url = Deno.env.get("SUPABASE_URL");
@@ -63,18 +64,42 @@ Deno.serve(async (request) => {
     return errorResponse("INVITE", "Invalid or unavailable invitation", 400);
   }
 
+  // Recovery-code storage must exist before creating a non-email identity.
+  const { error: recoveryTableError } = await admin.from("username_recovery_codes")
+    .select("id", { head: true, count: "exact" }).limit(0);
+  if (recoveryTableError) return errorResponse("NOT_CONFIGURED", "Recovery service unavailable", 503);
+
+  const recoveryCodes = Array.from({ length: 8 }, () => {
+    const bytes = crypto.getRandomValues(new Uint8Array(16));
+    const hex = Array.from(bytes, (n) => n.toString(16).padStart(2, "0")).join("").toUpperCase();
+    return "MMR-" + hex.match(/.{1,8}/g)!.join("-");
+  });
+  const recoveryHashes = await Promise.all(recoveryCodes.map(async (code) => {
+    const digest = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(code));
+    return Array.from(new Uint8Array(digest), (n) => n.toString(16).padStart(2, "0")).join("");
+  }));
+
   // The service-role API creates a confirmed account without requiring
   // undeliverable mail. The database invitation trigger consumes its code.
-  const { error: signupError } = await admin.auth.admin.createUser({
+  const { data: registered, error: signupError } = await admin.auth.admin.createUser({
     email,
     password,
     email_confirm: true,
     user_metadata: { name, username: normalizedUsername, beta_invite_code: inviteCode },
   });
-  if (signupError) {
+  if (signupError || !registered?.user) {
     // Avoid username enumeration, duplicate-account disclosure and raw DB errors.
     return errorResponse("SIGNUP_FAILED", "Unable to create account. Check your invitation or choose another username.", 400);
   }
-  // Never include synthetic email or passwords in responses/logs.
-  return json({ ok: true, needsVerification: false }, 201);
+  const { error: storeError } = await admin.from("username_recovery_codes").insert(
+    recoveryHashes.map((code_hash) => ({ user_id: registered.user.id, code_hash })),
+  );
+  if (storeError) {
+    // Fail closed: never leave a new email-less account without recovery.
+    // The invitation may already have been consumed; an admin can issue another.
+    await admin.auth.admin.deleteUser(registered.user.id);
+    return errorResponse("RECOVERY_UNAVAILABLE", "Could not prepare account recovery. Ask the beta administrator for a new invitation.", 503);
+  }
+  // Never log or persist plaintext recovery codes. Display exactly once.
+  return json({ ok: true, needsVerification: false, recoveryCodes }, 201);
 });
