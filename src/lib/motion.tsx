@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import type { CSSProperties, ElementType, ReactNode } from "react";
+import type { CSSProperties, ReactNode } from "react";
 
 /** The GLM reference used CSS view timelines. Keep content visible when they
  * are unavailable, when scripts are disabled, and for reduced motion. */
