@@ -108,3 +108,20 @@ describe("demo backend isolation mirrors the production RLS intent", () => {
     expect((await backend.getSavedMeals()).some((meal) => meal.id === first.meal.id)).toBe(false);
   });
 });
+
+describe("demo administrator access is not granted to every account", () => {
+  it("keeps sample admin access restricted to the seeded administrator", async () => {
+    await login(SECOND);
+    expect(await backend.amIAdmin()).toBe(false);
+    await expect(backend.adminListUsers("")).rejects.toThrow();
+    await expect(backend.adminGetAudit()).rejects.toThrow();
+    await expect(backend.adminGetSettings()).rejects.toThrow();
+    await expect(backend.adminAction({ action: "set_trial_days", days: 90 })).rejects.toThrow();
+
+    await backend.signOut();
+    await backend.signIn("demo@macromint.app", "demo only");
+    expect(await backend.amIAdmin()).toBe(true);
+    expect((await backend.adminListUsers("")).length).toBeGreaterThan(0);
+    expect((await backend.adminGetSettings()).trialDays).toBeGreaterThan(0);
+  });
+});
