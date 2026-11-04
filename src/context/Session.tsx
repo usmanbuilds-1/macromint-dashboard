@@ -1,5 +1,15 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useState } from "react";
 import { backend } from "@/lib/backend";
+
+// Session.tsx creates the auth context at module scope, so a hot-swapped copy
+// would leave the mounted provider on the old context while new consumers read
+// the new one ("useSession must be used inside SessionProvider"). Any edit to
+// this file therefore forces a full page reload instead of a hot swap.
+if (import.meta.hot) {
+  import.meta.hot.accept(() => {
+    window.location.reload();
+  });
+}
 import type { GoalSet, Profile, Entitlement } from "@/types";
 import type { SessionUser } from "@/lib/backend/types";
 
