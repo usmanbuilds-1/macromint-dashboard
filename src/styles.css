@@ -1379,7 +1379,7 @@
 .ref-outline:hover{background:#ecf1e9}
 .ref-header-actions .ref-primary,.ref-header-actions .ref-outline{min-height:38px;padding-inline:20px}
 .ref-hero{max-width:1640px;min-height:655px;margin:0 auto;display:grid;grid-template-columns:minmax(0,47%) minmax(0,53%);position:relative;align-items:stretch;isolation:isolate;overflow:hidden}
-.ref-hero-copy{padding:clamp(70px,8vw,130px) 0 92px clamp(25px,5vw,72px);position:relative;z-index:4;align-self:center}
+.ref-hero-copy{padding:clamp(64px,6.5vw,98px) 0 48px clamp(25px,5vw,72px);position:relative;z-index:4;align-self:start}
 .ref-hero-copy h1,.ref-how h2,.ref-manifesto h2,.ref-bottom-cta h2{font-family:"Fraunces",Georgia,serif;font-weight:430;letter-spacing:-.058em}
 .ref-hero-copy h1{font-size:clamp(49px,4.7vw,76px);line-height:1.09;letter-spacing:-.061em}
 .ref-hero-copy>p{color:#273d33;font-size:clamp(16px,1.32vw,19px);line-height:1.53;margin-top:25px;max-width:435px}
