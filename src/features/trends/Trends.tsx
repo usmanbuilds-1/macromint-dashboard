@@ -1,5 +1,6 @@
 import { addDaysStr as addDaysStrLocal } from "@/lib/nutrition/datetime";
 import { useMemo, useState } from "react";
+import { Link } from "@tanstack/react-router";
 import {
   Bar,
   BarChart,
@@ -12,20 +13,15 @@ import {
   XAxis,
   YAxis,
 } from "recharts";
-import { toast } from "sonner";
-import { Minus, Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
 import { useSession } from "@/context/Session";
-import { backend, bumpData } from "@/lib/backend";
+import { backend } from "@/lib/backend";
 import { useAsyncData, useDataVersion } from "@/hooks/useData";
 import { adherenceStats, daysToKcal } from "@/lib/nutrition/math";
 import { lastNWeeks, weekDates, weekLabel, formatDateShort, todayStr } from "@/lib/nutrition/datetime";
 import { formatNumber } from "@/lib/utils";
-import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { cn } from "@/lib/utils";
 
 const RANGE_OPTIONS = [
@@ -189,7 +185,7 @@ export function Trends() {
         <section className="border-b pb-6" aria-label="Weight trend">
           <div className="flex items-center justify-between gap-2">
             <h2 className="text-sm font-semibold">Weight</h2>
-            <AddWeightButton />
+            <Link to="/weight" className="inline-flex min-h-10 items-center text-xs font-medium text-primary underline underline-offset-4">Weight log &amp; goals</Link>
           </div>
           {weights.length === 0 ? (
             <div className="mt-4">
@@ -319,54 +315,6 @@ function WeeklyArchive({ target, version }: { target: number; version: number })
   );
 }
 
-function AddWeightButton() {
-  const [open, setOpen] = useState(false);
-  const [value, setValue] = useState("");
-  const [busy, setBusy] = useState(false);
-  const today = todayStr();
-
-  const submit = async () => {
-    const kg = Number(value);
-    if (!Number.isFinite(kg) || kg < 20 || kg > 500) {
-      toast.error("Enter a weight in kilograms between 20 and 500");
-      return;
-    }
-    setBusy(true);
-    try {
-      await backend.addWeight(today, Math.round(kg * 10) / 10);
-      bumpData();
-      toast.success("Weight recorded");
-      setOpen(false);
-      setValue("");
-    } finally {
-      setBusy(false);
-    }
-  };
-
-  return (
-    <>
-      <Button variant="outline" size="sm" onClick={() => setOpen(true)}>
-        <Plus className="h-3.5 w-3.5" /> Add weight
-      </Button>
-      <Dialog open={open} onOpenChange={(o) => (!o ? setOpen(false) : undefined)}>
-        <DialogContent className="sm:max-w-xs">
-          <DialogHeader>
-            <DialogTitle>Today's weight</DialogTitle>
-          </DialogHeader>
-          <div className="grid gap-1.5">
-            <Label htmlFor="w-kg">Weight (kg)</Label>
-            <Input id="w-kg" inputMode="decimal" autoFocus value={value} onChange={(e) => setValue(e.target.value)} placeholder="78.4" />
-            <p className="text-xs text-muted-foreground">One entry per day; entering it again replaces today's value.</p>
-          </div>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setOpen(false)}>Cancel</Button>
-            <Button onClick={submit} disabled={busy}>{busy ? "Saving…" : "Save"}</Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
-    </>
-  );
-}
 
 function EmptyChart({ message }: { message: string }) {
   return (
