@@ -1,4 +1,5 @@
 import type { ActivityLevel, GoalSet, Objective, Sex } from "@/types";
+import { LIMITS } from "@/lib/validation/limits";
 import {
   ACTIVITY_FACTORS,
   FAT_SHARE_OF_KCAL,
@@ -128,16 +129,17 @@ export function computeGoals(input: GoalInput): ComputedGoals {
 /** Revalidate a manually edited goal set (used by Goals and Settings). */
 export function sanitizeGoalEdit(g: Partial<GoalSet>): GoalSet | null {
   const num = (v: unknown, min: number, max: number): number | null => {
-    const n = typeof v === "string" ? Number(v) : typeof v === "number" ? v : NaN;
+    // Empty or whitespace input means missing, never a recorded zero.
+    const n = typeof v === "string" && v.trim() !== "" ? Number(v) : typeof v === "number" ? v : NaN;
     if (!Number.isFinite(n) || n < min || n > max) return null;
     return Math.round(n);
   };
-  const calorieTarget = num(g.calorieTarget, 800, 10000);
-  const proteinG = num(g.proteinG, 10, 500);
-  const carbsG = num(g.carbsG, 0, 1200);
-  const fatG = num(g.fatG, 10, 400);
-  const fiberG = num(g.fiberG, 0, 150);
-  const waterMl = num(g.waterMl, 500, 8000);
+  const calorieTarget = num(g.calorieTarget, LIMITS.calorieTarget.min, LIMITS.calorieTarget.max);
+  const proteinG = num(g.proteinG, LIMITS.proteinG.min, LIMITS.proteinG.max);
+  const carbsG = num(g.carbsG, LIMITS.carbsG.min, LIMITS.carbsG.max);
+  const fatG = num(g.fatG, LIMITS.fatG.min, LIMITS.fatG.max);
+  const fiberG = num(g.fiberG, LIMITS.fiberG.min, LIMITS.fiberG.max);
+  const waterMl = num(g.waterMl, LIMITS.waterMl.min, LIMITS.waterMl.max);
   if (calorieTarget === null || proteinG === null || carbsG === null || fatG === null || fiberG === null || waterMl === null) {
     return null;
   }

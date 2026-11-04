@@ -1,3 +1,4 @@
+import { LIMITS, validateNumeric } from "@/lib/validation/limits";
 import { useState } from "react";
 import { toast } from "sonner";
 import { Camera, Plus, Search, Star } from "lucide-react";
@@ -201,18 +202,27 @@ function CustomFoodDialog({ open, onClose, onCreated }: { open: boolean; onClose
       toast.error("Give the food a name");
       return;
     }
-    const kcal = Number(values["kcal"]);
-    if (!Number.isFinite(kcal) || kcal < 0) {
-      toast.error("Calories are required (per 100 g)");
+    if (name.trim().length > 120 || brand.trim().length > 120) {
+      toast.error("Food name and brand must be under 120 characters");
       return;
     }
+    const kcalResult = validateNumeric(values["kcal"] ?? "", "foodKcalPer100g", "Calories");
+    if ("error" in kcalResult) { toast.error(kcalResult.error); return; }
+    const optionalKeys = ["protein", "carbs", "fat", "fiber", "sugar", "sodium"] as const;
+    for (const key of optionalKeys) {
+      const raw = values[key];
+      if (raw === undefined || raw.trim() === "") continue;
+      const result = validateNumeric(raw, key === "sodium" ? "foodSodiumMgPer100g" : "foodMacroPer100g", key);
+      if ("error" in result) { toast.error(result.error); return; }
+    }
+    const kcal = kcalResult.value;
     setBusy(true);
     try {
       const per100g: Record<string, number | null> = {
         kcal,
-        protein: Number(values["protein"]) || 0,
-        carbs: Number(values["carbs"]) || 0,
-        fat: Number(values["fat"]) || 0,
+        protein: values["protein"]?.trim() ? Number(values["protein"]) : null,
+        carbs: values["carbs"]?.trim() ? Number(values["carbs"]) : null,
+        fat: values["fat"]?.trim() ? Number(values["fat"]) : null,
         fiber: values["fiber"] ? Number(values["fiber"]) : null,
         sugar: values["sugar"] ? Number(values["sugar"]) : null,
         sodium: values["sodium"] ? Number(values["sodium"]) : null,
@@ -245,11 +255,11 @@ function CustomFoodDialog({ open, onClose, onCreated }: { open: boolean; onClose
           <div className="grid grid-cols-2 gap-3">
             <div className="grid gap-1.5">
               <Label htmlFor="cf-name">Name</Label>
-              <Input id="cf-name" value={name} onChange={(e) => setName(e.target.value)} placeholder="Mum's biryani" />
+              <Input id="cf-name" maxLength={120} value={name} onChange={(e) => setName(e.target.value)} placeholder="Mum's biryani" />
             </div>
             <div className="grid gap-1.5">
               <Label htmlFor="cf-brand">Brand (optional)</Label>
-              <Input id="cf-brand" value={brand} onChange={(e) => setBrand(e.target.value)} />
+              <Input id="cf-brand" maxLength={120} value={brand} onChange={(e) => setBrand(e.target.value)} />
             </div>
           </div>
           <p className="text-xs text-muted-foreground">Values per 100 g or 100 ml. Leave optional fields empty if unknown — Macromint never invents values.</p>
@@ -259,7 +269,9 @@ function CustomFoodDialog({ open, onClose, onCreated }: { open: boolean; onClose
                 <Label htmlFor={`cf-${m.key}`}>{m.label}</Label>
                 <Input
                   id={`cf-${m.key}`}
-                  inputMode="decimal"
+                  type="number" min={0}
+                  max={m.key === "kcal" ? LIMITS.foodKcalPer100g.max : m.key === "sodium" ? LIMITS.foodSodiumMgPer100g.max : LIMITS.foodMacroPer100g.max}
+                  step="any" inputMode="decimal"
                   value={values[m.key] ?? ""}
                   onChange={(e) => setValues((v) => ({ ...v, [m.key]: e.target.value }))}
                 />

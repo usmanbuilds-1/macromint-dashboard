@@ -1,3 +1,4 @@
+import { LIMITS, validateNumeric } from "@/lib/validation/limits";
 import { useEffect, useState } from "react";
 import { getSupabase } from "@/lib/supabase";
 import { INVITE_REGISTRATION_ENABLED } from "@/lib/beta/config";
@@ -370,6 +371,17 @@ function AdminSettings() {
   }, [settings.data]);
 
   const save = async () => {
+    for (const [raw, key, label] of [
+      [trialDays, "trialDays", "Trial days"],
+      [rewardHours, "rewardHours", "Access hours"],
+      [maxAds, "adsPerDay", "Daily ads"],
+    ] as const) {
+      const checked = validateNumeric(raw, key, label);
+      if ("error" in checked || !Number.isInteger(checked.value)) {
+        toast.error("error" in checked ? checked.error : `${label} must be a whole number.`);
+        return;
+      }
+    }
     setBusy(true);
     try {
       await backend.adminAction({ action: "set_trial_days", days: Number(trialDays) });
@@ -391,7 +403,7 @@ function AdminSettings() {
         <div className="mt-4 flex flex-wrap items-end gap-4">
           <div className="grid w-32 gap-1.5">
             <Label htmlFor="as-trial">Trial days (0–90)</Label>
-            <Input id="as-trial" inputMode="numeric" value={trialDays} onChange={(e) => setTrialDays(e.target.value.replace(/\D/g, ""))} />
+            <Input id="as-trial" type="number" min={LIMITS.trialDays.min} max={LIMITS.trialDays.max} step={1} inputMode="numeric" value={trialDays} onChange={(e) => setTrialDays(e.target.value.replace(/\D/g, ""))} />
           </div>
         </div>
       </section>
@@ -404,11 +416,11 @@ function AdminSettings() {
         <div className="mt-4 flex flex-wrap items-end gap-4">
           <div className="grid w-40 gap-1.5">
             <Label htmlFor="as-hours">Access hours per ad</Label>
-            <Input id="as-hours" inputMode="numeric" value={rewardHours} onChange={(e) => setRewardHours(e.target.value.replace(/\D/g, ""))} />
+            <Input id="as-hours" type="number" min={LIMITS.rewardHours.min} max={LIMITS.rewardHours.max} step={1} inputMode="numeric" value={rewardHours} onChange={(e) => setRewardHours(e.target.value.replace(/\D/g, ""))} />
           </div>
           <div className="grid w-40 gap-1.5">
             <Label htmlFor="as-ads">Max ads per day</Label>
-            <Input id="as-ads" inputMode="numeric" value={maxAds} onChange={(e) => setMaxAds(e.target.value.replace(/\D/g, ""))} />
+            <Input id="as-ads" type="number" min={LIMITS.adsPerDay.min} max={LIMITS.adsPerDay.max} step={1} inputMode="numeric" value={maxAds} onChange={(e) => setMaxAds(e.target.value.replace(/\D/g, ""))} />
           </div>
         </div>
       </section>

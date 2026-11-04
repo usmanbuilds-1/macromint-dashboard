@@ -11,6 +11,8 @@ import { Logo } from "@/components/app/AppLayout";
 import { backend } from "@/lib/backend";
 import { useSession } from "@/context/Session";
 import { computeGoals } from "@/lib/nutrition/targets";
+import { LIMITS, withinLimit } from "@/lib/validation/limits";
+import { estimateWeightTimeline, weightTimelineLabel } from "@/lib/weight/timeline";
 import { ACTIVITY_DESCRIPTIONS, ACTIVITY_FACTORS } from "@/lib/nutrition/constants";
 import type { ActivityLevel, Objective, Sex, Units } from "@/types";
 import { cn } from "@/lib/utils";
@@ -36,6 +38,7 @@ export function Onboarding() {
   const [age, setAge] = useState<string>(profile?.birthYear ? String(new Date().getFullYear() - profile.birthYear) : "");
   const [heightCm, setHeightCm] = useState<string>(profile?.heightCm ? String(profile.heightCm) : "");
   const [weightKg, setWeightKg] = useState<string>(profile?.weightKg ? String(profile.weightKg) : "");
+  const [targetWeightKg, setTargetWeightKg] = useState<string>(profile?.targetWeightKg ? String(profile.targetWeightKg) : "");
   const [objective, setObjective] = useState<Objective | null>(profile?.objective ?? null);
   const [activityLevel, setActivityLevel] = useState<ActivityLevel | null>(profile?.activityLevel ?? null);
 
@@ -43,12 +46,26 @@ export function Onboarding() {
   const heightNum = Number(heightCm);
   const weightNum = Number(weightKg);
   const personalValid =
-    sex !== null && Number.isFinite(ageNum) && ageNum >= 13 && ageNum <= 100 && heightNum >= 100 && heightNum <= 250 && weightNum >= 30 && weightNum <= 350;
+    sex !== null && withinLimit(age, "ageYears") && Number.isInteger(ageNum) &&
+    withinLimit(heightCm, "heightCm") && withinLimit(weightKg, "weightKg") && name.trim().length <= 100;
+  const targetRequested = targetWeightKg.trim().length > 0;
+  const timeline = useMemo(() => {
+    if (!objective || !personalValid || !targetRequested || !withinLimit(targetWeightKg, "weightKg")) return null;
+    return estimateWeightTimeline({
+      currentKg: weightNum, targetKg: Number(targetWeightKg), heightCm: heightNum, objective,
+    });
+  }, [objective, personalValid, targetRequested, targetWeightKg, weightNum, heightNum]);
+  const goalTargetValid = !targetRequested ||
+    (withinLimit(targetWeightKg, "weightKg") &&
+     timeline !== null &&
+     !["invalid_input", "objective_mismatch", "review_target"].includes(timeline.status));
 
   const computed = useMemo(() => {
-    if (!sex || !personalValid || !objective || !activityLevel) return null;
+    if (!sex || !personalValid || !goalTargetValid || !objective || !activityLevel) return null;
+    const bmi = weightNum / ((heightNum / 100) ** 2);
+    if (bmi < 18.5 && (objective === "lose" || objective === "recomp")) return null;
     return computeGoals({ sex, age: ageNum, heightCm: heightNum, weightKg: weightNum, activityLevel, objective });
-  }, [sex, personalValid, objective, activityLevel, ageNum, heightNum, weightNum]);
+  }, [sex, personalValid, goalTargetValid, objective, activityLevel, ageNum, heightNum, weightNum]);
 
   const steps = ["About you", "Objective", "Activity", "Your targets"];
 
@@ -63,7 +80,7 @@ export function Onboarding() {
         birthYear: new Date().getFullYear() - ageNum,
         heightCm: heightNum,
         weightKg: weightNum,
-        targetWeightKg: null,
+        targetWeightKg: targetRequested ? Number(targetWeightKg) : null,
         activityLevel,
         objective,
 
@@ -120,7 +137,7 @@ export function Onboarding() {
             <div className="grid gap-4">
               <div className="grid gap-1.5">
                 <Label htmlFor="ob-name">What should we call you?</Label>
-                <Input id="ob-name" value={name} onChange={(e) => setName(e.target.value)} placeholder="Your name" />
+                <Input id="ob-name" value={name} maxLength={100} onChange={(e) => setName(e.target.value)} placeholder="Your name" />
               </div>
               <div className="grid gap-1.5">
                 <Label>Measurement system</Label>
@@ -145,15 +162,15 @@ export function Onboarding() {
               <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
                 <div className="grid gap-1.5">
                   <Label htmlFor="ob-age">Age</Label>
-                  <Input id="ob-age" inputMode="numeric" value={age} onChange={(e) => setAge(e.target.value.replace(/\D/g, ""))} placeholder="30" />
+                  <Input id="ob-age" type="number" min={LIMITS.ageYears.min} max={LIMITS.ageYears.max} step={1} inputMode="numeric" value={age} onChange={(e) => setAge(e.target.value)} placeholder="30" />
                 </div>
                 <div className="grid gap-1.5">
                   <Label htmlFor="ob-height">Height (cm)</Label>
-                  <Input id="ob-height" inputMode="decimal" value={heightCm} onChange={(e) => setHeightCm(e.target.value)} placeholder="176" />
+                  <Input id="ob-height" type="number" min={LIMITS.heightCm.min} max={LIMITS.heightCm.max} step="any" inputMode="decimal" value={heightCm} onChange={(e) => setHeightCm(e.target.value)} placeholder="176" />
                 </div>
                 <div className="col-span-2 grid gap-1.5 sm:col-span-1">
                   <Label htmlFor="ob-weight">Weight (kg)</Label>
-                  <Input id="ob-weight" inputMode="decimal" value={weightKg} onChange={(e) => setWeightKg(e.target.value)} placeholder="78" />
+                  <Input id="ob-weight" type="number" min={LIMITS.weightKg.min} max={LIMITS.weightKg.max} step="any" inputMode="decimal" value={weightKg} onChange={(e) => setWeightKg(e.target.value)} placeholder="78" />
                 </div>
               </div>
             </div>
@@ -177,6 +194,26 @@ export function Onboarding() {
                 </Label>
               ))}
             </RadioGroup>
+            <div className="grid gap-2">
+              <Label htmlFor="ob-target-weight">Target weight (kg, optional)</Label>
+              <Input id="ob-target-weight" type="number" min={LIMITS.weightKg.min} max={LIMITS.weightKg.max}
+                step="any" inputMode="decimal" value={targetWeightKg} onChange={(e) => setTargetWeightKg(e.target.value)}
+                placeholder="e.g. 74" aria-describedby="ob-target-help" />
+              <p id="ob-target-help" className="text-xs text-muted-foreground">
+                Set a destination to see an illustrative timeline. You can change it anytime.
+              </p>
+              {targetRequested && !goalTargetValid && (
+                <p role="alert" className="text-xs text-destructive">
+                  {timeline?.note ?? `Target weight must be between ${LIMITS.weightKg.min} and ${LIMITS.weightKg.max} kg.`}
+                </p>
+              )}
+              {timeline && goalTargetValid && (
+                <div className="border-l-2 border-primary pl-3 text-sm">
+                  <strong>{weightTimelineLabel(timeline)}</strong>
+                  <p className="mt-1 text-xs leading-5 text-muted-foreground">{timeline.note}</p>
+                </div>
+              )}
+            </div>
           </div>
         )}
 
@@ -255,7 +292,7 @@ export function Onboarding() {
           <ArrowLeft className="h-4 w-4" /> {step === 0 ? "Skip for now" : "Back"}
         </Button>
         {step < 3 ? (
-          <Button className="min-h-11" onClick={() => setStep((s) => s + 1)} disabled={(step === 0 && !personalValid) || (step === 1 && !objective) || (step === 2 && !activityLevel)}>
+          <Button className="min-h-11" onClick={() => setStep((s) => s + 1)} disabled={(step === 0 && !personalValid) || (step === 1 && (!objective || !goalTargetValid)) || (step === 2 && !activityLevel)}>
             Continue <ArrowRight className="h-4 w-4" />
           </Button>
         ) : (

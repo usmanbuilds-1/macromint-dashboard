@@ -9,6 +9,7 @@ import { backend, bumpData } from "@/lib/backend";
 import { computeGoals, sanitizeGoalEdit } from "@/lib/nutrition/targets";
 import { ACTIVITY_DESCRIPTIONS, ACTIVITY_FACTORS, GOAL_DELTA_KCAL } from "@/lib/nutrition/constants";
 import type { ActivityLevel, GoalSet, Objective } from "@/types";
+import { LIMITS, type NumericLimitKey } from "@/lib/validation/limits";
 
 const OBJECTIVE_NOTES: Record<Objective, string> = {
   lose: "Moderate deficit, about 0.45 kg per week",
@@ -89,12 +90,12 @@ export function Goals() {
       <section className="rounded-xl border bg-card p-5" aria-label="Daily targets">
         <h2 className="text-sm font-semibold">Daily targets</h2>
         <div className="mt-4 grid grid-cols-2 gap-4 sm:grid-cols-3">
-          <Field label="Calories (kcal)" id="g-kcal" value={num(form.calorieTarget)} onChange={(v) => set("calorieTarget", v)} />
-          <Field label="Protein (g)" id="g-protein" value={num(form.proteinG)} onChange={(v) => set("proteinG", v)} />
-          <Field label="Carbohydrates (g)" id="g-carbs" value={num(form.carbsG)} onChange={(v) => set("carbsG", v)} />
-          <Field label="Fat (g)" id="g-fat" value={num(form.fatG)} onChange={(v) => set("fatG", v)} />
-          <Field label="Fiber (g)" id="g-fiber" value={num(form.fiberG)} onChange={(v) => set("fiberG", v)} />
-          <Field label="Water (ml)" id="g-water" value={num(form.waterMl)} onChange={(v) => set("waterMl", v)} />
+          <Field label="Calories (kcal)" id="g-kcal" limitKey="calorieTarget" value={num(form.calorieTarget)} onChange={(v) => set("calorieTarget", v)} />
+          <Field label="Protein (g)" id="g-protein" limitKey="proteinG" value={num(form.proteinG)} onChange={(v) => set("proteinG", v)} />
+          <Field label="Carbohydrates (g)" id="g-carbs" limitKey="carbsG" value={num(form.carbsG)} onChange={(v) => set("carbsG", v)} />
+          <Field label="Fat (g)" id="g-fat" limitKey="fatG" value={num(form.fatG)} onChange={(v) => set("fatG", v)} />
+          <Field label="Fiber (g)" id="g-fiber" limitKey="fiberG" value={num(form.fiberG)} onChange={(v) => set("fiberG", v)} />
+          <Field label="Water (ml)" id="g-water" limitKey="waterMl" value={num(form.waterMl)} onChange={(v) => set("waterMl", v)} />
         </div>
         <div className="mt-4 flex items-center gap-3">
           <Button onClick={save} disabled={busy || !dirty}>{busy ? "Saving…" : "Save targets"}</Button>
@@ -122,11 +123,17 @@ export function Goals() {
   );
 }
 
-function Field({ label, id, value, onChange }: { label: string; id: string; value: string; onChange: (v: string) => void }) {
+function Field({ label, id, value, limitKey, onChange }: {
+  label: string; id: string; value: string; limitKey: NumericLimitKey;
+  onChange: (v: string) => void;
+}) {
+  const limit = LIMITS[limitKey];
   return (
     <div className="grid gap-1.5">
       <Label htmlFor={id}>{label}</Label>
-      <Input id={id} inputMode="numeric" value={value} onChange={(e) => onChange(e.target.value.replace(/[^\d]/g, ""))} />
+      <Input id={id} type="number" min={limit.min} max={limit.max} step={1}
+        inputMode="numeric" value={value} onChange={(e) => onChange(e.target.value)} />
+      <p className="text-[11px] text-muted-foreground">Range: {limit.min}–{limit.max}</p>
     </div>
   );
 }

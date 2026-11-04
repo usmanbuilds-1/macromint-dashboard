@@ -1,3 +1,4 @@
+import { LIMITS } from "@/lib/validation/limits";
 import { useRef, useState } from "react";
 import { toast } from "sonner";
 import { Camera, Info, Loader2, TriangleAlert } from "lucide-react";
@@ -148,7 +149,7 @@ export function ScanDialog({
 
   if (!open) return null;
 
-  const invalidGramDraft = Object.values(gramDrafts).some((draft) => !Number.isSafeInteger(Number(draft)) || Number(draft) <= 0 || draft.length === 0);
+  const invalidGramDraft = Object.values(gramDrafts).some((draft) => !Number.isSafeInteger(Number(draft)) || Number(draft) < 1 || Number(draft) > LIMITS.foodGrams.max || draft.length === 0);
 
   const totalKcal = items.reduce((s, i) => s + kcalOf(i.nutrients), 0);
 
@@ -256,6 +257,7 @@ export function ScanDialog({
                         <Label htmlFor={`grams-${idx}`} className="text-xs text-muted-foreground">Grams</Label>
                         <Input
                           id={`grams-${idx}`}
+                          type="number" min={1} max={LIMITS.foodGrams.max} step={1}
                           inputMode="numeric"
                           className="h-8 w-24 text-sm tabular-nums"
                           value={gramDrafts[idx] ?? String(item.grams)}
@@ -265,7 +267,7 @@ export function ScanDialog({
                             setGramDrafts((prev) => ({ ...prev, [idx]: draft }));
                             const grams = Number(draft);
                             const original = originalItems.current[idx];
-                            if (!original || !Number.isSafeInteger(grams) || grams <= 0) return;
+                            if (!original || !Number.isSafeInteger(grams) || grams < 1 || grams > LIMITS.foodGrams.max) return;
                             setItems((prev) => prev.map((it, i) =>
                               i === idx
                                 ? { ...it, grams, nutrients: rescaleScanNutrients(original.nutrients, original.grams, grams) }

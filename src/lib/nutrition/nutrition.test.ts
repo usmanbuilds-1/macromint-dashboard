@@ -264,3 +264,29 @@ describe("daysToKcal", () => {
     expect(days[2]!.kcal).toBeNull();
   });
 });
+
+
+describe("zero manual macro values", () => {
+  const validGoals = {
+    userId: "test-user",
+    calorieTarget: 2000,
+    proteinG: 0,
+    carbsG: 200,
+    fatG: 0,
+    fiberG: 25,
+    waterMl: 2000,
+    method: "manual",
+    manuallyAdjusted: true,
+  };
+  it("accepts zero protein and fat in manually edited totals", () => {
+    const outcome = sanitizeGoalEdit(validGoals);
+    expect(outcome).not.toBeNull();
+    expect(outcome?.proteinG).toBe(0);
+    expect(outcome?.fatG).toBe(0);
+  });
+  it("does not turn blank or negative protein/fat targets into zero", () => {
+    expect(sanitizeGoalEdit({ ...validGoals, proteinG: "" as never })).toBeNull();
+    expect(sanitizeGoalEdit({ ...validGoals, fatG: -1 })).toBeNull();
+    expect(sanitizeGoalEdit({ ...validGoals, proteinG: "Infinity" as never })).toBeNull();
+  });
+});
