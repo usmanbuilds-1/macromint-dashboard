@@ -2,7 +2,7 @@ import { Link } from "react-router-dom";
 import { Logo } from "@/components/app/AppLayout";
 
 const heroMeal = "https://images.unsplash.com/photo-1547592180-85f173990554?auto=format&fit=crop&w=1500&q=85";
-const breakfastMeal = "https://images.unsplash.com/photo-1490645935967-10de6ba17061?auto=format&fit=crop&w=900&q=85";
+const breakfastMeal = "https://images.unsplash.com/photo-1760533535534-c69f637df2e6?auto=format&fit=crop&w=900&q=85";
 const leafPhoto = "https://images.unsplash.com/photo-1501004318641-b39e6451bec6?auto=format&fit=crop&w=1200&q=80";
 
 const macros = [
