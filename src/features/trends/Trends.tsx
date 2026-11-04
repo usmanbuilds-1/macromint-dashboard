@@ -105,7 +105,7 @@ export function Trends() {
     : null;
 
   return (
-    <div className="flex flex-col gap-6">
+    <div className="mm6-subpage mm6-page-trends flex flex-col gap-6">
       <header className="flex flex-wrap items-end justify-between gap-3">
         <div>
           <h1 className="text-2xl font-semibold tracking-tight">Trends</h1>
