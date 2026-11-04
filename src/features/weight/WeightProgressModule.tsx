@@ -13,7 +13,7 @@ import { estimateWeightTimeline, weightTimelineLabel } from "@/lib/weight/timeli
 import { LIMITS, validateNumeric } from "@/lib/validation/limits";
 import type { WeightEntry } from "@/types";
 
-/** This is a deliberately UNMOUNTED feature; the owner will decide placement. */
+/** Full weight log and estimates, accessible from the Trends page. */
 const POUNDS_PER_KG = 2.2046226218487757;
 export interface WeightProgressModuleProps {
   /** Optional callback for an outer page to refresh additional dependent data. */
@@ -26,7 +26,7 @@ function isoDateIsValid(s: string): boolean {
 }
 
 /**
- * Use on any authenticated page once UI placement is approved.
+ * Use on authenticated pages. The Trends page links to the dedicated weight journey.
  * The existing backend already upserts one RLS-protected entry per user/day.
  * No schema migration, localStorage or privileged API is introduced here.
  */
@@ -135,7 +135,7 @@ export function WeightProgressModule({ onSaved }: WeightProgressModuleProps) {
     <section className="flex w-full max-w-2xl flex-col gap-6" aria-labelledby="weight-module-heading">
       <header>
         <h2 id="weight-module-heading" className="text-xl font-semibold tracking-tight">Weight log</h2>
-        <p className="mt-1 text-sm text-muted-foreground">Daily readings, long-term trends. Your entries stay in your own diary.</p>
+        <p className="mt-1 text-sm text-muted-foreground">Daily readings and long-term trends, saved in your private weight history.</p>
       </header>
 
       <form className="grid gap-4 border-b pb-6" onSubmit={(event) => { event.preventDefault(); void save(); }}>
