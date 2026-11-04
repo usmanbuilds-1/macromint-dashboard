@@ -91,7 +91,7 @@ export function Foods() {
   };
 
   return (
-    <div className="flex flex-col gap-6">
+    <div className="mm6-subpage mm6-page-foods flex flex-col gap-6">
       <header className="flex flex-wrap items-center justify-between gap-3">
         <div>
           <h1 className="text-2xl font-semibold tracking-tight">Foods</h1>
