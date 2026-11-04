@@ -4,6 +4,13 @@ import type { TablesUpdate, Json } from "@/integrations/supabase/types";
 // Ownership and access are re-checked by the database on every call.
 
 import { BackendError } from "./types";
+import { USERNAME_AUTH_ENABLED } from "@/lib/auth/username-config";
+import {
+  isValidUsername,
+  canonicalUsername,
+  identifierToAuthEmail,
+  usernameFromAuthEmail,
+} from "@/lib/auth/username";
 import type {
   Backend,
   AddEntryInput,
@@ -71,20 +78,51 @@ export const supabaseBackend: Backend = {
     const { data } = await getSupabase().auth.getSession();
     const u = data.session?.user;
     if (!u) return null;
-    return { id: u.id, email: u.email ?? "", emailVerified: Boolean(u.email_confirmed_at) };
+    const username = usernameFromAuthEmail(u.email) ?? (
+      typeof u.user_metadata?.username === "string" && isValidUsername(u.user_metadata.username)
+        ? canonicalUsername(u.user_metadata.username) : undefined
+    );
+    return {
+      id: u.id, email: u.email ?? "", emailVerified: Boolean(u.email_confirmed_at),
+      ...(username ? { username } : {}),
+    };
   },
 
-  async signIn(email, password) {
+  async signIn(identifier, password) {
+    let email: string;
+    try {
+      email = USERNAME_AUTH_ENABLED ? identifierToAuthEmail(identifier) : identifier.trim().toLowerCase();
+    } catch {
+      throw new BackendError("VALIDATION", "Enter a valid username or account email");
+    }
     const { error } = await getSupabase().auth.signInWithPassword({ email, password });
-    if (error) throw new BackendError("AUTH", error.message);
+    if (error) throw new BackendError("AUTH", "Invalid login credentials");
   },
 
-  async signUp(email, password, name, inviteCode) {
+  async signUp(identifier, password, name, inviteCode) {
     if (!inviteCode || !/^MM-[A-F0-9]{40}$/i.test(inviteCode.trim())) {
       throw new BackendError("INVITE", "Enter the invitation code from your beta invitation");
     }
+    if (USERNAME_AUTH_ENABLED) {
+      if (!isValidUsername(identifier)) {
+        throw new BackendError("VALIDATION", "Username must be 3–20 letters, numbers, or underscores");
+      }
+      if (password.length < 12) {
+        throw new BackendError("VALIDATION", "Password must contain at least 12 characters");
+      }
+      const { data, error } = await getSupabase().functions.invoke<{ needsVerification: boolean; error?: string }>(
+        "username-register",
+        { body: { username: canonicalUsername(identifier), name: name.trim(), password, inviteCode: inviteCode.trim() } },
+      );
+      if (error || !data || data.error) {
+        throw new BackendError("AUTH", "Could not create account. Check the invitation and username, or contact the administrator.");
+      }
+      // A server-confirmed identity can now sign in without an email inbox.
+      await supabaseBackend.signIn(identifier, password);
+      return { needsVerification: false };
+    }
     const { data, error } = await getSupabase().auth.signUp({
-      email,
+      email: identifier.trim(),
       password,
       options: { data: { name, beta_invite_code: inviteCode.trim() } },
     });
@@ -97,6 +135,9 @@ export const supabaseBackend: Backend = {
   },
 
   async requestPasswordReset(email) {
+    if (USERNAME_AUTH_ENABLED && !email.includes("@")) {
+      throw new BackendError("RECOVERY_UNAVAILABLE", "Username accounts cannot receive reset emails. Contact your beta administrator for recovery.");
+    }
     const { error } = await getSupabase().auth.resetPasswordForEmail(email, {
       redirectTo: new URL("/reset?change=1", window.location.origin).href,
     });
@@ -107,6 +148,7 @@ export const supabaseBackend: Backend = {
     const { data } = await getSupabase().auth.getSession();
     const email = data.session?.user?.email;
     if (!email) throw new BackendError("AUTH", "Not signed in");
+    if (usernameFromAuthEmail(email)) throw new BackendError("RECOVERY_UNAVAILABLE", "Synthetic usernames cannot receive verification mail");
     const { error } = await getSupabase().auth.resend({ type: "signup", email });
     if (error) throw new BackendError("AUTH", error.message);
   },
@@ -114,9 +156,11 @@ export const supabaseBackend: Backend = {
   onAuthChange(cb) {
     const { data } = getSupabase().auth.onAuthStateChange((_event, session) => {
       const u = session?.user;
-      cb(
-        u ? { id: u.id, email: u.email ?? "", emailVerified: Boolean(u.email_confirmed_at) } : null,
-      );
+      const username = usernameFromAuthEmail(u?.email);
+      cb(u ? {
+        id: u.id, email: u.email ?? "", emailVerified: Boolean(u.email_confirmed_at),
+        ...(username ? { username } : {}),
+      } : null);
     });
     return () => data.subscription.unsubscribe();
   },
@@ -138,6 +182,7 @@ export const supabaseBackend: Backend = {
     return {
       userId: String(data.user_id),
       email: String(data.email ?? ""),
+      username: usernameFromAuthEmail(String(data.email ?? "")) ?? undefined,
       name: String(data.name ?? ""),
       sex: (data.sex as Profile["sex"]) ?? null,
       birthYear: (data.birth_year as number | null) ?? null,
