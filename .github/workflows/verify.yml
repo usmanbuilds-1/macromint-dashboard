@@ -26,7 +26,7 @@ jobs:
         run: pnpm test
       - name: ESLint (existing Prettier violations excluded)
         run: "pnpm exec eslint . --rule 'prettier/prettier: off'"
+      - name: Build and regenerate TanStack route types
+        run: pnpm build
       - name: TypeScript
         run: pnpm exec tsc --noEmit
-      - name: Build
-        run: pnpm build
