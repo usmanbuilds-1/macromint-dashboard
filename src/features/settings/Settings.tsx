@@ -23,6 +23,7 @@ import { backend, bumpData, IS_DEMO } from "@/lib/backend";
 import type { Units } from "@/types";
 import { LIMITS, validateNumeric } from "@/lib/validation/limits";
 import { estimateWeightTimeline } from "@/lib/weight/timeline";
+import { diaryExportCsv, weightExportCsv } from "@/lib/export/csv";
 
 export function Settings() {
   const { profile, isAdmin, refresh, setAuthUser } = useSession();
@@ -94,15 +95,26 @@ export function Settings() {
   };
 
   const exportData = async () => {
-    const data = await backend.exportAllData();
-    const blob = new Blob([JSON.stringify(data, null, 2)], { type: "application/json" });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = `macromint-export-${new Date().toISOString().slice(0, 10)}.json`;
-    a.click();
-    URL.revokeObjectURL(url);
-    toast.success("Export downloaded");
+    try {
+      const data = await backend.exportAllData();
+      downloadFile(`macromint-export-${new Date().toISOString().slice(0, 10)}.json`,
+        JSON.stringify(data, null, 2), "application/json");
+      toast.success("Account export downloaded");
+    } catch {
+      toast.error("Export failed. No incomplete file was downloaded. Try again.");
+    }
+  };
+
+  const exportCsv = async (kind: "diary" | "weight") => {
+    try {
+      const data = await backend.exportAllData();
+      const text = kind === "diary" ? diaryExportCsv(data) : weightExportCsv(data);
+      downloadFile(`macromint-${kind}-${new Date().toISOString().slice(0, 10)}.csv`,
+        "\uFEFF" + text, "text/csv;charset=utf-8");
+      toast.success(`${kind === "diary" ? "Diary" : "Weight"} CSV downloaded`);
+    } catch {
+      toast.error("CSV export failed. No partial file was downloaded.");
+    }
   };
 
   const deleteAccount = async () => {
@@ -214,8 +226,14 @@ export function Settings() {
       <section className="border-b pb-6" aria-label="Account">
         <h2 className="text-sm font-semibold">Account</h2>
         <div className="mt-4 flex flex-col gap-3">
-          <Button variant="outline" className="min-h-11 justify-start gap-2" onClick={exportData}>
-            <Download className="h-4 w-4" /> Export my data (JSON)
+          <Button variant="outline" className="min-h-11 justify-start gap-2" onClick={() => void exportData()}>
+            <Download className="h-4 w-4" /> Export all account data (JSON)
+          </Button>
+          <Button variant="outline" className="min-h-11 justify-start gap-2" onClick={() => void exportCsv("diary")}>
+            <Download className="h-4 w-4" /> Export food diary (CSV)
+          </Button>
+          <Button variant="outline" className="min-h-11 justify-start gap-2" onClick={() => void exportCsv("weight")}>
+            <Download className="h-4 w-4" /> Export weight log (CSV)
           </Button>
           {isAdmin && (
             <Button variant="outline" className="min-h-11 justify-start gap-2" onClick={() => navigate("/admin")}>
@@ -248,6 +266,23 @@ export function Settings() {
       </section>
     </div>
   );
+}
+
+function downloadFile(filename: string, content: string, mime: string) {
+  const blob = new Blob([content], { type: mime });
+  const url = URL.createObjectURL(blob);
+  const element = document.createElement("a");
+  try {
+    element.href = url;
+    element.download = filename;
+    element.style.display = "none";
+    document.body.appendChild(element);
+    element.click();
+  } finally {
+    element.remove();
+    // Browser downloads need a moment to access the object URL.
+    window.setTimeout(() => URL.revokeObjectURL(url), 1200);
+  }
 }
 
 async function demoReset() {
