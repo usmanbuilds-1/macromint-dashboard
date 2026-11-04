@@ -34,79 +34,51 @@ for (const [width, height] of sizes) {
     }));
     if (dims.document > dims.viewport + 1) throw new Error("Horizontal overflow: " + JSON.stringify(dims));
     if (!dims.heading) throw new Error("Missing h1");
-    // Offscreen sections must remain readable in full-page captures and for
-    // assistive technology; scroll-linked motion must never hide the content.
-    const visual = await page.evaluate(() => {
-      const heading = document.querySelector(".mint6-hero h1")?.getBoundingClientRect();
-      const lead = document.querySelector(".mint6-hero-lede")?.getBoundingClientRect();
-      const hidden = [".mint6-manifesto h2", ".mint6-process-heading h2", ".mint6-process-food", ".mint6-benefit"]
-        .filter((selector) => {
-          const element = document.querySelector(selector);
-          return !element || Number(getComputedStyle(element).opacity) < 0.95;
-        });
-      return { heroGap: heading && lead ? lead.top - heading.bottom : null, hidden };
+    // The user-approved composition must be present and fully visible.
+    await page.locator("#ref-hero-title").waitFor();
+    const hero = page.locator(".ref-hero");
+    const phone = page.locator(".ref-device");
+    const photo = page.locator(".ref-hero-img");
+    if (!await hero.count() || !await phone.count() || !await photo.count()) {
+      throw new Error("Reference hero, food photo or phone preview is missing");
+    }
+    const title = await page.locator("#ref-hero-title").innerText();
+    if (!title.includes("A calmer way to")) throw new Error("Reference hero copy was changed");
+    const geometry = await page.evaluate(() => {
+      const phone = document.querySelector(".ref-device").getBoundingClientRect();
+      const media = document.querySelector(".ref-hero-media").getBoundingClientRect();
+      const title = document.querySelector("#ref-hero-title").getBoundingClientRect();
+      const lead = document.querySelector(".ref-hero-copy>p").getBoundingClientRect();
+      return { inside: phone.left >= media.left - 2 && phone.right <= media.right + 2,
+        gap: lead.top - title.bottom };
     });
-    if (visual.heroGap === null || visual.heroGap < 12)
-      throw new Error("Editorial headline overlaps its description: " + JSON.stringify(visual));
-    if (visual.hidden.length)
-      throw new Error("Scroll animations hide important off-screen content: " + visual.hidden.join(", "));
-
-    // Visual QA: no old stock food photo, no overlapping product-card collage.
-    if (await page.locator(".mint6-hero img, .mint6-process-photo img").count())
-      throw new Error("Old food photography remains in the editorial composition");
-    const stage = page.locator(".mint6-product-stage");
-    await stage.waitFor();
-    const geometry = await page.locator(".mint6-stage-ui .mint6-product").evaluate((element) => {
-      const frame = element.closest(".mint6-product-stage")?.getBoundingClientRect();
-      const card = element.getBoundingClientRect();
-      return frame && {
-        left: card.left - frame.left, right: frame.right - card.right,
-        top: card.top - frame.top, bottom: frame.bottom - card.bottom,
-      };
-    });
-    if (!geometry || Object.values(geometry).some((space) => space < -1))
-      throw new Error("Product preview is cropped by its frame: " + JSON.stringify(geometry));
-    await page.locator(".mint6-type-poster").waitFor();
-    await page.locator("#mint6-hero-title").scrollIntoViewIfNeeded();
+    if (!geometry.inside || geometry.gap < 12) throw new Error("Reference hero has clipping or text overlap: " + JSON.stringify(geometry));
+    await photo.scrollIntoViewIfNeeded();
+    await photo.evaluate((img) => img.decode());
+    if (await photo.evaluate((img) => img.naturalWidth) < 600) throw new Error("Hero photography too small");
+    const stepImage = page.locator(".ref-how-photo img");
+    await stepImage.scrollIntoViewIfNeeded();
+    await stepImage.evaluate((img) => img.decode());
+    await page.locator("#ref-hero-title").scrollIntoViewIfNeeded();
     await page.screenshot({ path: `mobile-audit/landing-${width}.png`, fullPage: true });
+    if (await page.locator(".ref-example").count() < 2) throw new Error("Real HTML example screens missing");
+    if (await page.locator(".mint6-site,.mint6-hero,.mint6-product-stage").count()) throw new Error("Previous unrelated design still rendered");
+    if (!await page.getByText(/Illustrative example/i).count()) throw new Error("Example values must be disclosed");
+    for (const sel of ["#features","#how-it-works",".ref-manifesto",".ref-bottom-cta"]) {
+      if (!await page.locator(sel).count()) throw new Error("Required reference section missing: " + sel);
+    }
+    const bodyText = await page.locator("body").innerText();
+    if (/[✳↗↓✨🎉🍃🚀]/u.test(bodyText)) throw new Error("Cheap decorative symbols visible");
+    for (const claim of ["Trust Score","80+ nutrients","Free forever","No ads"]) {
+      if (bodyText.toLowerCase().includes(claim.toLowerCase())) throw new Error("Unsupported claim: " + claim);
+    }
     if (width === 390) {
-      await page.emulateMedia({ reducedMotion: "reduce" });
-      const reducedOpacity = await page.locator(".mint6-process-food").first().evaluate((node) => getComputedStyle(node).opacity);
-      if (Number(reducedOpacity) !== 1) throw new Error("Reduced motion makes content invisible");
-      await page.emulateMedia({ reducedMotion: "no-preference" });
+      await page.getByRole("link", { name: "See how it works" }).click();
+      await page.waitForURL((u) => u.hash === "#how-it-works", { timeout: 10000 });
+      await page.getByRole("heading", { name: /The daily loop/i }).waitFor();
     }
-    // Public interactive demo is DEFERRED by owner (2026-11-04).
-    // The example day preview is intentionally read-only until reactivation is requested.
-    const sample = page.locator(".mint6-product");
-    if (await sample.count() < 2) throw new Error("Editable, honestly labelled sample diary is missing");
-    if (!await page.getByText(/Illustrative values, not a real person/i).count()) throw new Error("Example values are not disclosed");
-    if (width >= 1001) {
-      const heroLayout = await page.locator(".mint6-hero").evaluate((node) => getComputedStyle(node).display);
-      if (heroLayout !== "grid") throw new Error("Editorial desktop layout is missing");
-    }
-    if (await page.getByRole("button", { name: /Add 250 ml to example|Remove 250 ml from example/i }).count()) {
-      throw new Error("Interactive dashboard controls should remain deferred");
-    }
-    if (await page.locator("#portion-control, .mint2-walkthrough").count()) {
-      throw new Error("Deferred interactive walkthrough is still rendered");
-    }
-    if (await page.locator("#inside, #approach, #questions").count() !== 3) throw new Error("One or more editorial sections are missing");
-    if (await page.getByRole("link", { name: /Try the interactive demo/i }).count()) {
-      throw new Error("Deferred walkthrough still has an active public link");
-    }
-    const forbiddenText = await page.locator("body").innerText();
-    if (/[✳↗↓✨🎉🍃🚀]/u.test(forbiddenText))
-      throw new Error("Decorative emoji-like symbols remain visible");
-    for (const claim of ["Trust Score", "80+ nutrients", "Speak to a dietician", "verified grade", "Free forever", "No ads"]) {
-      if (forbiddenText.toLowerCase().includes(claim.toLowerCase())) throw new Error("Unsupported GLM claim on landing: " + claim);
-    }
-    console.log("PASS landing", width, dims.heading);
-    if (width === 390) {
-      await page.getByRole("link", { name: /See what.s inside/i }).click();
-      await page.waitForURL((u) => u.hash === "#inside", { timeout: 10000 });
-      await page.getByRole("heading", { name: /A good day starts/i }).waitFor();
-      console.log("PASS product section CTA; deferred demo remains hidden", width);
-    }
+    if (problems.length) throw new Error("Runtime errors: " + problems.join("; "));
+    console.log("PASS reference visual & navigation", width, dims.heading);
     const reg = await page.goto(url + "/register", { waitUntil: "networkidle", timeout: 30000 });
     if (!reg || reg.status() >= 400) throw new Error("Registration HTTP status " + reg?.status());
     if (process.env.VITE_BETA_INVITES_ENABLED === "true") {
@@ -138,7 +110,7 @@ for (const [width, height] of sizes) {
         await page.getByRole("button", { name: /Skip for now/ }).click();
         await page.waitForURL((u) => u.pathname === "/today", { timeout: 15000 });
       }
-      await page.getByRole("heading", { name: "Your day.", exact: true }).waitFor({ timeout: 15000 });
+      await page.getByRole("heading", { name: "Today", exact: true }).waitFor({ timeout: 15000 });
       await page.locator(".mm-today-arc").waitFor({ timeout: 10000 });
       const todayOverflow = await page.evaluate(() => document.documentElement.scrollWidth - window.innerWidth);
       if (todayOverflow > 1) throw new Error("Today screen horizontal overflow: " + todayOverflow);
