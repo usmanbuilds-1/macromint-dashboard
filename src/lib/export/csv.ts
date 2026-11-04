@@ -29,7 +29,7 @@ function escapeCsvCell(value: unknown): string {
     : typeof value === "boolean" ? String(value) : String(value);
   // Spreadsheet software can execute formulas embedded in imported CSV text.
   // Prepend an apostrophe, even when hostile text starts with whitespace.
-  const safe = typeof value === "string" && /^[\s\uFEFF]*[=+@\-]/u.test(text)
+  const safe = typeof value === "string" && /^[\s\uFEFF]*[=+@-]/u.test(text)
     ? "'" + text
     : text;
   return '"' + safe.replaceAll('"', '""') + '"';
