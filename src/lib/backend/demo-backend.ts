@@ -850,16 +850,32 @@ export const demoBackend: Backend & DemoExtras = {
   async exportAllData() {
     const st = s();
     const userId = requireUser();
+    const recipes = st.recipes.filter((r) => r.userId === userId);
+    const recipeIds = new Set(recipes.map((r) => r.id));
     return {
       exportedAt: new Date().toISOString(),
+      formatVersion: 2,
       demo: true,
-      profile: st.profiles[userId],
-      goals: st.goals[userId],
+      profile: st.profiles[userId] ? [st.profiles[userId]] : [],
+      goals: st.goals[userId] ? [st.goals[userId]] : [],
+      preferences: st.prefs[userId] ? [st.prefs[userId]] : [],
+      customFoods: st.foods.filter((food) => food.ownerId === userId),
       diary: st.diary.filter((d) => d.userId === userId),
-      recipes: st.recipes.filter((r) => r.userId === userId),
+      savedMeals: st.savedMeals.filter((meal) => meal.userId === userId),
+      recipes,
+      recipeIngredients: st.recipeIngredients.filter((item) => recipeIds.has(item.recipeId)),
       weightEntries: st.weights.filter((w) => w.userId === userId),
       waterEntries: st.water.filter((w) => w.userId === userId),
       favorites: st.favorites.filter((x) => x.userId === userId),
+      entitlements: st.entitlements[userId] ? [st.entitlements[userId]] : [],
+      trialRecords: [],
+      subscriptions: [],
+      payments: [],
+      scanCorrections: st.scanCorrections.filter((x) => x.userId === userId),
+      scanEvents: [],
+      rewardedAdEvents: [],
+      consents: st.consents.filter((x) => x.userId === userId),
+      notifications: st.notifications.filter((x) => x.userId === userId),
     };
   },
 
