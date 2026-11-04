@@ -1276,3 +1276,81 @@
 .dark .mm6-page-diary section[aria-label="Diary totals"]{background:#294132}
 .dark .mm6-page-diary>section[aria-label] li:hover{background:#25392d}
 .dark .mm6-page-foods [role="tabpanel"]>p.rounded-xl{background:#25392d;color:#c7d7c9}
+
+/* Editorial correction: no stock photography behind the interface, no decorative
+   pictograms or faux-device collage. Show the product directly and without overlap. */
+.mint6-site .mm-logo-leaves,
+.mm-app-shell .mm-logo-leaves {display:none}
+.mint6-site .mint6-brand .mm-logo-name {font-size:clamp(23px,2.2vw,32px);font-weight:440;letter-spacing:-.055em}
+.mint6-product-edition {font-size:9px;letter-spacing:.12em;color:#66856e;font-weight:670}
+.mint6-hero-visual {display:flex;align-items:center;min-height:670px;align-self:center;width:100%;margin:0}
+.mint6-product-stage {
+  width:100%;min-height:645px;display:flex;flex-direction:column;align-items:stretch;
+  justify-content:space-between;gap:12px;position:relative;background:#dce8dc;
+  padding:30px clamp(20px,3vw,48px) 27px;overflow:hidden;
+}
+.mint6-stage-heading {display:flex;justify-content:space-between;gap:20px;align-items:baseline;
+  font-size:10px;letter-spacing:.12em;font-weight:710;color:#437157}
+.mint6-stage-ui {flex:1;display:flex;align-items:center;justify-content:center;padding:20px 0}
+.mint6-stage-ui .mint6-product {
+  flex:none;width:min(100%,410px);background:#fbfdf7;border:1px solid #b6c9b6;
+  box-shadow:12px 12px 0 rgba(20,72,43,.08);
+}
+.mint6-stage-footnote {max-width:36ch;font-size:12px;line-height:1.55;color:#4a7056;align-self:flex-end;text-align:right}
+.mint6-ticker {gap:0;justify-content:center}
+.mint6-ticker>span {gap:0;line-height:1.25;padding:0 23px;border-right:1px solid #bccbbc}
+.mint6-ticker>span:last-child {border-right:0}
+.mint6-text-link {gap:0}
+.mint6-primary {justify-content:center;gap:0}
+.mint6-header-action {gap:0}
+.mint6-type-poster {
+  display:flex;flex-direction:column;justify-content:space-between;align-items:flex-start;
+  gap:35px;padding:clamp(27px,4.1vw,64px);color:#123b2a;background:#cedbc9;
+}
+.mint6-type-poster .mint6-overline {font-size:11px;letter-spacing:.135em;color:#53785e}
+.mint6-type-poster>strong {
+  display:block;font-family:"Fraunces",Georgia,serif;font-size:clamp(52px,5.6vw,93px);
+  line-height:1.06;letter-spacing:-.07em;font-weight:380;
+}
+.mint6-type-poster>strong em {font-weight:320}
+.mint6-poster-bottom {display:flex;align-items:center;justify-content:space-between;gap:14px;
+  width:100%;border-top:1px solid #a8c1aa;padding-top:19px}
+.mint6-poster-bottom span {font-size:10px;letter-spacing:.12em;font-weight:710;color:#54765d}
+@media(max-width:1200px){
+ .mint6-hero-visual{min-height:615px}
+ .mint6-product-stage{min-height:600px;padding-inline:25px}
+ .mint6-stage-ui .mint6-product{width:min(100%,365px)}
+ .mint6-ticker>span{padding:0 16px}
+}
+@media(max-width:900px){
+ .mint6-hero-visual {min-height:unset;margin-top:42px}
+ .mint6-product-stage {min-height:625px;padding:23px 27px}
+ .mint6-stage-ui .mint6-product {width:min(100%,400px)}
+ .mint6-type-poster {aspect-ratio:4/5}
+ .mint6-ticker {justify-content:flex-start}
+ .mint6-ticker>span{margin:8px 0;padding:0 15px}
+ .mint6-ticker>span:first-child{padding-left:0}
+}
+@media(max-width:640px){
+ .mint6-hero-visual {min-height:unset;margin-top:45px}
+ .mint6-product-stage {min-height:540px;padding:20px 18px;gap:5px}
+ .mint6-stage-ui{padding:18px 0}
+ .mint6-stage-ui .mint6-product{width:min(100%,330px);padding:19px 18px 15px}
+ .mint6-stage-ui .mint6-energy{margin-top:17px}
+ .mint6-stage-ui .mint6-macros{margin-top:19px;gap:8px}
+ .mint6-stage-ui .mint6-product-footer{margin-top:17px}
+ .mint6-stage-ui .mint6-meal-rows>div{padding:7px 0}
+ .mint6-stage-footnote{font-size:11px;max-width:34ch}
+ .mint6-ticker{column-gap:0;row-gap:5px}
+ .mint6-ticker>span{font-size:11px;margin:4px 0;padding:0 13px}
+ .mint6-ticker>span:nth-child(3){border-right:0}
+ .mint6-type-poster{min-height:450px;aspect-ratio:4/4.5;padding:28px}
+ .mint6-type-poster>strong{font-size:clamp(53px,11.5vw,74px)}
+}
+@media(max-width:390px){
+ .mint6-product-stage{min-height:510px;padding:18px 13px}
+ .mint6-stage-ui .mint6-product{width:min(100%,290px);padding:16px 15px}
+ .mint6-stage-heading{font-size:9px}
+ .mint6-stage-ui .mint6-energy-main strong{font-size:46px}
+ .mint6-stage-ui .mint6-product-title strong{font-size:27px}
+}
