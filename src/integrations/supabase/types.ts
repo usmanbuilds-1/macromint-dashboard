@@ -71,22 +71,31 @@ export type Database = {
       app_settings: {
         Row: {
           id: number
+          maintenance_message: string | null
+          maintenance_mode: boolean
           max_daily_rewarded_ads: number
           reward_access_hours: number
+          scanning_enabled: boolean
           trial_days: number
           updated_at: string
         }
         Insert: {
           id?: number
+          maintenance_message?: string | null
+          maintenance_mode?: boolean
           max_daily_rewarded_ads?: number
           reward_access_hours?: number
+          scanning_enabled?: boolean
           trial_days?: number
           updated_at?: string
         }
         Update: {
           id?: number
+          maintenance_message?: string | null
+          maintenance_mode?: boolean
           max_daily_rewarded_ads?: number
           reward_access_hours?: number
+          scanning_enabled?: boolean
           trial_days?: number
           updated_at?: string
         }
@@ -779,6 +788,10 @@ export type Database = {
       am_i_admin: { Args: never; Returns: boolean }
       check_access: { Args: never; Returns: boolean }
       has_access: { Args: { uid?: string }; Returns: boolean }
+      has_active_entitlement: {
+        Args: { target_user_id: string }
+        Returns: boolean
+      }
       is_admin: { Args: never; Returns: boolean }
       log_admin_action: {
         Args: {
