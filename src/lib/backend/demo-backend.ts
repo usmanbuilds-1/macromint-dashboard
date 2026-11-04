@@ -379,8 +379,8 @@ export const demoBackend: Backend & DemoExtras = {
     const st = s();
     const term = q.trim().toLowerCase();
     const local = term
-      ? st.foods.filter((fd) => fd.name.toLowerCase().includes(term)).slice(0, 8)
-      : st.foods.slice(0, 8);
+      ? st.foods.filter((fd) => canReadFood(fd, requireUser()) && fd.name.toLowerCase().includes(term)).slice(0, 8)
+      : st.foods.filter((fd) => canReadFood(fd, requireUser())).slice(0, 8);
 
     // Demo mode also tries Open Food Facts directly (CORS-enabled, keyless)
     // so branded search works in the preview. Failures degrade silently.
@@ -457,13 +457,16 @@ export const demoBackend: Backend & DemoExtras = {
     const userId = requireUser();
     return st.favorites
       .filter((x) => x.userId === userId)
-      .map((fav) => ({ ...fav, food: st.foods.find((fd) => fd.id === fav.foodId)! }))
+      .map((fav) => ({ ...fav, food: st.foods.find((fd) => fd.id === fav.foodId && canReadFood(fd, userId))! }))
       .filter((x) => x.food);
   },
 
   async toggleFavorite(foodId) {
     const st = s();
     const userId = requireUser();
+    if (!st.foods.some((fd) => fd.id === foodId && canReadFood(fd, userId))) {
+      throw new BackendError("NOT_FOUND", "Food not found");
+    }
     const existing = st.favorites.find((x) => x.userId === userId && x.foodId === foodId);
     if (existing) {
       st.favorites = st.favorites.filter((x) => x.id !== existing.id);
@@ -484,8 +487,11 @@ export const demoBackend: Backend & DemoExtras = {
   async saveMeal(name, entryIds) {
     const st = s();
     const userId = requireUser();
+    if (!entryIds.length || entryIds.some((id) => !st.diary.some((d) => d.id === id && d.userId === userId))) {
+      throw new BackendError("NOT_FOUND", "Select entries from your own diary");
+    }
     const items = st.diary
-      .filter((d) => entryIds.includes(d.id))
+      .filter((d) => d.userId === userId && entryIds.includes(d.id))
       .map((d) => ({
         foodId: d.foodId,
         name: d.name,
@@ -508,7 +514,7 @@ export const demoBackend: Backend & DemoExtras = {
   async logSavedMeal(id, entryDate, mealType) {
     const st = s();
     const userId = requireUser();
-    const meal = st.savedMeals.find((m) => m.id === id);
+    const meal = st.savedMeals.find((m) => m.id === id && m.userId === userId);
     if (!meal) throw new BackendError("NOT_FOUND", "Saved meal not found");
     for (const item of meal.items) {
       const base = scaleNutrients(item.per100g, item.grams);
@@ -517,7 +523,6 @@ export const demoBackend: Backend & DemoExtras = {
         grams: item.grams, portionPercent: 100, baseNutrients: base, source: "favorite",
       });
     }
-    void userId;
   },
 
   // ── Diary ───────────────────────────────────────────────────────────────
@@ -554,8 +559,8 @@ export const demoBackend: Backend & DemoExtras = {
 
   async updateEntry(id, patch) {
     const st = s();
-    requireUser();
-    const idx = st.diary.findIndex((d) => d.id === id);
+    const userId = requireUser();
+    const idx = st.diary.findIndex((d) => d.id === id && d.userId === userId);
     if (idx < 0) throw new BackendError("NOT_FOUND", "Entry not found");
     const current = st.diary[idx];
     if (!current) throw new BackendError("NOT_FOUND", "Diary entry missing");
@@ -574,8 +579,11 @@ export const demoBackend: Backend & DemoExtras = {
 
   async deleteEntry(id) {
     const st = s();
-    requireUser();
-    st.diary = st.diary.filter((d) => d.id !== id);
+    const userId = requireUser();
+    if (!st.diary.some((d) => d.id === id && d.userId === userId)) {
+      throw new BackendError("NOT_FOUND", "Diary entry not found");
+    }
+    st.diary = st.diary.filter((d) => !(d.id === id && d.userId === userId));
     save(st);
   },
 
@@ -598,7 +606,12 @@ export const demoBackend: Backend & DemoExtras = {
   },
 
   async getRecipeIngredients(recipeId) {
-    return s().recipeIngredients.filter((i) => i.recipeId === recipeId);
+    const st = s();
+    const userId = requireUser();
+    if (!st.recipes.some((r) => r.id === recipeId && r.userId === userId)) {
+      throw new BackendError("NOT_FOUND", "Recipe not found");
+    }
+    return st.recipeIngredients.filter((i) => i.recipeId === recipeId);
   },
 
   async createRecipe(input: RecipeInput) {
@@ -615,7 +628,11 @@ export const demoBackend: Backend & DemoExtras = {
 
   async deleteRecipe(id) {
     const st = s();
-    st.recipes = st.recipes.filter((r) => r.id !== id);
+    const userId = requireUser();
+    if (!st.recipes.some((r) => r.id === id && r.userId === userId)) {
+      throw new BackendError("NOT_FOUND", "Recipe not found");
+    }
+    st.recipes = st.recipes.filter((r) => !(r.id === id && r.userId === userId));
     st.recipeIngredients = st.recipeIngredients.filter((i) => i.recipeId !== id);
     save(st);
   },
@@ -623,7 +640,7 @@ export const demoBackend: Backend & DemoExtras = {
   async logRecipe(recipeId, entryDate, mealType, servings) {
     const st = s();
     const userId = requireUser();
-    const recipe = st.recipes.find((r) => r.id === recipeId);
+    const recipe = st.recipes.find((r) => r.id === recipeId && r.userId === userId);
     if (!recipe) throw new BackendError("NOT_FOUND", "Recipe not found");
     const ingredients = st.recipeIngredients.filter((i) => i.recipeId === recipeId);
     const total = sumNutrients(ingredients.map((i) => scaleNutrients(i.per100g, i.grams)));
@@ -659,7 +676,11 @@ export const demoBackend: Backend & DemoExtras = {
 
   async deleteWeight(id) {
     const st = s();
-    st.weights = st.weights.filter((w) => w.id !== id);
+    const userId = requireUser();
+    if (!st.weights.some((w) => w.id === id && w.userId === userId)) {
+      throw new BackendError("NOT_FOUND", "Weight entry not found");
+    }
+    st.weights = st.weights.filter((w) => !(w.id === id && w.userId === userId));
     save(st);
   },
 
@@ -832,9 +853,15 @@ export const demoBackend: Backend & DemoExtras = {
   },
 
   async getAllFoods() {
-    return s().foods;
+    const userId = requireUser();
+    return s().foods.filter((fd) => canReadFood(fd, userId));
   },
 };
+
+/** Seed foods are public; user-created foods are private to their owner. */
+function canReadFood(food: Food, userId: string): boolean {
+  return food.ownerId === null || food.ownerId === userId;
+}
 
 function hasAccess(st: DemoStore, userId: string): boolean {
   const e = st.entitlements[userId];
