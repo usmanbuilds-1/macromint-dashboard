@@ -132,12 +132,17 @@ export function WeightProgressModule({ onSaved }: WeightProgressModuleProps) {
   }
 
   return (
-    <section className="flex w-full max-w-2xl flex-col gap-6" aria-labelledby="weight-module-heading">
+    <section className="ref-live-weight flex w-full max-w-2xl flex-col gap-6" aria-labelledby="weight-module-heading">
       <header>
-        <h2 id="weight-module-heading" className="text-xl font-semibold tracking-tight">Weight log</h2>
+        <h2 id="weight-module-heading" className="text-xl font-semibold tracking-tight">Weight</h2>
         <p className="mt-1 text-sm text-muted-foreground">Daily readings and long-term trends, saved in your private weight history.</p>
       </header>
 
+      <div className="ref-weight-current" aria-label="Latest recorded weight">
+        <span>CURRENT WEIGHT</span>
+        <div><strong>{latestKg === null ? "—" : (latestKg * (isImperial ? POUNDS_PER_KG : 1)).toFixed(1)}</strong><small>{units}</small></div>
+        <p>{latestKg === null ? "Add your first weigh-in to start the trend." : "From your most recent saved weigh-in."}</p>
+      </div>
       <form className="grid gap-4 border-b pb-6" onSubmit={(event) => { event.preventDefault(); void save(); }}>
         <div className="grid grid-cols-2 gap-3">
           <div className="grid gap-1.5">
