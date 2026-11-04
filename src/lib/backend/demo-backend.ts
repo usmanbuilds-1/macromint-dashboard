@@ -732,13 +732,14 @@ export const demoBackend: Backend & DemoExtras = {
 
   // ── Admin ───────────────────────────────────────────────────────────────
   async amIAdmin() {
-    // Demo mode: every demo user can preview the admin panel. In production
-    // this is decided by the admin_users table through the SQL is_admin().
-    return Boolean(s().sessionUserId);
+    const st = s();
+    return st.sessionUserId !== null && st.adminUserIds.includes(st.sessionUserId);
   },
 
   async adminListUsers(search) {
     const st = s();
+    const adminId = requireUser();
+    if (!st.adminUserIds.includes(adminId)) throw new BackendError("FORBIDDEN", "Administrator access required");
     const term = search.trim().toLowerCase();
     return st.users
       .filter((u) => !term || u.email.toLowerCase().includes(term) || u.name.toLowerCase().includes(term))
@@ -759,10 +760,8 @@ export const demoBackend: Backend & DemoExtras = {
   async adminAction(input) {
     const st = s();
     const adminId = requireUser();
-    // Demo mode: any signed-in demo user administers the sample data, in
-    // line with amIAdmin(). Production authorises this in admin-action Edge
-    // Function via the admin_users table.
-    if (!adminId) throw new BackendError("FORBIDDEN", "Administrator access required");
+    // Mirror production admin authorization even in local preview mode.
+    if (!st.adminUserIds.includes(adminId)) throw new BackendError("FORBIDDEN", "Administrator access required");
     const { action, targetUserId, days } = input;
 
     if (action === "set_trial_days") {
@@ -813,27 +812,31 @@ export const demoBackend: Backend & DemoExtras = {
 
   async adminGetAudit(targetUserId) {
     const st = s();
+    const adminId = requireUser();
+    if (!st.adminUserIds.includes(adminId)) throw new BackendError("FORBIDDEN", "Administrator access required");
     return st.auditLogs.filter((a) => !targetUserId || a.targetUserId === targetUserId).slice(0, 200);
   },
 
   async adminGetSettings() {
-    return s().appSettings;
+    const st = s();
+    const adminId = requireUser();
+    if (!st.adminUserIds.includes(adminId)) throw new BackendError("FORBIDDEN", "Administrator access required");
+    return st.appSettings;
   },
 
   // ── Notifications, consents, export ─────────────────────────────────────
   async getNotifications() {
     const st = s();
     const userId = requireUser();
-    return st.notifications.filter((n) => {
-      void userId;
-      return true;
-    }).slice(0, 30);
+    return st.notifications.filter((n) => n.userId === userId).slice(0, 30);
   },
 
   async markNotificationRead(id) {
     const st = s();
-    const n = st.notifications.find((x) => x.id === id);
-    if (n) n.readAt = new Date().toISOString();
+    const userId = requireUser();
+    const n = st.notifications.find((x) => x.id === id && x.userId === userId);
+    if (!n) throw new BackendError("NOT_FOUND", "Notification not found");
+    n.readAt = new Date().toISOString();
     save(st);
   },
 
