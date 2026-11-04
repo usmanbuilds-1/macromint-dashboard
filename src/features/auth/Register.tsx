@@ -21,7 +21,7 @@ export function Register() {
   const submit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!INVITE_REGISTRATION_ENABLED && !IS_DEMO) {
-      toast.error("Beta registration is not open yet.");
+      toast.error("New account invitations are temporarily unavailable.");
       return;
     }
     if (!name.trim() || name.trim().length < 2) {
@@ -55,11 +55,10 @@ export function Register() {
 
   if (!INVITE_REGISTRATION_ENABLED && !IS_DEMO) {
     return (
-      <AuthShell title="Beta registration is coming soon" subtitle="Macromint is preparing private beta access. New accounts cannot be created until secure sign-in and invitations are enabled.">
+      <AuthShell title="Invitation access" subtitle="Macromint is live. New account invitations are temporarily unavailable while account sign-in is configured.">
         <div className="flex flex-col gap-5">
           <p className="text-sm leading-6 text-muted-foreground">
-            Existing users can sign in when authentication is available. We won't ask you
-            to create an account until it can be secured and saved correctly.
+            Already a member? Use your existing account to sign in. New beta invitations are managed separately by the administrator.
           </p>
           <Link className="inline-flex min-h-12 items-center justify-center rounded-md bg-primary px-4 text-sm font-semibold text-primary-foreground" to="/">
             Back to Macromint
