@@ -77,7 +77,7 @@ export function Goals() {
   const num = (v: unknown) => (v === undefined || v === "" ? "" : String(v));
 
   return (
-    <div className="flex flex-col gap-6">
+    <div className="mm6-subpage mm6-page-goals flex flex-col gap-6">
       <header>
         <h1 className="text-2xl font-semibold tracking-tight">Goals</h1>
         <p className="mt-0.5 text-sm text-muted-foreground">
