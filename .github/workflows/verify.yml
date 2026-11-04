@@ -22,6 +22,8 @@ jobs:
         run: npm install --global pnpm@10
       - name: Install project dependencies
         run: pnpm install --no-frozen-lockfile
+      - name: Verify beta-auth migration and Edge syntax
+        run: node scripts/check-auth-activation-sources.mjs
       - name: Nutrition regression tests
         run: pnpm test
       - name: ESLint (existing Prettier violations excluded)
