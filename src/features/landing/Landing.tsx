@@ -61,8 +61,8 @@ function ExampleWeight() {
 function Photo({ src, alt, className = "" }: { src: string; alt: string; className?: string }) {
   return <img src={src} alt={alt} className={className} loading="lazy" decoding="async" onError={(e) => {
     const img = e.currentTarget;
-    if (img.dataset.fallback !== "true") {
-      img.dataset.fallback = "true";
+    if (img.dataset["fallback"] !== "true") {
+      img.dataset["fallback"] = "true";
       img.src = "/images/meal-review-hq.webp";
     }
   }} />;
