@@ -55,8 +55,8 @@ function NavItem({ to, label, icon: Icon, onClick }: { to: string; label: string
       onClick={onClick}
       className={({ isActive }) =>
         cn(
-          "flex items-center gap-3 rounded-md px-3 py-2 text-sm font-medium text-muted-foreground transition-colors hover:bg-accent hover:text-foreground",
-          isActive && "bg-accent text-foreground",
+          "mm-app-navitem flex items-center gap-3 border-l-2 border-transparent px-3 py-2.5 text-sm font-medium text-muted-foreground transition-colors hover:text-foreground",
+          isActive && "border-primary text-foreground font-semibold",
         )
       }
     >
@@ -90,9 +90,9 @@ export function AppLayout() {
       renderServing={(p) => <ServingConfigHost food={p.food} target={p.target} onClose={p.onClose} />}
       renderScan={(p) => <ScanDialog open={p.open} target={p.target} onClose={p.onClose} />}
     >
-    <div className="flex min-h-screen bg-background">
+    <div className="mm-app-shell flex min-h-screen bg-background">
       {/* Desktop sidebar */}
-      <aside className="sticky top-0 hidden h-screen w-56 shrink-0 flex-col justify-between border-r px-4 py-5 md:flex">
+      <aside className="sticky top-0 hidden h-screen w-60 shrink-0 flex-col justify-between border-r px-5 py-8 md:flex">
         <div>
           <div className="px-3">
             <Logo />
@@ -168,7 +168,7 @@ export function AppLayout() {
           </Sheet>
         </header>
 
-        <main className="mx-auto w-full max-w-3xl flex-1 px-4 pb-24 pt-5 md:px-8 md:pb-10 md:pt-8">
+        <main className="mm-app-main mx-auto w-full max-w-3xl flex-1 px-5 pb-24 pt-7 md:px-9 md:pb-12 md:pt-10">
           <Outlet />
         </main>
 
