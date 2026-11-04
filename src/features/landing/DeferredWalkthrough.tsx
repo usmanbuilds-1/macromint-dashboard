@@ -21,48 +21,6 @@ function nutritionAt(grams: number) {
   };
 }
 
-function DailyPreview() {
-  const [water, setWater] = useState(1250);
-  return (
-    <section className="mint4-preview" aria-label="Interactive example nutrition dashboard">
-      <div className="mint4-preview-top">
-        <div><span className="mint4-preview-overline">YOUR DAY</span><h3>Today</h3></div>
-        <span className="mint4-preview-label">Sample diary</span>
-      </div>
-      <div className="mint4-energy-heading">
-        <div><span>Calories consumed</span><strong>1,430 <small>/ 2,100 kcal</small></strong></div>
-        <span className="mint4-energy-remaining"><strong>670</strong><small>remaining</small></span>
-      </div>
-      <div className="mint4-energy-meter" role="progressbar" aria-label="Example calories consumed" aria-valuemin={0} aria-valuenow={1430} aria-valuemax={2100}><i style={{width:"68.095%"}} /></div>
-      <div className="mint4-preview-macros">
-        {[
-          ["Protein", SAMPLE.protein, SAMPLE.proteinGoal],
-          ["Carbs", SAMPLE.carbs, 220],
-          ["Fat", SAMPLE.fat, 70]
-        ].map(([name, value, goal])=>(
-          <div className="mint4-macro" key={name}>
-            <div><span>{name}</span><strong>{value} <small>/ {goal} g</small></strong></div>
-            <div className="mint4-macro-meter"><i style={{width:`${Math.round(Number(value)/Number(goal)*100)}%`}} /></div>
-          </div>
-        ))}
-      </div>
-      <div className="mint4-preview-diary">
-        <div className="mint4-section-line"><strong>Your food diary</strong><span>1,430 kcal</span></div>
-        <div><span>Breakfast <small>Overnight oats</small></span><b>320</b></div>
-        <div><span>Lunch <small>Chicken and rice</small></span><b>610</b></div>
-        <div><span>Dinner <small>Vegetable bowl</small></span><b>500</b></div>
-      </div>
-      <div className="mint4-preview-water">
-        <div className="mint4-water-top"><div><Droplets size={16} aria-hidden="true" /><span>Water <small>{(water/1000).toFixed(2)} / 2.00 L</small></span></div><div>
-          <button type="button" aria-label="Remove 250 ml from example" disabled={water===0} onClick={()=>setWater(v=>Math.max(0,v-250))}><Minus size={15}/></button>
-          <button type="button" aria-label="Add 250 ml to example" disabled={water>=2000} onClick={()=>setWater(v=>Math.min(2000,v+250))}><Plus size={15}/></button>
-        </div></div>
-        <div className="mint4-water-meter" role="progressbar" aria-label="Example water intake" aria-valuenow={water} aria-valuemin={0} aria-valuemax={2000}><i style={{width:`${water/20}%`}}/></div>
-        <p>Use the controls to try the preview</p>
-      </div>
-    </section>
-  );
-}
 
 const STEPS = [
   { key: "search", number: "01", name: "Find your food", summary: "Search foods and saved meals." },
