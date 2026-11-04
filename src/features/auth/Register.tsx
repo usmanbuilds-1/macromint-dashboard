@@ -111,6 +111,7 @@ export function Register() {
     } finally {
       setBusy(false);
     }
+    return;
   };
 
   if (!INVITE_REGISTRATION_ENABLED && !IS_DEMO) {
