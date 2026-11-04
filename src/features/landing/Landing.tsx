@@ -38,7 +38,7 @@ const features = [
 /** A clearly labelled static example. No imaginary verified scores, customers or live data. */
 function StageDiary() {
   return (
-    <div className="mint5-stage-card" aria-label="Illustrative daily nutrition dashboard using sample values">
+    <div className="mint5-stage-card" role="region" aria-label="Illustrative daily nutrition dashboard using sample values">
       <div className="mint5-stage-heading">
         <div><span className="mint5-micro">DAILY VIEW</span><h2>Today</h2></div>
         <span className="mint5-stage-date">Example diary</span>
