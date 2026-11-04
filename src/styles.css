@@ -1227,3 +1227,51 @@
 .dark .mm-app-shell .mm6-today-summary .mm-today-remaining,
 .dark .mm-app-shell .mm6-today-summary .mm-today-summary-head p,
 .dark .mm-app-shell .mm6-today-utilities p{color:#b7cdbb}
+
+/* The secondary journeys retain their forms, data, links, validations and
+   accessible states. Styling is progressive rather than a risky rewrite. */
+.mm6-subpage{max-width:820px;gap:32px}
+.mm6-subpage>header{padding-bottom:27px;border-bottom:1px solid var(--border);gap:20px}
+.mm6-subpage>header>div:first-child>p{line-height:1.6;max-width:58ch;color:var(--muted-foreground)}
+.mm6-subpage h2{font-family:"Fraunces",Georgia,serif!important;font-size:clamp(22px,2.6vw,30px)!important;font-weight:450!important;line-height:1.16;letter-spacing:-.045em}
+.mm6-subpage>section[aria-label]{border-bottom-color:var(--border)}
+.mm6-subpage>section[aria-label]>h2{margin-bottom:5px}
+.mm6-subpage :is(input,select,textarea){min-height:45px;border-radius:2px}
+.mm6-subpage :is(button,[role="tab"]){transition:background .16s ease,color .16s ease,border .16s ease,transform .16s ease}
+.mm6-page-diary section[aria-label="Diary totals"]{background:#e8efe5;border:0;padding:28px 32px}
+.mm6-page-diary section[aria-label="Diary totals"] p.text-3xl{font-family:"Fraunces",Georgia,serif;font-size:clamp(46px,5vw,65px);font-weight:430;letter-spacing:-.07em;line-height:1.04}
+.mm6-page-diary>section[aria-label] h2{font-family:"Instrument Sans",Arial,sans-serif!important;font-size:16px!important;letter-spacing:-.02em;font-weight:680!important}
+.mm6-page-diary>section[aria-label]{border-bottom:1px solid var(--border)}
+.mm6-page-diary>section[aria-label] li{padding-left:0;padding-right:0}
+.mm6-page-diary>section[aria-label] li:hover{background:#eef2e9}
+.mm6-page-diary>div.flex.flex-wrap>button:first-child{min-height:53px;padding-inline:24px}
+.mm6-page-foods header>div:last-child{flex-wrap:wrap}
+.mm6-page-foods [role="tablist"],.mm6-page-trends [role="tablist"]{background:transparent;border-radius:0;padding:0;border-bottom:1px solid var(--border);height:auto;gap:18px}
+.mm6-page-foods [role="tab"],.mm6-page-trends [role="tab"]{border-radius:0;min-height:47px;padding:0 3px;color:var(--muted-foreground);font-weight:560;background:transparent!important;box-shadow:none!important;border-bottom:2px solid transparent}
+.mm6-page-foods [role="tab"][data-state="active"],.mm6-page-trends [role="tab"][data-state="active"]{border-color:var(--primary);color:var(--foreground);font-weight:680}
+.mm6-page-foods input[aria-label="Search foods"]{min-height:53px;background:#fff;border:1px solid #b9cabb}
+.mm6-page-foods [role="tabpanel"]>div.rounded-xl{border-radius:2px}
+.mm6-page-foods [role="tabpanel"]>p.rounded-xl{border-radius:2px;border-style:solid;background:#f0f2ec;color:#6b7b6b}
+.mm6-page-trends>section[aria-label]{padding-top:15px;padding-bottom:32px}
+.mm6-page-trends>section[aria-label]>div:first-child h2,
+.mm6-page-trends>div.grid section h2{font-family:"Fraunces",Georgia,serif!important;font-size:27px!important;font-weight:450!important}
+.mm6-page-trends .recharts-responsive-container{background:transparent}
+.mm6-page-settings>section{padding:22px 0 34px;border-color:var(--border)}
+.mm6-page-settings>section h2{margin-bottom:7px}
+.mm6-page-settings>section[aria-label="Account"] button{border-radius:2px}
+.mm6-page-goals>section.rounded-xl{border:0;border-top:1px solid var(--border);border-radius:0;background:transparent;padding:30px 0 15px}
+.mm6-page-goals>section.rounded-xl h2{margin-bottom:12px}
+.mm6-page-goals>section.rounded-xl>div.grid{row-gap:24px}
+.mm6-page-goals button.variant-outline{border-radius:2px}
+@media(max-width:640px){
+ .mm6-subpage{gap:25px}
+ .mm6-subpage>header{padding-bottom:19px}
+ .mm6-page-diary section[aria-label="Diary totals"]{padding:23px}
+ .mm6-page-diary section[aria-label="Diary totals"] p.text-3xl{font-size:48px}
+ .mm6-page-foods header>div:last-child{width:100%}
+ .mm6-page-trends header>[role="tablist"]{max-width:100%}
+ .mm6-page-trends>section[aria-label]{padding-top:5px}
+}
+.dark .mm6-page-diary section[aria-label="Diary totals"]{background:#294132}
+.dark .mm6-page-diary>section[aria-label] li:hover{background:#25392d}
+.dark .mm6-page-foods [role="tabpanel"]>p.rounded-xl{background:#25392d;color:#c7d7c9}
