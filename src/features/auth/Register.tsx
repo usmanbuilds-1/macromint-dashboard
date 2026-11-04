@@ -8,6 +8,7 @@ import { AuthShell } from "./AuthShell";
 import { backend, BackendError, IS_DEMO } from "@/lib/backend";
 import { useSession } from "@/context/Session";
 import { INVITE_REGISTRATION_ENABLED } from "@/lib/beta/config";
+import { isValidInviteCode } from "@/lib/beta/invite-code";
 import { USERNAME_AUTH_ENABLED, USERNAME_MIN_PASSWORD_LENGTH } from "@/lib/auth/username-config";
 import { isValidUsername } from "@/lib/auth/username";
 
@@ -25,7 +26,7 @@ export function Register() {
 
   const submit = async (e: React.FormEvent) => {
     e.preventDefault();
-  if (!INVITE_REGISTRATION_ENABLED && !IS_DEMO) {
+    if (!INVITE_REGISTRATION_ENABLED && !IS_DEMO) {
       toast.error("New account invitations are temporarily unavailable.");
       return;
     }
@@ -33,7 +34,7 @@ export function Register() {
       toast.error("Enter your name");
       return;
     }
-    if (!/^MM-[A-F0-9]{40}$/i.test(inviteCode.trim()) && !IS_DEMO) {
+    if (!isValidInviteCode(inviteCode) && !IS_DEMO) {
       toast.error("Enter your beta invitation code");
       return;
     }
