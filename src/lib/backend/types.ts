@@ -102,9 +102,10 @@ export interface Backend {
   // Auth
   getSessionUser(): Promise<SessionUser | null>;
   signIn(usernameOrEmail: string, password: string): Promise<void>;
-  signUp(usernameOrEmail: string, password: string, name: string, inviteCode: string): Promise<{ needsVerification: boolean }>;
+  signUp(usernameOrEmail: string, password: string, name: string, inviteCode: string): Promise<{ needsVerification: boolean; recoveryCodes?: string[] }>;
   signOut(): Promise<void>;
   requestPasswordReset(email: string): Promise<void>;
+  recoverUsernamePassword(username: string, recoveryCode: string, newPassword: string): Promise<void>;
   resendVerification(): Promise<void>;
   onAuthChange(cb: (user: SessionUser | null) => void): Unsubscribe;
   deleteAccount(): Promise<void>;
