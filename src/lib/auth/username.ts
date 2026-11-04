@@ -51,7 +51,7 @@ export function usernameFromAuthEmail(email: string | null | undefined): string 
   return isValidUsername(local) ? canonicalUsername(local) : null;
 }
 
-export function publicAccountLabel(account: { username?: string | null; email?: string | null; name?: string | null }): string {
+export function publicAccountLabel(account: { username?: string | null | undefined; email?: string | null | undefined; name?: string | null | undefined }): string {
   const internal = usernameFromAuthEmail(account.email);
   const username = account.username && isValidUsername(account.username) ? canonicalUsername(account.username) : internal;
   if (username) return `@${username}`;
