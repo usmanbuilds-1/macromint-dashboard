@@ -18,3 +18,7 @@ verify_jwt = false
 # server-side rollout flags and the database beta invitation trigger are ready.
 [functions.username-register]
 verify_jwt = false
+
+# Password recovery uses non-email one-use backup codes.
+[functions.username-recovery]
+verify_jwt = false
