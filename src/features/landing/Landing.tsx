@@ -2,9 +2,6 @@ import { Link } from "react-router-dom";
 import { Logo } from "@/components/app/AppLayout";
 import { Reveal } from "@/lib/motion";
 
-const heroPhoto = "/images/meal-hero-hq.webp";
-const breakfastPhoto = "/images/breakfast-hero-hq.webp";
-
 const sampleMacros = [
   { name: "Protein", value: 96, target: 130 },
   { name: "Carbs", value: 148, target: 220 },
@@ -16,7 +13,7 @@ function ProductPreview({ compact = false }: { compact?: boolean }) {
     <div className={`mint6-product ${compact ? "mint6-product--compact" : ""}`} aria-label="Illustrative preview of the nutrition diary">
       <div className="mint6-product-top">
         <span className="mint6-overline">MACRO MINT / SAMPLE DAY</span>
-        <span className="mint6-product-dots" aria-hidden="true"><i /><i /><i /></span>
+        <span className="mint6-product-edition">DAILY VIEW</span>
       </div>
       <div className="mint6-product-title">
         <div><small>Tuesday's diary</small><strong>Today.</strong></div>
@@ -86,7 +83,7 @@ export function Landing() {
           <a href="#inside">Inside the app</a>
           <a href="#questions">Questions</a>
         </nav>
-        <Link to="/login" className="mint6-header-action">Member sign in <span aria-hidden="true">↗</span></Link>
+        <Link to="/login" className="mint6-header-action">Member sign in</Link>
       </header>
 
       <main id="main-content">
@@ -96,24 +93,24 @@ export function Landing() {
             <h1 id="mint6-hero-title">Eat well.<br />Know <em>why.</em></h1>
             <p className="mint6-hero-lede">The meals you eat. The numbers behind them. Your progress in one quieter, clearer place.</p>
             <div className="mint6-hero-actions">
-              <Link to="/login" className="mint6-primary">Open your diary <span aria-hidden="true">↗</span></Link>
-              <a href="#inside" className="mint6-text-link">See what’s inside <span aria-hidden="true">↓</span></a>
+              <Link to="/login" className="mint6-primary">Open your diary</Link>
+              <a href="#inside" className="mint6-text-link">See what’s inside</a>
             </div>
             <p className="mint6-access">Existing members can sign in. New accounts are invitation only during setup.</p>
           </div>
           <div className="mint6-hero-visual">
-            <div className="mint6-photo-frame">
-              <img src={heroPhoto} alt="Chicken, grains and fresh vegetables arranged in a ceramic bowl" fetchPriority="high" width={1200} height={900} decoding="async" />
+            <div className="mint6-product-stage">
+              <div className="mint6-stage-heading"><span>THE DAILY VIEW</span><span>MACRO MINT / 01</span></div>
+              <div className="mint6-stage-ui"><ProductPreview /></div>
+              <p className="mint6-stage-footnote">Your meals and the numbers behind them, together in one clear place.</p>
             </div>
-            <div className="mint6-floating-preview"><ProductPreview compact /></div>
-            <div className="mint6-image-caption"><span>Good food.</span><span>Good information.</span></div>
           </div>
-          <div className="mint6-hero-bottom"><span>YOUR DIARY / REIMAGINED</span><a href="#approach">SCROLL TO EXPLORE <span aria-hidden="true">↓</span></a><span>001 — 006</span></div>
+          <div className="mint6-hero-bottom"><span>YOUR DIARY / REIMAGINED</span><a href="#approach">SCROLL TO EXPLORE</a><span>001 — 006</span></div>
         </section>
 
         <section className="mint6-ticker" aria-label="Core product capabilities">
-          {["Food diary", "Calories & macros", "Weight history", "Saved meals", "Data export"].map((item, i) =>
-            <span key={item}>{item}{i !== 4 && <i aria-hidden="true">✳</i>}</span>
+          {["Food diary", "Calories & macros", "Weight history", "Saved meals", "Data export"].map((item) =>
+            <span key={item}>{item}</span>
           )}
         </section>
 
@@ -137,9 +134,14 @@ export function Landing() {
           </div>
           <div className="mint6-process-grid">
             <Reveal as="article" className="mint6-process-food">
-              <div className="mint6-process-photo">
-                <img src={breakfastPhoto} alt="Breakfast bowl with oats, yogurt and fresh berries" width={900} height={1100} loading="lazy" decoding="async" />
-                <span>01 / LOG THE FOOD</span>
+              <div className="mint6-process-photo mint6-type-poster">
+                <p className="mint6-overline">01 / A BETTER WAY TO LOG</p>
+                <strong>Find it.<br />Measure it.<br /><em>Move on.</em></strong>
+                <div className="mint6-poster-bottom">
+                  <span>SEARCH</span>
+                  <span>SAVE</span>
+                  <span>SCAN</span>
+                </div>
               </div>
               <h3>Start with what you ate.</h3>
               <p>Search, save or scan. Pick the portion yourself before you add it.</p>
@@ -151,7 +153,7 @@ export function Landing() {
             </Reveal>
           </div>
           <Reveal as="article" className="mint6-process-trend">
-            <div className="mint6-trend-copy"><span className="mint6-overline">03 / THE LONG VIEW</span><h3>Progress is a pattern, not a single day.</h3><p>Record your weight and follow the trend without losing sight of what changed along the way.</p><Link to="/login" className="mint6-text-link">Go to your diary <span aria-hidden="true">↗</span></Link></div>
+            <div className="mint6-trend-copy"><span className="mint6-overline">03 / THE LONG VIEW</span><h3>Progress is a pattern, not a single day.</h3><p>Record your weight and follow the trend without losing sight of what changed along the way.</p><Link to="/login" className="mint6-text-link">Go to your diary</Link></div>
             <WeightIllustration />
           </Reveal>
         </section>
@@ -180,7 +182,7 @@ export function Landing() {
         <section className="mint6-finale" aria-labelledby="mint6-finale-title">
           <span className="mint6-overline">05 / MAKE SPACE FOR CLARITY</span>
           <h2 id="mint6-finale-title">Less guessing.<br /><em>More knowing.</em></h2>
-          <div><p>Start with a meal. See the whole day.</p><Link to="/login" className="mint6-primary mint6-primary--light">Member sign in <span aria-hidden="true">↗</span></Link></div>
+          <div><p>Start with a meal. See the whole day.</p><Link to="/login" className="mint6-primary mint6-primary--light">Member sign in</Link></div>
         </section>
       </main>
 
