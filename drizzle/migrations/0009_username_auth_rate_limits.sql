@@ -34,36 +34,7 @@ declare
 begin
   -- No dynamic SQL, unrestricted scopes, or arbitrary limits.
   if p_scope is null or p_scope not in ('register_ip', 'register_invite', 'recover_ip', 'recover_username')
-     or p_key_hash is null or p_key_hash !~ '^[0-9a-f]{64}
-  then
-    return false;
-  end if;
-
-  insert into public.username_auth_attempts as rate
-    (scope, key_hash, window_start, attempts)
-  values (
-    p_scope,
-    p_key_hash,
-    to_timestamp(floor(extract(epoch from clock_timestamp()) / p_window_seconds) * p_window_seconds),
-    1
-  )
-  on conflict (scope, key_hash, window_start) do update
-    set attempts = rate.attempts + 1
-    where rate.attempts < p_limit
-  returning attempts into recorded;
-
-  return recorded is not null;
-end;
-$$;
-
-revoke all on function public.consume_username_auth_budget(text,text,integer,integer)
-  from public, anon, authenticated;
-grant execute on function public.consume_username_auth_budget(text,text,integer,integer)
-  to service_role;
-
--- Maintenance: run this statement manually in Cloud SQL every few weeks:
--- DELETE FROM public.username_auth_attempts WHERE window_start < now() - interval '3 days';
-
+     or p_key_hash is null or p_key_hash !~ '^[0-9a-f]{64}$'
      or p_limit is null or p_limit < 1 or p_limit > 100
      or p_window_seconds is null or p_window_seconds not in (300, 900, 3600, 86400)
   then
