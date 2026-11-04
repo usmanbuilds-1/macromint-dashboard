@@ -729,6 +729,51 @@ export type Database = {
         }
         Relationships: []
       }
+      username_auth_attempts: {
+        Row: {
+          attempts: number
+          key_hash: string
+          scope: string
+          window_start: string
+        }
+        Insert: {
+          attempts: number
+          key_hash: string
+          scope: string
+          window_start: string
+        }
+        Update: {
+          attempts?: number
+          key_hash?: string
+          scope?: string
+          window_start?: string
+        }
+        Relationships: []
+      }
+      username_recovery_codes: {
+        Row: {
+          code_hash: string
+          created_at: string
+          id: string
+          used_at: string | null
+          user_id: string
+        }
+        Insert: {
+          code_hash: string
+          created_at?: string
+          id?: string
+          used_at?: string | null
+          user_id: string
+        }
+        Update: {
+          code_hash?: string
+          created_at?: string
+          id?: string
+          used_at?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
       water_entries: {
         Row: {
           amount_ml: number
@@ -787,6 +832,19 @@ export type Database = {
     Functions: {
       am_i_admin: { Args: never; Returns: boolean }
       check_access: { Args: never; Returns: boolean }
+      consume_username_auth_budget: {
+        Args: {
+          p_key_hash: string
+          p_limit: number
+          p_scope: string
+          p_window_seconds: number
+        }
+        Returns: boolean
+      }
+      consume_username_recovery_code: {
+        Args: { p_code_hash: string; p_user_id: string }
+        Returns: boolean
+      }
       has_access: { Args: { uid?: string }; Returns: boolean }
       has_active_entitlement: {
         Args: { target_user_id: string }
