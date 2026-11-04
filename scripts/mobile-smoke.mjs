@@ -51,17 +51,22 @@ for (const [width, height] of sizes) {
     if (visual.hidden.length)
       throw new Error("Scroll animations hide important off-screen content: " + visual.hidden.join(", "));
 
-    // Catch low-resolution or broken imagery before a public release.
-    const heroImage = page.locator(".mint6-photo-frame img");
-    await heroImage.waitFor();
-    await heroImage.evaluate((img) => img.decode());
-    const renderedImageWidth = await heroImage.evaluate((img) => img.naturalWidth);
-    if (renderedImageWidth < 600) throw new Error("Hero photo is broken or too small: " + renderedImageWidth + "px");
-    const breakfastImage = page.locator(".mint6-process-photo img");
-    await breakfastImage.scrollIntoViewIfNeeded();
-    await breakfastImage.evaluate((img) => img.decode());
-    const breakfastImageWidth = await breakfastImage.evaluate((img) => img.naturalWidth);
-    if (breakfastImageWidth < 600) throw new Error("Breakfast photo is broken or too small: " + breakfastImageWidth + "px");
+    // Visual QA: no old stock food photo, no overlapping product-card collage.
+    if (await page.locator(".mint6-hero img, .mint6-process-photo img").count())
+      throw new Error("Old food photography remains in the editorial composition");
+    const stage = page.locator(".mint6-product-stage");
+    await stage.waitFor();
+    const geometry = await page.locator(".mint6-stage-ui .mint6-product").evaluate((element) => {
+      const frame = element.closest(".mint6-product-stage")?.getBoundingClientRect();
+      const card = element.getBoundingClientRect();
+      return frame && {
+        left: card.left - frame.left, right: frame.right - card.right,
+        top: card.top - frame.top, bottom: frame.bottom - card.bottom,
+      };
+    });
+    if (!geometry || Object.values(geometry).some((space) => space < -1))
+      throw new Error("Product preview is cropped by its frame: " + JSON.stringify(geometry));
+    await page.locator(".mint6-type-poster").waitFor();
     await page.locator("#mint6-hero-title").scrollIntoViewIfNeeded();
     await page.screenshot({ path: `mobile-audit/landing-${width}.png`, fullPage: true });
     if (width === 390) {
@@ -90,6 +95,8 @@ for (const [width, height] of sizes) {
       throw new Error("Deferred walkthrough still has an active public link");
     }
     const forbiddenText = await page.locator("body").innerText();
+    if (/[✳↗↓✨🎉🍃🚀]/u.test(forbiddenText))
+      throw new Error("Decorative emoji-like symbols remain visible");
     for (const claim of ["Trust Score", "80+ nutrients", "Speak to a dietician", "verified grade", "Free forever", "No ads"]) {
       if (forbiddenText.toLowerCase().includes(claim.toLowerCase())) throw new Error("Unsupported GLM claim on landing: " + claim);
     }
