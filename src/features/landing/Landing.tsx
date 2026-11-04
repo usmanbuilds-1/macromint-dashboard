@@ -58,12 +58,12 @@ function ExampleWeight() {
   );
 }
 
-function Photo({ src, alt, className = "" }: { src: string; alt: string; className?: string }) {
+function Photo({ src, alt, className = "", fallback = "/images/meal-review-hq.webp" }: { src: string; alt: string; className?: string; fallback?: string }) {
   return <img src={src} alt={alt} className={className} loading="lazy" decoding="async" onError={(e) => {
     const img = e.currentTarget;
     if (img.dataset["fallback"] !== "true") {
       img.dataset["fallback"] = "true";
-      img.src = "/images/meal-review-hq.webp";
+      img.src = fallback;
     }
   }} />;
 }
@@ -120,7 +120,7 @@ export function Landing() {
           <p className="ref-section-intro">A simple routine that helps you stay consistent and make progress.</p>
           <div className="ref-how-steps">
             <article>
-              <div className="ref-how-photo"><Photo src={breakfastMeal} alt="Breakfast bowl with fruit and grains" /></div>
+              <div className="ref-how-photo"><Photo src={breakfastMeal} alt="Breakfast bowl with fruit and grains" fallback="/images/breakfast-hero-hq.webp" /></div>
               <div className="ref-how-caption"><span className="ref-step">01</span><div><h3>Log the meal.</h3><p>Search, scan or save your meals in seconds.</p></div></div>
             </article>
             <article>
