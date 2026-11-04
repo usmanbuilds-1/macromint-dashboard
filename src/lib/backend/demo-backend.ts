@@ -318,6 +318,11 @@ export const demoBackend: Backend & DemoExtras = {
     // Demo mode: nothing to reset.
   },
 
+  async recoverUsernamePassword() {
+    // The local demo deliberately has no secure credential recovery.
+    throw new BackendError("RECOVERY_UNAVAILABLE", "Recovery codes are only available with the configured server.");
+  },
+
   async resendVerification() {},
 
   onAuthChange(cb) {
