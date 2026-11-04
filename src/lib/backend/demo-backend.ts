@@ -49,7 +49,7 @@ interface DemoStore {
   weights: WeightEntry[];
   water: WaterEntry[];
   scanCorrections: Array<{ id: string; userId: string; scanId: string; label: string; original: unknown; corrected: unknown; createdAt: string }>;
-  notifications: NotificationItem[];
+  notifications: Array<NotificationItem & { userId: string }>;
   consents: Array<{ id: string; userId: string; kind: string; version: string; grantedAt: string }>;
   auditLogs: AuditLogEntry[];
   adminUserIds: string[];
