@@ -11,6 +11,7 @@
  */
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.58.0";
 import { json, errorResponse, preflight } from "../_shared/http.ts";
+import { checkUsernameAuthBudget } from "../_shared/username-rate-limit.ts";
 
 const USERNAME = /^[A-Za-z0-9_]{3,20}$/;
 const CODE = /^MMR-(?:[A-F0-9]{8}-){3}[A-F0-9]{8}$/;
@@ -40,7 +41,7 @@ Deno.serve(async (req) => {
   }
 
   const admin = createClient(url, key, { auth: { persistSession: false } });
-  const email = `${username}@macromint.internal`;
+  // Throttle before database username lookups or any recovery-code redemption.\n  // Missing infrastructure fails closed; never permit a bypass through a flag.\n  const budget = await checkUsernameAuthBudget(req, "recover", username,\n    (args) => admin.rpc("consume_username_auth_budget", args));\n  if (budget === "unavailable") return errorResponse("NOT_CONFIGURED", "Recovery security checks unavailable", 503);\n  if (budget === "limited") return errorResponse("RATE_LIMIT", "Too many recovery attempts. Try again later.", 429);\n\n  const email = `${username}@macromint.internal`;
   const { data: profile, error: lookupError } = await admin.from("profiles")
     .select("user_id").eq("email", email).maybeSingle();
   if (lookupError || !profile) return errorResponse("INVALID_CODE", INVALID, 400);

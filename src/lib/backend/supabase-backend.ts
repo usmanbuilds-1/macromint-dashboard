@@ -5,6 +5,7 @@ import type { TablesUpdate, Json } from "@/integrations/supabase/types";
 
 import { BackendError } from "./types";
 import { USERNAME_AUTH_ENABLED } from "@/lib/auth/username-config";
+import { isValidInviteCode } from "@/lib/beta/invite-code";
 import {
   isValidUsername,
   canonicalUsername,
@@ -101,7 +102,7 @@ export const supabaseBackend: Backend = {
   },
 
   async signUp(identifier, password, name, inviteCode) {
-    if (!inviteCode || !/^MM-[A-F0-9]{40}$/i.test(inviteCode.trim())) {
+    if (!isValidInviteCode(inviteCode ?? "")) {
       throw new BackendError("INVITE", "Enter the invitation code from your beta invitation");
     }
     if (USERNAME_AUTH_ENABLED) {
