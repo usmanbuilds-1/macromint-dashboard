@@ -33,10 +33,9 @@ const NAV = [
 
 const MOBILE_NAV = [
   { to: "/today", label: "Today" },
+  { to: "/foods", label: "Food" },
   { to: "/trends", label: "Progress" },
-  { to: "/diary", label: "Log" },
-  { to: "/weight", label: "Weight" },
-  { to: "/settings", label: "More" },
+  { to: "/settings", label: "Settings" },
 ];
 
 const SECONDARY = [
@@ -181,7 +180,7 @@ export function AppLayout() {
         </main>
 
         {/* Fast five-destination navigation. Text-only rather than decorative glyphs. */}
-        <nav className="ref-mobile-tabs fixed inset-x-0 bottom-0 z-40 grid grid-cols-5 border-t bg-background pb-[env(safe-area-inset-bottom)] md:hidden" aria-label="Primary">
+        <nav className="ref-mobile-tabs fixed inset-x-0 bottom-0 z-40 grid grid-cols-4 border-t bg-background pb-[env(safe-area-inset-bottom)] md:hidden" aria-label="Primary">
           {MOBILE_NAV.map((item) => (
             <NavLink key={item.to} to={item.to} className={({ isActive }) =>
               cn("ref-mobile-tab", isActive && "ref-mobile-tab--active")
