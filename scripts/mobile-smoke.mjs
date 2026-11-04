@@ -34,6 +34,23 @@ for (const [width, height] of sizes) {
     }));
     if (dims.document > dims.viewport + 1) throw new Error("Horizontal overflow: " + JSON.stringify(dims));
     if (!dims.heading) throw new Error("Missing h1");
+    // Offscreen sections must remain readable in full-page captures and for
+    // assistive technology; scroll-linked motion must never hide the content.
+    const visual = await page.evaluate(() => {
+      const heading = document.querySelector(".mint6-hero h1")?.getBoundingClientRect();
+      const lead = document.querySelector(".mint6-hero-lede")?.getBoundingClientRect();
+      const hidden = [".mint6-manifesto h2", ".mint6-process-heading h2", ".mint6-process-food", ".mint6-benefit"]
+        .filter((selector) => {
+          const element = document.querySelector(selector);
+          return !element || Number(getComputedStyle(element).opacity) < 0.95;
+        });
+      return { heroGap: heading && lead ? lead.top - heading.bottom : null, hidden };
+    });
+    if (visual.heroGap === null || visual.heroGap < 12)
+      throw new Error("Editorial headline overlaps its description: " + JSON.stringify(visual));
+    if (visual.hidden.length)
+      throw new Error("Scroll animations hide important off-screen content: " + visual.hidden.join(", "));
+
     // Catch low-resolution or broken imagery before a public release.
     const heroImage = page.locator(".mint6-photo-frame img");
     await heroImage.waitFor();
