@@ -26,6 +26,7 @@ import { Route as AppGoalsRouteImport } from './routes/_app/goals'
 import { Route as AppSettingsRouteImport } from './routes/_app/settings'
 import { Route as AppTodayRouteImport } from './routes/_app/today'
 import { Route as AppTrendsRouteImport } from './routes/_app/trends'
+import { Route as AppWeightRouteImport } from './routes/_app/weight'
 import { Route as AppAdminIndexRouteImport } from './routes/_app/admin.index'
 import { Route as AppAdminAuditRouteImport } from './routes/_app/admin.audit'
 import { Route as AppAdminSettingsRouteImport } from './routes/_app/admin.settings'
@@ -114,6 +115,11 @@ const AppTrendsRoute = AppTrendsRouteImport.update({
   path: '/trends',
   getParentRoute: () => AppRoute,
 } as any)
+const AppWeightRoute = AppWeightRouteImport.update({
+  id: '/weight',
+  path: '/weight',
+  getParentRoute: () => AppRoute,
+} as any)
 const AppAdminIndexRoute = AppAdminIndexRouteImport.update({
   id: '/',
   path: '/',
@@ -147,6 +153,7 @@ export interface FileRoutesByFullPath {
   '/settings': typeof AppSettingsRoute
   '/today': typeof AppTodayRoute
   '/trends': typeof AppTrendsRoute
+  '/weight': typeof AppWeightRoute
   '/admin/audit': typeof AppAdminAuditRoute
   '/admin/settings': typeof AppAdminSettingsRoute
   '/admin/': typeof AppAdminIndexRoute
@@ -167,6 +174,7 @@ export interface FileRoutesByTo {
   '/settings': typeof AppSettingsRoute
   '/today': typeof AppTodayRoute
   '/trends': typeof AppTrendsRoute
+  '/weight': typeof AppWeightRoute
   '/admin/audit': typeof AppAdminAuditRoute
   '/admin/settings': typeof AppAdminSettingsRoute
   '/admin': typeof AppAdminIndexRoute
@@ -190,6 +198,7 @@ export interface FileRoutesById {
   '/_app/settings': typeof AppSettingsRoute
   '/_app/today': typeof AppTodayRoute
   '/_app/trends': typeof AppTrendsRoute
+  '/_app/weight': typeof AppWeightRoute
   '/_app/admin/audit': typeof AppAdminAuditRoute
   '/_app/admin/settings': typeof AppAdminSettingsRoute
   '/_app/admin/': typeof AppAdminIndexRoute
@@ -213,6 +222,7 @@ export interface FileRouteTypes {
     | '/settings'
     | '/today'
     | '/trends'
+    | '/weight'
     | '/admin/audit'
     | '/admin/settings'
     | '/admin/'
@@ -233,6 +243,7 @@ export interface FileRouteTypes {
     | '/settings'
     | '/today'
     | '/trends'
+    | '/weight'
     | '/admin/audit'
     | '/admin/settings'
     | '/admin'
@@ -255,6 +266,7 @@ export interface FileRouteTypes {
     | '/_app/settings'
     | '/_app/today'
     | '/_app/trends'
+    | '/_app/weight'
     | '/_app/admin/audit'
     | '/_app/admin/settings'
     | '/_app/admin/'
@@ -394,6 +406,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppTrendsRouteImport
       parentRoute: typeof AppRoute
     }
+    '/_app/weight': {
+      id: '/_app/weight'
+      path: '/weight'
+      fullPath: '/weight'
+      preLoaderRoute: typeof AppWeightRouteImport
+      parentRoute: typeof AppRoute
+    }
     '/_app/admin/': {
       id: '/_app/admin/'
       path: '/'
@@ -442,6 +461,7 @@ interface AppRouteChildren {
   AppSettingsRoute: typeof AppSettingsRoute
   AppTodayRoute: typeof AppTodayRoute
   AppTrendsRoute: typeof AppTrendsRoute
+  AppWeightRoute: typeof AppWeightRoute
 }
 
 const AppRouteChildren: AppRouteChildren = {
@@ -452,6 +472,7 @@ const AppRouteChildren: AppRouteChildren = {
   AppSettingsRoute: AppSettingsRoute,
   AppTodayRoute: AppTodayRoute,
   AppTrendsRoute: AppTrendsRoute,
+  AppWeightRoute: AppWeightRoute,
 }
 
 const AppRouteWithChildren = AppRoute._addFileChildren(AppRouteChildren)
