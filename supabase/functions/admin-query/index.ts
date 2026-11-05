@@ -6,7 +6,7 @@
 // ═══════════════════════════════════════════════════════════════════════
 
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.58.0";
-import { json, errorResponse, preflight } from "../_shared/http.ts";
+import { json, errorResponse, preflight, readJsonObject } from "../_shared/http.ts";
 
 Deno.serve(async (req) => {
   const pre = preflight(req);
@@ -30,12 +30,11 @@ Deno.serve(async (req) => {
     .maybeSingle();
   if (!adminRow) return errorResponse("FORBIDDEN", "Administrator access required", 403);
 
-  let body: { action?: string; search?: string; targetUserId?: string };
-  try {
-    body = await req.json();
-  } catch {
-    return errorResponse("BAD_REQUEST", "Invalid JSON", 400);
+  const raw = await readJsonObject(req);
+  if (!raw || typeof raw.action !== "string") {
+    return errorResponse("BAD_REQUEST", "Invalid or oversized request", 400);
   }
+  const body = raw as { action: string; search?: string; targetUserId?: string };
 
   if (body.action === "list_users") {
     if (body.search != null && (typeof body.search !== "string" || body.search.length > 80)) {
