@@ -244,7 +244,7 @@ function AdminUsers() {
     }
   };
   const requestAction = (action: string, row: AdminUserRow, extra?: Record<string, unknown>) => {
-    setPending({ action, row, extra });
+    setPending({ action, row, ...(extra ? { extra } : {}) });
     setReason("");
   };
   const confirmAction = async () => {
