@@ -38,7 +38,7 @@ Deno.serve(async (req) => {
     .select("role")
     .eq("user_id", caller.id)
     .maybeSingle();
-  if (!adminRow) return errorResponse("FORBIDDEN", "Administrator access required", 403);
+  if (adminRow?.role !== "owner") return errorResponse("FORBIDDEN", "Owner access required", 403);
 
   const raw = await readJsonObject(req);
   if (!raw || typeof raw.action !== "string") {
@@ -64,6 +64,11 @@ Deno.serve(async (req) => {
     return errorResponse("BAD_REQUEST", "Note or reason too long", 400);
   }
   const isConfig = action === "set_trial_days" || action === "set_reward_config";
+  // Access decisions are never silent, including manual beta trial extensions.
+  if (!isConfig && action !== "add_note" &&
+      (typeof reason !== "string" || reason.trim().length < 3)) {
+    return errorResponse("BAD_REQUEST", "A reason of at least 3 characters is required", 400);
+  }
   if (!isConfig && (typeof targetUserId !== "string" ||
       !/^[0-9a-f]{8}-(?:[0-9a-f]{4}-){3}[0-9a-f]{12}$/i.test(targetUserId))) {
     return errorResponse("BAD_REQUEST", "Valid target user ID required", 400);
@@ -99,7 +104,7 @@ Deno.serve(async (req) => {
     return errorResponse("BAD_REQUEST", "Expiry must be YYYY-MM-DD", 400);
   }
   if (action === "restore_access" &&
-      !["paid_active", "complimentary", "trial_active"].includes(body.state ?? "")) {
+      !["complimentary", "trial_active"].includes(body.state ?? "")) {
     return errorResponse("BAD_REQUEST", "Select a valid access state", 400);
   }
 
@@ -110,7 +115,7 @@ Deno.serve(async (req) => {
     p_days: action === "extend_trial" || action === "shorten_trial" ? body.days : null,
     p_date: action === "set_expiry" ? body.date : null,
     p_state: action === "restore_access" ? body.state : null,
-    p_reason: reason ?? null,
+    p_reason: reason?.trim() ?? null,
     p_note: body.note ?? null,
   });
   if (error || !updated) return errorResponse("DB", "Could not apply audited access change", 500);
