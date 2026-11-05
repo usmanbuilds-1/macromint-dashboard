@@ -36,3 +36,37 @@ jobs:
         run: pnpm build
       - name: TypeScript
         run: pnpm exec tsc --noEmit
+
+  sql-release-contracts:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_DB: macromint_ci
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres -d macromint_ci"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 15
+    env:
+      PGHOST: localhost
+      PGPORT: 5432
+      PGDATABASE: macromint_ci
+      PGUSER: postgres
+      PGPASSWORD: postgres
+    steps:
+      - uses: actions/checkout@v4
+      - name: Apply release migrations to disposable PostgreSQL
+        run: |
+          psql -X -v ON_ERROR_STOP=1 -f scripts/sql-release-fixtures.sql
+          psql -X -v ON_ERROR_STOP=1 -f drizzle/migrations/0010_ai_scan_atomic_budgets.sql
+          psql -X -v ON_ERROR_STOP=1 -f drizzle/migrations/0011_atomic_admin_actions.sql
+          psql -X -v ON_ERROR_STOP=1 -f drizzle/migrations/0012_atomic_beta_invites.sql
+      - name: Exercise quota, audit, rollback and privileges
+        run: psql -X -v ON_ERROR_STOP=1 -f scripts/sql-release-contracts.sql
