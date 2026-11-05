@@ -59,8 +59,12 @@ An owner-authorized change that allows a previously blocked account to use the p
 _Avoid_: New account registration
 
 **Reactivation Request**:
-A user's request that the owner reconsider an expired or revoked account's access. Submitting a request does not itself grant product access.
+A single pending appeal per account for owner reconsideration of expired, revoked or suspended product access. The requester can see its status; submitting a request never grants access.
 _Avoid_: Automatic trial extension
+
+**Reactivation Decision**:
+An owner-issued approval or denial of an appeal, with a mandatory private audit reason. Approval affects entitlement at decision time, not next login.
+_Avoid_: Silent access grant
 
 **Data Export**:
 A user-initiated download of the requesting account's own stored data; it does not grant access to product features.
