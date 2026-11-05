@@ -26,6 +26,8 @@ jobs:
         run: node scripts/check-auth-activation-sources.mjs
       - name: Check one-shot Edge release contracts
         run: node scripts/check-edge-release.mjs
+      - name: Verify guarded postdeploy security test harness
+        run: node --check scripts/live-auth-security-audit.mjs
       - name: Nutrition regression tests
         run: pnpm test
       - name: ESLint (existing Prettier violations excluded)
