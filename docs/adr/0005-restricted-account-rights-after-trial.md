@@ -1,0 +1,7 @@
+# Separate restricted account access from paid feature entitlement
+
+The owner approved on 2026-11-05 that an expired Macro Mint tester must be signed out of the product on all devices, but may reauthenticate into a **restricted account-only area** to export/delete their own data or request reactivation. This is not a new trial and does not allow logging meals, editing tracking history or scanning food. When access is later restored, the existing identity and password work without any new invitation.
+
+This separation is intentional: a single `has_access()` entitlement check on every account operation is simple but strands users who need privacy controls after expiry. Granting every authenticated account broad read privileges would instead weaken the private-beta paywall. The implementation must maintain server-side premium feature denial while offering only narrowly scoped account-management/data-subject operations, with rigorous cross-account isolation and complete exports. UI sign-out on expiry/revocation and authentication into this restricted area are different transitions.
+
+**Status:** accepted architectural rule; implementation and real-account RLS/export tests outstanding. Whether revoked accounts have the same limited rights is not yet decided.
