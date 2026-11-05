@@ -186,12 +186,14 @@ DO $$
 DECLARE
   result jsonb;
   count_rows int;
+  key_count int;
 BEGIN
   result := public.get_public_app_settings();
+  SELECT count(*) INTO key_count FROM jsonb_object_keys(result);
   IF result->>'trial_days' <> '21' OR
      NOT (result ? 'reward_access_hours') OR
      NOT (result ? 'max_daily_rewarded_ads') OR
-     jsonb_object_length(result) <> 3 THEN
+     key_count <> 3 THEN
     RAISE EXCEPTION 'Public settings RPC leaks fields or returned wrong data: %',result;
   END IF;
   SELECT count(*) INTO count_rows FROM public.app_settings;
