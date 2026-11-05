@@ -52,6 +52,13 @@ CREATE TABLE public.beta_invites (
   note text CHECK (char_length(note) <= 200)
 );
 
+CREATE TABLE public.beta_invite_redemptions (
+  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  invite_id uuid NOT NULL REFERENCES public.beta_invites(id),
+  user_id uuid NOT NULL UNIQUE REFERENCES auth.users(id),
+  redeemed_at timestamptz NOT NULL DEFAULT now()
+);
+
 -- Match the real Cloud policy environment for the optional settings migration.
 CREATE OR REPLACE FUNCTION auth.uid() RETURNS uuid
 LANGUAGE sql STABLE AS $$
