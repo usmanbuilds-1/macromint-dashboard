@@ -122,7 +122,7 @@ export function Settings() {
     try {
       await backend.deleteAccount();
       setAuthUser(null);
-      toast.success("Account deleted. All personal data has been removed.");
+      toast.success("Account deleted. Limited trial-abuse records may be retained as explained in our Privacy Policy.");
       navigate("/");
     } catch {
       toast.error("Account deletion failed. Try again or contact support.");
