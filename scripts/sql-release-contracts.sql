@@ -162,3 +162,53 @@ BEGIN
   RAISE NOTICE 'PASS: privileged function grants restricted';
 END
 $$;
+
+-- Minimal, authenticated-only settings RPC: no direct public table access.
+DO $$
+BEGIN
+  IF has_function_privilege('anon','public.get_public_app_settings()','EXECUTE') THEN
+    RAISE EXCEPTION 'Anonymous role can read app settings RPC';
+  END IF;
+  IF NOT has_function_privilege('authenticated','public.get_public_app_settings()','EXECUTE') THEN
+    RAISE EXCEPTION 'Authenticated users cannot read limited settings RPC';
+  END IF;
+  IF EXISTS (SELECT 1 FROM pg_policies WHERE schemaname='public'
+             AND tablename='app_settings' AND policyname='app_settings read') THEN
+    RAISE EXCEPTION 'Universal app_settings table SELECT policy still exists';
+  END IF;
+  RAISE NOTICE 'PASS: settings RPC permissions and policy';
+END $$;
+
+BEGIN;
+SET LOCAL ROLE authenticated;
+SET LOCAL request.jwt.claim.sub = '22222222-2222-4222-8222-222222222222';
+DO $$
+DECLARE
+  result jsonb;
+  count_rows int;
+BEGIN
+  result := public.get_public_app_settings();
+  IF result->>'trial_days' <> '21' OR
+     NOT (result ? 'reward_access_hours') OR
+     NOT (result ? 'max_daily_rewarded_ads') OR
+     jsonb_object_length(result) <> 3 THEN
+    RAISE EXCEPTION 'Public settings RPC leaks fields or returned wrong data: %',result;
+  END IF;
+  SELECT count(*) INTO count_rows FROM public.app_settings;
+  IF count_rows <> 0 THEN RAISE EXCEPTION 'Non-admin direct settings SELECT is possible'; END IF;
+  RAISE NOTICE 'PASS: non-admin receives minimal RPC data but cannot read table';
+END $$;
+ROLLBACK;
+
+BEGIN;
+SET LOCAL ROLE authenticated;
+SET LOCAL request.jwt.claim.sub = '11111111-1111-4111-8111-111111111111';
+DO $$
+DECLARE
+  count_rows int;
+BEGIN
+  SELECT count(*) INTO count_rows FROM public.app_settings;
+  IF count_rows <> 1 THEN RAISE EXCEPTION 'Owner cannot directly read settings'; END IF;
+  RAISE NOTICE 'PASS: owner can directly read app settings';
+END $$;
+ROLLBACK;
