@@ -92,6 +92,7 @@ function parseItems(raw: unknown): { items: ModelItem[]; notes: string } {
     const o = it as Record<string, unknown>;
     const label = String(o.label ?? "").trim().slice(0, 120);
     if (!label) continue;
+    if (!Number.isFinite(Number(o.grams)) || Number(o.grams) <= 0) continue;
     const conf = String(o.confidence ?? "low").toLowerCase();
     items.push({
       label,
@@ -236,7 +237,8 @@ async function searchOff(label: string): Promise<GroundedFood | null> {
     }>;
     for (const p of products) {
       const n = p.nutriments;
-      if (!p.product_name || !n || n["energy-kcal_100g"] == null) continue;
+      if (!p.product_name || !n || n["energy-kcal_100g"] == null ||
+          matchScore(label, p.product_name) < 0.65) continue;
       return {
         id: "",
         name: p.brands ? `${p.product_name} (${p.brands.split(",")[0]})` : p.product_name,
