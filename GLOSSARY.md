@@ -51,12 +51,20 @@ An owner-imposed loss of product permission requiring that the affected user be 
 _Avoid_: Deleting their data
 
 **Restricted Account Access**:
-A limited authenticated state for an expired trial account to export or delete its data and request reactivation, without being able to use protected tracking features.
+A limited authenticated state for an expired or revoked account to export or delete its own data, and for eligible users to request reactivation, without access to paid tracking features.
 _Avoid_: Active product access, complimentary access
 
 **Access Restoration**:
 An owner-authorized change that allows a previously blocked account to use the product again with its existing login credentials.
 _Avoid_: New account registration
+
+**Reactivation Request**:
+A user's request that the owner reconsider an expired or revoked account's access. Submitting a request does not itself grant product access.
+_Avoid_: Automatic trial extension
+
+**Data Export**:
+A user-initiated download of the requesting account's own stored data; it does not grant access to product features.
+_Avoid_: Automatic backup, subscription entitlement
 
 ## Recovery and scanning
 
