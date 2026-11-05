@@ -7,6 +7,68 @@ after all code is merged. This cannot guarantee that a live provider/runtime
 failure will never require a corrective deploy. Never bypass security to avoid
 a second credit charge.
 
+## Owner directive — Edge deployments LAST (2026-11-05)
+
+**Hard release policy:** No intermediate Lovable Edge Function deployments. Add every
+new or modified function and shared dependency to the **pending deployment queue**;
+finish all other feasible work first, then generate one final Build-mode request
+at a frozen, CI-green GitHub main SHA. No Lovable AI-credit calls or publish
+actions from ChatGPT without explicit approval. The owner may manually apply
+reviewed additive SQL migrations and publish frontend-only changes independently.
+
+**Order of operations, with separate controls:**
+
+1. **Build now:** Continue GitHub feature work, Edge source changes (not deploying),
+   frontend/UX, payment/ad integration designs and sandbox code when the actual
+   provider is selected. Add new functions to the queue, not production.
+2. **Test now:** Unit/mock/integration tests, static Edge analysis, security policy
+   review, compiled frontend/mobile/browser checks, and disposable DB tests where
+   feasible without changing production accounts or secrets.
+3. **Migrate independently:** The owner can apply reviewed, backed-up,
+   additive SQL (currently pending `0010`–`0012`), each with read-only
+   verification, **before** the queued functions are deployed. Do not apply
+   incompatible/drop/rename changes that would break the *currently deployed*
+   functions. Never reapply `0006`–`0009` or run a migration just to satisfy
+   a skipped verification.
+4. **Publish independently, with guards:** The owner can publish compatible
+   frontend/marketing changes while backend authentication and paid/rewarded
+   features remain disabled. No UI should expose a flow that requires an
+   undeployed function or absent RPC. Frontend `VITE_*` activation flags
+   remain off until the backend is verified.
+5. **Freeze once:** Finish all feature/provider decisions, audit the function
+   inventory, ensure dependent migrations applied, record the final SHA and
+   per-function source hashes, and get all CI gates green.
+6. **Very last *code deployment*:** Owner explicitly approves and sends
+   **ONE** Lovable Build-mode prompt deploying all required Edge bundles in
+   the queue. No regenerations, SQL mutations, flag activation or site
+   publishing during that pass.
+7. **Required after deployment:** Live runtime/ingress tests, safe backend
+   flag enablement, private owner registration and promotion, disposable
+   user A/B RLS, recovery, AI quotas, food search, admin access, deletion
+   and payment/ad sandbox-to-production verification. **These tests cannot
+   truthfully be moved before the code they test is deployed.**
+   Their failure blocks activation and can necessitate a corrective deploy;
+   no guarantee of exactly one deploy is possible.
+
+**Deployment queue (source changes staged, runtime deployment deferred):**
+
+| Name | Why queued |
+| --- | --- |
+| `username-register` | PR #21 trusted-IP limiter dependency |
+| `username-recovery` | PR #21 trusted-IP limiter dependency |
+| `ai-scan` | New `0010` atomic quotas; Gemini-first and validation |
+| `food-search` | POST JSON handler contract and remote timeout |
+| `admin-action` | New `0011` atomic audited RPCs |
+| `admin-query` | Hardened query filters/error handling |
+| `beta-invites` | New `0012` audited invite RPCs |
+| `delete-account` | Audit-only/no known source change; verify live hash; include in one final pass if needed |
+| **Future functions** | Any payment webhooks, checkout or verified ad rewards are queued only after provider selection and code review |
+
+Always include the audited `_shared/http.ts` and `_shared/username-rate-limit.ts`
+in dependent bundles. Update this queue whenever a function is added or changed.
+**This document is not permission to deploy.** A previous SHA/prompt becomes
+stale whenever new code is merged.
+
 ## 0. Verified baseline and intentional boundaries
 
 - `0006_closed_beta_invites.sql` and `0007`–`0009` are already installed in
