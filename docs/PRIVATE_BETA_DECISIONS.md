@@ -1,6 +1,6 @@
 # Private-beta decision record
 
-Grill with Docs rounds 1–4 — owner answers received 2026-11-05. This document tracks decisions, observed source gaps, and unresolved tradeoffs. Do not treat this file or green CI as production activation.
+Grill with Docs rounds 1–5 — owner answers received 2026-11-05. This document tracks decisions, observed source gaps, and unresolved tradeoffs. Do not treat this file or green CI as production activation.
 
 ## Resolved decisions
 
@@ -19,6 +19,10 @@ Grill with Docs rounds 1–4 — owner answers received 2026-11-05. This documen
 13. **Reactivation requests go into a private owner-only Admin queue**. Users may request but only the verified owner can decide and grant access. No automatic extension or grant.
 14. **Owner administration does not expire with the owner's product trial**. The verified owner must still be able to sign in to manage users, invitations, settings and requests; that administrative capability is not a blanket bypass of paid tracking entitlement.
 15. **Full data export is available strictly on user request**, including after expiry/revocation; no automatic export or email of user data. Export the user's own records completely, excluding other accounts' data, security secrets and recovery-code hashes. User-initiated deletion remains separate.
+16. **Revoked and suspended users may submit a reactivation appeal.** Submission never restores access; the verified owner chooses whether to grant it.
+17. **Only one pending reactivation request per account.** The requester can view their own request status. Duplicate submissions must not create parallel pending cases or consume owner attention.
+18. **An approved extension takes effect at the time the owner approves it, even if the user is offline.** It is not delayed until a subsequent login. Existing trial-extension SQL extends an active unexpired trial from its current scheduled end and an expired one from approval time; if this distinction changes, it requires an explicit product decision.
+19. **Every owner approval, denial, suspension and access restoration requires a recorded reason** in the private administrative audit. An action with an empty/whitespace-only reason must fail before any state change; decision logging and mutation must be atomic.
 
 ## Source/code alignment findings
 
@@ -35,13 +39,17 @@ Grill with Docs rounds 1–4 — owner answers received 2026-11-05. This documen
 - Full export is presently initiated from `src/features/settings/Settings.tsx`, so it is user initiated already, but the route and RLS block expired/revoked accounts. Do not auto-create or auto-send files in the future; require a deliberate authenticated export action.
 - `supabase/functions/username-recovery/index.ts` consumes a one-time code and updates the password, but does not visibly revoke other sessions; its comment flags previous JWT survival. Verify Supabase session revocation and prevent indefinite stale-session access.
 - The scan-budget infrastructure exists. Owner visibility into attempts and failures has not been verified.
+- Reactivation request storage, one-pending-request constraint, requester-visible status and owner-only accept/deny handling have **not** been implemented. A database-level unique pending constraint and authenticated user ownership checks are needed; UI-only deduplication is insufficient.
+- In `drizzle/migrations/0011_atomic_admin_actions.sql`, `admin_change_entitlement` accepts `p_reason` as nullable and checks maximum length but does not require nonempty reasons. `supabase/functions/admin-action/index.ts` similarly treats `reason` as optional. These must change for the four explicitly protected decision types. The signed-off policy extends to denial decisions introduced by the new queue.
+- The existing SQL `extend_trial` computes `greatest(old_record.trial_ends_at, now()) + interval`, so an expired account extension begins from approval-time and does not wait for login. For an *active* trial it adds time to the existing scheduled end; do not silently redefine this behavior.
 
-## Frontier for round 5 — decisions, not facts
+## Frontier for round 6 — decisions, not facts
 
-- Should **revoked or suspended users** be allowed to submit a fresh reactivation request, or only export/delete their own data unless the owner proactively restores access? The previous answers explicitly protect exports and deletion.
-- Should expired testers be limited to **one pending reactivation request** at a time, with duplicate submissions merged and status visible to the requester? Rate limiting and audit are needed.
-- When the owner grants an extension, should it start **immediately from the approval time** (even if the tester is offline), rather than on the next login? The existing entitlement model can store expiry timestamps.
-- Should initial beta administration be **strictly owner-only** even if a future support/admin role is added, with explicit role-based permissions designed separately? Q2 establishes owner-only initial authority; this asks whether the first beta should prohibit delegated operations entirely.
+- When an owner denies a reactivation request, should the requester see only a neutral status (`Denied`) and an optional public-facing explanation, while private audit reasons stay owner-only?
+- Should users with a denied request have a fixed cooldown before opening another, rather than immediately spamming a new pending request? If yes, decide the interval rather than inventing one.
+- Should deleting an account require recent password reauthentication (or another secure fresh-auth proof), rather than just clicking Delete on a session that may have been left open?
+- Should the platform prevent deletion, suspension or demotion of its **last verified owner** until another trusted owner has been promoted, avoiding an unadministrable system?
+- For reactivation approvals, should the owner choose the exact extension length (for example 7, 14 or 30 days) rather than applying a fixed entitlement automatically?
 
 ## Release controls
 
