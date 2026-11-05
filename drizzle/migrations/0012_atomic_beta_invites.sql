@@ -1,3 +1,5 @@
+BEGIN;
+
 -- 0012: Atomically issue/revoke private beta invitations with admin audit.
 -- Manual Cloud SQL migration after 0010/0011; do not execute on an
 -- unverified environment. Service-role-only, no client direct access.
@@ -76,3 +78,5 @@ REVOKE ALL ON FUNCTION public.admin_revoke_beta_invite(uuid,uuid)
   FROM public, anon, authenticated;
 GRANT EXECUTE ON FUNCTION public.admin_revoke_beta_invite(uuid,uuid)
   TO service_role;
+
+COMMIT;
