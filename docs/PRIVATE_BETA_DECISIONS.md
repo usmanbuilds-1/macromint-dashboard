@@ -1,6 +1,6 @@
 # Private-beta decision record
 
-Grill with Docs rounds 1–2 — owner answers received 2026-11-05. This document tracks decisions, observed source gaps, and unresolved tradeoffs. Do not treat this file or green CI as production activation.
+Grill with Docs rounds 1–3 — owner answers received 2026-11-05. This document tracks decisions, observed source gaps, and unresolved tradeoffs. Do not treat this file or green CI as production activation.
 
 ## Resolved decisions
 
@@ -12,6 +12,9 @@ Grill with Docs rounds 1–2 — owner answers received 2026-11-05. This documen
 6. **Invitations are single-use and normally expire after seven days.** Successfully redeemed invitations cannot be reused. If registration creates an account but recovery setup fails, use a fresh invitation rather than reactivating the consumed one.
 7. **Owner revocation signs the tester out.** All protected database/API operations must fail immediately for a revoked entitlement, without deleting diary history. Remote multi-device sign-out latency must be verified, not assumed.
 8. **Password recovery requires fresh sign-in and terminates other sessions wherever possible.** Verify real provider behavior; existing access JWTs may remain valid until expiry.
+9. **Expired accounts can sign back in to a restricted account-only area** for data export, deletion and a reactivation request, without being allowed to create food logs or use AI scanning. No automatic extension or new trial is granted.
+10. **Restoring access does not require another invitation or account.** The user signs in with their existing username and password once the owner restores their entitlement.
+11. **Expiry/revocation must sign users out on every device as each connects/refreshes**, with *immediate* server-side denial of protected operations even when a device retains a valid JWT. Immediate remote client UI logout is not guaranteed for offline devices.
 
 ## Source/code alignment findings
 
@@ -19,14 +22,19 @@ Grill with Docs rounds 1–2 — owner answers received 2026-11-05. This documen
 - `drizzle/migrations/0006_closed_beta_invites.sql` uses an atomic one-time redemption; `username-register` deletes a partially-created account if recovery-code storage fails. The script makes no promise of reusing a consumed invite. The `beta-invites` server handler currently defaults invitation validity to 14 days, so a seven-day default requires an intentional change.
 - `src/context/Session.tsx` and `src/routes/_app.tsx` currently redirect expired/revoked users to `/upgrade` while retaining the authenticated session. This **does not match** the signed-out policy. `src/features/upgrade/Upgrade.tsx` shows payment checkout as unavailable during private beta.
 - `src/context/Session.tsx` computes access in the UI, while SQL `has_access()` independently gates user data; no verified remote session termination exists. Need to handle expiration across tabs/devices, backgrounded sessions, and existing JWTs.
+- `src/lib/backend/supabase-backend.ts:exportAllData` uses the caller's RLS scope. The diary, weight and other data SELECT policies in `0002_macromint_0003_rls.sql` require `has_access()`. A restricted expired-account export will silently lose required collections or fail without a narrowly scoped owner-only export mechanism that does not restore full premium reads. Test completeness, isolation and privacy.
+- `src/features/settings/Settings.tsx` only exposes export/delete inside the regular authenticated app; `src/features/upgrade/Upgrade.tsx` remains signed in and has no restricted account controls. They need a distinct, reachable post-expiry flow.
+- `supabase/functions/delete-account/index.ts` validates an authenticated token without requiring active product access; this is compatible with Q9 but needs route/UI access and real-account testing.
+- Restoration should update entitlement only, with no new invite redemption and no new trial; sign-in with existing credentials must remain possible.
 - `supabase/functions/username-recovery/index.ts` consumes a one-time code and updates the password, but does not visibly revoke other sessions; its comment flags previous JWT survival. Verify Supabase session revocation and prevent indefinite stale-session access.
 - The scan-budget infrastructure exists. Owner visibility into attempts and failures has not been verified.
 
-## Frontier for round 3 — decisions, not facts
+## Frontier for round 4 — decisions, not facts
 
-- If expiry logs the tester out but no payment provider is available, should they be allowed to authenticate into a **restricted account-only** area to request reactivation and export/delete their data, while logging/scanning remain blocked?
-- When the owner restores an account's access, can the tester simply sign in again with existing credentials, or must they use a new invitation?
-- Do trial expiry and revocation demand sign-out on **every device**, as soon as a device connects/refreshes, with immediate backend access denial even when an existing JWT is still unexpired?
+- Should an **owner-revoked** user have the same restricted data-export/deletion pathway as an expired tester? The Q9 approval explicitly covered expiry, not revocation.
+- Who receives an expired tester's **reactivation request**: a private in-app owner queue, or an external support channel? No automatic restore should happen.
+- Can the owner recover their own expired entitlement through the existing admin privilege, or should there be an explicit owner-only maintenance path that never overrides revoked/suspended users? Avoid creating an inaccessible first-owner account.
+- If account-only export requires bypassing the paid-access read policies, what precisely is exposed: the full user-owned data export versus a smaller privacy export? This tradeoff requires full export completeness and RLS isolation tests.
 
 ## Release controls
 
