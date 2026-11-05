@@ -24,35 +24,36 @@ export function Privacy() {
   return (
     <LegalShell title="Privacy policy" updated="November 2026">
       <p>
-        Macromint collects the information needed to run a nutrition tracker: your account email, the
-        measurements you enter, the foods and meals you log, and minimal technical records such as
-        scan events (metadata only, never the photos themselves).
+        Macromint processes the information needed for nutrition tracking: your username or existing
+        account email, measurements, foods and meals you enter, and minimal usage records.
+        Username accounts use an internal sign-in identifier rather than a contact email.
       </p>
       <h2>What we store</h2>
       <ul>
-        <li>Account: email, name, hashed password managed by Supabase Auth. Passwords are never stored in application tables.</li>
+        <li>Account: username or email, name, and password credentials managed by the authentication service. We do not store plaintext passwords in application tables.</li>
         <li>Nutrition data: diary entries, custom foods, recipes, weight and water entries, goals.</li>
-        <li>Scans: item labels, portions, confidence and timing for quality monitoring. Photographs are processed and discarded; they are not persisted.</li>
+        <li>Scans: request counts, confidence summaries and processing times. The photo is sent to the configured AI provider for analysis, but Macro Mint does not save the photo in its application database. The provider has its own data handling practices.</li>
         <li>Consents: your analytics and advertising choices with timestamps.</li>
       </ul>
       <h2>Who can see your data</h2>
       <p>
-        Only you. Every user-owned table is protected by row level security at the database level, so
-        no other account, including through direct API calls, can read your records. Platform
-        administrators can change your access status but cannot browse your diary contents through
-        the product interface.
+        Your personal diary records are protected by row level security, which restricts ordinary
+        accounts to their own data. Authorized platform operations use higher privileges where
+        necessary to run the service. The standard administrator interface manages account status,
+        invitations and access rather than providing a diary browser.
       </p>
       <h2>Advertising and analytics</h2>
       <p>
-        Both are off by default and governed by your consent in Settings. Advertising funds the free
-        tier; when personalised advertising is declined, ads are non-personalised where the provider
-        supports it.
+        Paid advertising and rewarded access are not active in the current private beta.
+        Settings may record your advertising preferences, but this does not mean an advertising
+        provider is enabled. We will update these details before introducing advertisements.
       </p>
       <h2>Your controls</h2>
       <p>
-        Settings includes a full JSON export of your data and a delete-account action that removes
-        your profile and every owned record through cascading deletion. A minimal trial-abuse ledger
-        (email and dates) is retained after deletion to protect the platform from repeated trial abuse.
+        Settings includes a JSON export of your tracked data and an account-deletion control.
+        Deletion removes the account and its associated diary and profile records. A limited
+        trial-abuse record containing an account identifier and dates may be retained to prevent
+        repeated free trials; it is not a recovery email address for username-only accounts.
       </p>
       <h2>Honest scope</h2>
       <p>
@@ -75,17 +76,17 @@ export function Terms() {
       </p>
       <h2>Access</h2>
       <p>
-        New accounts receive a free trial whose length is shown at signup. Continued access after the
-        trial requires an active subscription, a complimentary grant, or verified rewarded-ad access.
-        Access is enforced server-side and may be modified by the platform administrator. We may
-        suspend accounts that abuse the trial system, attempt unauthorised access, or breach these terms.
+        New accounts join by private invitation. Eligible accounts may receive a limited free
+        trial, and the administrator can grant, suspend or revoke access. Payments and
+        rewarded-ad access are unavailable during this private beta. Accounts that abuse access
+        controls or violate these terms may be suspended.
       </p>
       <h2>Payments</h2>
       <p>
-        Subscriptions renew automatically until cancelled. Failed payments move the account to a
-        payment-overdue state until resolved. Prices are shown before any charge, and access changes
-        only after payment is verified by our payment provider's webhooks, never on the basis of a
-        browser message.
+        Subscription checkout is not enabled in this release, and Macro Mint does not currently
+        accept payments through the website. Any future paid service will present its actual
+        price, renewal, cancellation and refund terms before a charge; access will not be granted
+        based solely on a checkout redirect.
       </p>
       <h2>Your content</h2>
       <p>
