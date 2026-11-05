@@ -22,6 +22,10 @@ _Avoid_: Permanent free user
 A distinct person's login identity and its own tracking data, access status, and recovery materials.
 _Avoid_: Invitation, session
 
+**Session**:
+An authenticated connection between one signed-in device or browser and an account. A session is not proof of current product access.
+_Avoid_: Entitlement
+
 **Owner**:
 The verified platform operator with exclusive initial authority to issue invitations and change other users' access.
 _Avoid_: Any administrator
@@ -37,6 +41,14 @@ _Avoid_: Invitation
 **Trial**:
 Time-limited product access granted to a new account under the same policy for beta participants and future customers, unless a separately authorized override is made.
 _Avoid_: Beta invitation
+
+**Trial Expiry**:
+The point when a trial no longer grants product access. The approved user-facing policy is to sign the tester out, not leave them in a locked app.
+_Avoid_: Account deletion
+
+**Access Revocation**:
+An owner-imposed loss of product permission requiring that the affected user be signed out and protected operations denied.
+_Avoid_: Deleting their data
 
 ## Recovery and scanning
 
