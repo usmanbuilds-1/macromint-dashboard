@@ -1,3 +1,5 @@
+BEGIN;
+
 -- 0011: Make every admin entitlement/config mutation and its audit event
 -- atomic in the database. MANUAL CLOUD SQL MIGRATION (after 0010).
 -- Old Edge admin-action updates then inserts an audit record separately,
@@ -172,3 +174,5 @@ REVOKE ALL ON FUNCTION public.admin_set_app_config(uuid,text,integer,numeric,int
   FROM public, anon, authenticated;
 GRANT EXECUTE ON FUNCTION public.admin_set_app_config(uuid,text,integer,numeric,integer,text)
   TO service_role;
+
+COMMIT;
