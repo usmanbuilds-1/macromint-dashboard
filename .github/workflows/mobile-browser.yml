@@ -28,7 +28,7 @@ jobs:
         run: pnpm build
       - name: Start preview
         run: |
-          pnpm preview --host 127.0.0.1 --port 4173 > /tmp/macromint-preview.log 2>&1 &
+          pnpm dlx wrangler@4.45.0 dev --config .output/server/wrangler.json --ip 127.0.0.1 --port 4173 --local > /tmp/macromint-preview.log 2>&1 &
           for i in $(seq 1 60); do
             if curl -fsS http://127.0.0.1:4173/ > /dev/null; then exit 0; fi
             sleep 1
