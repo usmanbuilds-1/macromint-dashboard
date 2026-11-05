@@ -61,11 +61,24 @@ Deno.serve(async (req) => {
   const pre = preflight(req);
   if (pre) return pre;
 
-  const url = new URL(req.url);
-  const q = (url.searchParams.get("q") ?? "").trim();
-  const barcode = (url.searchParams.get("barcode") ?? "").trim();
+  if (req.method !== "POST") return errorResponse("METHOD", "POST required", 405);
 
+  // The browser's Supabase functions.invoke() sends JSON POST bodies, not
+  // URL search params. Previously every normal food lookup returned 400.
+  let params: { q?: unknown; barcode?: unknown };
+  try {
+    params = await req.json();
+    if (!params || typeof params !== "object" || Array.isArray(params))
+      return errorResponse("BAD_REQUEST", "Invalid search request", 400);
+  } catch {
+    return errorResponse("BAD_REQUEST", "Invalid JSON", 400);
+  }
+  const q = typeof params.q === "string" ? params.q.trim() : "";
+  const barcode = typeof params.barcode === "string" ? params.barcode.trim() : "";
   if (!q && !barcode) return errorResponse("BAD_REQUEST", "Provide q or barcode", 400);
+  if (q.length > 80 || (barcode && !/^[0-9]{8,14}$/.test(barcode))) {
+    return errorResponse("BAD_REQUEST", "Invalid food query or barcode", 400);
+  }
 
   const authHeader = req.headers.get("Authorization") ?? "";
   if (!authHeader.startsWith("Bearer ")) return errorResponse("AUTH", "Missing bearer token", 401);
@@ -75,17 +88,19 @@ Deno.serve(async (req) => {
     Deno.env.get("SUPABASE_ANON_KEY")!,
     { global: { headers: { Authorization: authHeader } } },
   );
-  const { error: userError } = await supabase.auth.getUser();
-  if (userError) return errorResponse("AUTH", "Invalid token", 401);
+  const { data: userData, error: userError } = await supabase.auth.getUser();
+  if (userError || !userData?.user) return errorResponse("AUTH", "Invalid token", 401);
 
   const attribution = "Includes food data from Open Food Facts (ODbL) — openfoodfacts.org";
 
   let localRows: FoodRow[] = [];
+
   try {
     if (barcode) {
       const { data: local } = await supabase.from("foods").select("*").eq("barcode", barcode).limit(1);
       localRows = (local ?? []) as FoodRow[];
       const res = await fetch(`https://world.openfoodfacts.org/api/v2/product/${encodeURIComponent(barcode)}.json?fields=${OFF_FIELDS}`, {
+        signal: AbortSignal.timeout(5000),
         headers: { "User-Agent": "Macromint/0.1 (nutrition tracker)" },
       });
       let remote: Record<string, unknown> | null = null;
@@ -110,7 +125,7 @@ Deno.serve(async (req) => {
     let remote: Record<string, unknown>[] = [];
     const res = await fetch(
       `https://world.openfoodfacts.org/cgi/search.pl?search_terms=${encodeURIComponent(q)}&search_simple=1&action=process&json=1&page_size=8&fields=${OFF_FIELDS}`,
-      { headers: { "User-Agent": "Macromint/0.1 (nutrition tracker)" } },
+      { signal: AbortSignal.timeout(5000), headers: { "User-Agent": "Macromint/0.1 (nutrition tracker)" } },
     );
     if (res.ok) {
       const data = await res.json();
@@ -123,7 +138,7 @@ Deno.serve(async (req) => {
     const payload = { local: (local ?? []) as FoodRow[], remote, attribution };
     return json(payload);
   } catch (e) {
-    // The food database is an external dependency: degrade honestly.
+    // The remote food database is an external dependency: degrade honestly.
     return json({
       local: localRows,
       remote: [],
