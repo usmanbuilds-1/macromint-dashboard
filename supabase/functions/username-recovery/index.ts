@@ -10,7 +10,7 @@
  *  - Existing JWTs may remain valid until expiry; review Auth token lifetime.
  */
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.58.0";
-import { json, errorResponse, preflight } from "../_shared/http.ts";
+import { json, errorResponse, preflight, readJsonObject } from "../_shared/http.ts";
 import { checkUsernameAuthBudget } from "../_shared/username-rate-limit.ts";
 
 const USERNAME = /^[A-Za-z0-9_]{3,20}$/;
@@ -29,9 +29,8 @@ Deno.serve(async (req) => {
   const key = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
   if (!url || !key) return errorResponse("NOT_CONFIGURED", "Recovery service unavailable", 503);
 
-  let raw: Record<string, unknown>;
-  try { raw = await req.json(); }
-  catch { return errorResponse("INPUT", "Invalid request", 400); }
+  const raw = await readJsonObject(req);
+  if (!raw) return errorResponse("INPUT", "Invalid or oversized request", 400);
   const username = typeof raw.username === "string" ? raw.username.trim().toLowerCase() : "";
   const recoveryCode = typeof raw.recoveryCode === "string" ? raw.recoveryCode.trim().toUpperCase() : "";
   const newPassword = typeof raw.newPassword === "string" ? raw.newPassword : "";

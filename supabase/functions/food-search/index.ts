@@ -6,7 +6,7 @@
 // ═══════════════════════════════════════════════════════════════════════
 
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.58.0";
-import { json, errorResponse, preflight } from "../_shared/http.ts";
+import { json, errorResponse, preflight, readJsonObject } from "../_shared/http.ts";
 
 interface FoodRow {
   id: string;
@@ -33,6 +33,13 @@ function mapOffProduct(p: Record<string, unknown>): Record<string, unknown> | nu
   const n = (p.nutriments ?? {}) as Record<string, number | undefined>;
   if (n["energy-kcal_100g"] == null) return null;
   const servingQ = Number(p.serving_quantity ?? 0);
+  // OFF quantities may be millilitres or unspecified. Never silently
+  // convert volume to weight without ingredient-specific density.
+  const measuredInGrams = ["g", "gram", "grams"].includes(
+    String(p.serving_unit ?? "").trim().toLowerCase(),
+  );
+  const servingGrams = measuredInGrams && Number.isFinite(servingQ) &&
+    servingQ > 0 && servingQ <= 3000 ? Math.round(servingQ) : 100;
   return {
     id: null,
     name,
@@ -52,8 +59,8 @@ function mapOffProduct(p: Record<string, unknown>): Record<string, unknown> | nu
       satFat: n["saturated-fat_100g"] ?? null,
       sodium: n.sodium_100g != null ? Math.round(n.sodium_100g * 1000) : null,
     },
-    servingLabel: servingQ > 0 ? `${Math.round(servingQ)} ${p.serving_unit ?? "g"}` : "100 g",
-    servingGrams: servingQ > 0 ? Math.round(servingQ) : 100,
+    servingLabel: `${servingGrams} g`,
+    servingGrams,
   };
 }
 
@@ -65,14 +72,8 @@ Deno.serve(async (req) => {
 
   // The browser's Supabase functions.invoke() sends JSON POST bodies, not
   // URL search params. Previously every normal food lookup returned 400.
-  let params: { q?: unknown; barcode?: unknown };
-  try {
-    params = await req.json();
-    if (!params || typeof params !== "object" || Array.isArray(params))
-      return errorResponse("BAD_REQUEST", "Invalid search request", 400);
-  } catch {
-    return errorResponse("BAD_REQUEST", "Invalid JSON", 400);
-  }
+  const params = await readJsonObject(req, 1024);
+  if (!params) return errorResponse("BAD_REQUEST", "Invalid or oversized search request", 400);
   const q = typeof params.q === "string" ? params.q.trim() : "";
   const barcode = typeof params.barcode === "string" ? params.barcode.trim() : "";
   if (!q && !barcode) return errorResponse("BAD_REQUEST", "Provide q or barcode", 400);
@@ -90,6 +91,13 @@ Deno.serve(async (req) => {
   );
   const { data: userData, error: userError } = await supabase.auth.getUser();
   if (userError || !userData?.user) return errorResponse("AUTH", "Invalid token", 401);
+
+  // Match diary and AI-scan access control: a signed-in but revoked/expired
+  // user must not be able to proxy arbitrary remote food database requests.
+  const { data: access, error: accessError } = await supabase.rpc("check_access");
+  if (accessError || access !== true) {
+    return errorResponse("NO_ACCESS", "Active access required", 403);
+  }
 
   const attribution = "Includes food data from Open Food Facts (ODbL) — openfoodfacts.org";
 

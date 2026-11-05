@@ -11,7 +11,7 @@
  * - Protect this endpoint at the gateway against abuse and monitor failures.
  */
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.58.0";
-import { json, errorResponse, preflight } from "../_shared/http.ts";
+import { json, errorResponse, preflight, readJsonObject } from "../_shared/http.ts";
 import { checkUsernameAuthBudget } from "../_shared/username-rate-limit.ts";
 
 const USERNAME = /^[a-zA-Z0-9_]{3,20}$/;
@@ -34,9 +34,8 @@ Deno.serve(async (request) => {
   const key = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
   if (!url || !key) return errorResponse("NOT_CONFIGURED", "Registration service unavailable", 503);
 
-  let body: SignUpBody;
-  try { body = await request.json(); }
-  catch { return errorResponse("INPUT", "Invalid request body", 400); }
+  const body: SignUpBody | null = await readJsonObject(request);
+  if (!body) return errorResponse("INPUT", "Invalid or oversized request body", 400);
 
   const username = typeof body.username === "string" ? body.username.trim() : "";
   const password = typeof body.password === "string" ? body.password : "";

@@ -1,7 +1,7 @@
 // Admin-only, server-side invite issuance and revocation.
 // Never return invite hashes or persist the raw one-time code in a table.
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.58.0";
-import { json, errorResponse, preflight } from "../_shared/http.ts";
+import { json, errorResponse, preflight, readJsonObject } from "../_shared/http.ts";
 
 type RequestBody =
   | { action: "create"; expiresDays?: number; maxUses?: number; note?: string }
@@ -42,9 +42,11 @@ Deno.serve(async (req) => {
     .select("role").eq("user_id", ownerId).maybeSingle();
   if (adminError || !admin) return errorResponse("FORBIDDEN", "Administrator only", 403);
 
-  let body: RequestBody;
-  try { body = await req.json(); }
-  catch { return errorResponse("INPUT", "Invalid request", 400); }
+  const raw = await readJsonObject(req);
+  if (!raw || !["list", "create", "revoke"].includes(String(raw.action))) {
+    return errorResponse("INPUT", "Invalid or oversized request", 400);
+  }
+  const body = raw as RequestBody;
 
   if (body.action === "list") {
     const { data, error } = await sb.from("beta_invites")
@@ -57,6 +59,9 @@ Deno.serve(async (req) => {
   if (body.action === "create") {
     const days = body.expiresDays ?? 14;
     const maxUses = body.maxUses ?? 1;
+    if (body.note !== undefined && typeof body.note !== "string") {
+      return errorResponse("INPUT", "Invitation note must be text", 400);
+    }
     const note = (body.note ?? "").trim();
     if (!Number.isInteger(days) || days < 1 || days > 90 ||
         !Number.isInteger(maxUses) || maxUses < 1 || maxUses > 100 ||
@@ -81,7 +86,8 @@ Deno.serve(async (req) => {
   }
 
   if (body.action === "revoke") {
-    if (!body.inviteId || !/^[0-9a-f-]{36}$/i.test(body.inviteId)) {
+    if (typeof body.inviteId !== "string" ||
+        !/^[0-9a-f]{8}-(?:[0-9a-f]{4}-){3}[0-9a-f]{12}$/i.test(body.inviteId)) {
       return errorResponse("INPUT", "Invalid invitation ID", 400);
     }
     const { data, error } = await sb.rpc("admin_revoke_beta_invite", {

@@ -19,7 +19,7 @@
 // ═══════════════════════════════════════════════════════════════════════
 
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.58.0";
-import { json, errorResponse, preflight, CORS_HEADERS } from "../_shared/http.ts";
+import { json, errorResponse, preflight, CORS_HEADERS, readJsonObject } from "../_shared/http.ts";
 
 const GEMINI_MODELS = Array.from(new Set([
   ...(Deno.env.get("GEMINI_MODELS") ?? "").split(",").map((s) => s.trim()).filter(Boolean),
@@ -89,6 +89,7 @@ function parseItems(raw: unknown): { items: ModelItem[]; notes: string } {
   if (!obj || !Array.isArray(obj.items)) return { items: [], notes: "" };
   const items: ModelItem[] = [];
   for (const it of obj.items) {
+    if (it === null || typeof it !== "object" || Array.isArray(it)) continue;
     const o = it as Record<string, unknown>;
     const label = String(o.label ?? "").trim().slice(0, 120);
     if (!label) continue;
@@ -328,12 +329,8 @@ Deno.serve(async (req) => {
   );
 
   // Input validation.
-  let body: { image?: string; hints?: string; mealType?: string };
-  try {
-    body = await req.json();
-  } catch {
-    return errorResponse("BAD_REQUEST", "Invalid JSON", 400);
-  }
+  const body = await readJsonObject(req, 4_100_000);
+  if (!body) return errorResponse("BAD_REQUEST", "Invalid or oversized scan request", 400);
   const image = body.image ?? "";
   if (
     typeof image !== "string" ||
