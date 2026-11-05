@@ -51,3 +51,17 @@ CREATE TABLE public.beta_invites (
   revoked_at timestamptz,
   note text CHECK (char_length(note) <= 200)
 );
+
+-- Match the real Cloud policy environment for the optional settings migration.
+CREATE OR REPLACE FUNCTION auth.uid() RETURNS uuid
+LANGUAGE sql STABLE AS $$
+  SELECT nullif(current_setting('request.jwt.claim.sub', true), '')::uuid;
+$$;
+CREATE OR REPLACE FUNCTION public.is_admin() RETURNS boolean
+LANGUAGE sql STABLE SECURITY DEFINER SET search_path = public AS $$
+  SELECT EXISTS (SELECT 1 FROM public.admin_users WHERE user_id = auth.uid());
+$$;
+ALTER TABLE public.app_settings ENABLE ROW LEVEL SECURITY;
+GRANT USAGE ON SCHEMA public TO authenticated, anon;
+GRANT USAGE ON SCHEMA auth TO authenticated;
+GRANT SELECT ON public.app_settings TO authenticated;

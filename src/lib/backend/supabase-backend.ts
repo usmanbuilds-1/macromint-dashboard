@@ -768,11 +768,34 @@ export const supabaseBackend: Backend = {
   },
 
   async getPublicSettings() {
-    const { data } = await getSupabase().from("app_settings").select("*").eq("id", 1).maybeSingle();
+    const sb = getSupabase();
+    // Public beta clients need only these three non-personal settings.
+    // Avoid direct reads of the full, admin-controlled app_settings table.
+    const { data: config, error } = await sb.rpc("get_public_app_settings");
+    if (!error) {
+      if (!config) throw new BackendError("DB", "Application settings are unavailable");
+      return {
+        trialDays: n(config.trial_days),
+        rewardAccessHours: n(config.reward_access_hours),
+        maxDailyRewardedAds: n(config.max_daily_rewarded_ads),
+      };
+    }
+
+    // Rollout compatibility: older Cloud databases do not yet have the RPC.
+    // Never hide a permission failure or server error behind fake defaults.
+    if (error.code !== "PGRST202" && error.code !== "42883") {
+      throw new BackendError("DB", "Could not load application settings");
+    }
+    const { data: legacy, error: legacyError } = await sb.from("app_settings")
+      .select("trial_days, reward_access_hours, max_daily_rewarded_ads")
+      .eq("id", 1).maybeSingle();
+    if (legacyError || !legacy) {
+      throw new BackendError("DB", "Application settings are unavailable");
+    }
     return {
-      trialDays: n(data?.trial_days ?? 14),
-      rewardAccessHours: n(data?.reward_access_hours ?? 24),
-      maxDailyRewardedAds: n(data?.max_daily_rewarded_ads ?? 3),
+      trialDays: n(legacy.trial_days),
+      rewardAccessHours: n(legacy.reward_access_hours),
+      maxDailyRewardedAds: n(legacy.max_daily_rewarded_ads),
     };
   },
 
