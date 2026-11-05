@@ -880,9 +880,12 @@ export const supabaseBackend: Backend = {
   },
 
   async setConsent(kind, version) {
-    await getSupabase()
+    // This is a grant receipt, not a withdrawal marker. The current
+    // advertising/analytics choice lives in user_preferences.
+    const { error } = await getSupabase()
       .from("user_consents")
       .upsert({ user_id: await currentUserId(), kind, version }, { onConflict: "user_id,kind" });
+    if (error) throw new BackendError("DB", "Could not record consent");
   },
 
   async exportAllData() {
