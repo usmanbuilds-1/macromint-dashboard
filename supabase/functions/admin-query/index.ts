@@ -104,6 +104,11 @@ Deno.serve(async (req) => {
   }
 
   if (body.action === "get_audit") {
+    if (body.targetUserId !== undefined &&
+        (typeof body.targetUserId !== "string" ||
+         !/^[0-9a-f]{8}-(?:[0-9a-f]{4}-){3}[0-9a-f]{12}$/i.test(body.targetUserId))) {
+      return errorResponse("BAD_REQUEST", "Invalid targetUserId", 400);
+    }
     let q = admin
       .from("admin_audit_logs")
       .select("id, admin_id, target_user_id, action, previous_state, new_state, reason, created_at")
