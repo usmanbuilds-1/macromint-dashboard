@@ -50,6 +50,14 @@ _Avoid_: Account deletion
 An owner-imposed loss of product permission requiring that the affected user be signed out and protected operations denied.
 _Avoid_: Deleting their data
 
+**Restricted Account Access**:
+A limited authenticated state for an expired trial account to export or delete its data and request reactivation, without being able to use protected tracking features.
+_Avoid_: Active product access, complimentary access
+
+**Access Restoration**:
+An owner-authorized change that allows a previously blocked account to use the product again with its existing login credentials.
+_Avoid_: New account registration
+
 ## Recovery and scanning
 
 **Recovery Code**:
