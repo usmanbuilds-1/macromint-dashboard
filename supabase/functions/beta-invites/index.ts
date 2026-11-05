@@ -40,7 +40,7 @@ Deno.serve(async (req) => {
   const ownerId = authData.user.id;
   const { data: admin, error: adminError } = await sb.from("admin_users")
     .select("role").eq("user_id", ownerId).maybeSingle();
-  if (adminError || !admin) return errorResponse("FORBIDDEN", "Administrator only", 403);
+  if (adminError || admin?.role !== "owner") return errorResponse("FORBIDDEN", "Owner only", 403);
 
   const raw = await readJsonObject(req);
   if (!raw || !["list", "create", "revoke"].includes(String(raw.action))) {
@@ -57,7 +57,7 @@ Deno.serve(async (req) => {
   }
 
   if (body.action === "create") {
-    const days = body.expiresDays ?? 14;
+    const days = body.expiresDays ?? 7;
     const maxUses = body.maxUses ?? 1;
     if (body.note !== undefined && typeof body.note !== "string") {
       return errorResponse("INPUT", "Invitation note must be text", 400);

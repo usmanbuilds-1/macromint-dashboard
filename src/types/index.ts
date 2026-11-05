@@ -308,6 +308,8 @@ export interface AdminUserRow {
   name: string;
   createdAt: string;
   entitlement: Entitlement | null;
+  /** True only for invited non-admin testers eligible for beta trial extensions. */
+  isBetaTester?: boolean;
   diaryCount30d: number;
   lastDiaryDate: string | null;
 }

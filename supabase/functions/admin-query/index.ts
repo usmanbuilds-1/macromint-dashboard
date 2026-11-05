@@ -28,7 +28,7 @@ Deno.serve(async (req) => {
     .select("role")
     .eq("user_id", caller.id)
     .maybeSingle();
-  if (!adminRow) return errorResponse("FORBIDDEN", "Administrator access required", 403);
+  if (adminRow?.role !== "owner") return errorResponse("FORBIDDEN", "Owner access required", 403);
 
   const raw = await readJsonObject(req);
   if (!raw || typeof raw.action !== "string") {
@@ -56,7 +56,7 @@ Deno.serve(async (req) => {
 
     const ids = (profileRows ?? []).map((p) => p.user_id);
     const placeholder = ids.length ? ids : [crypto.randomUUID()];
-    const [entRes, diaryRes] = await Promise.all([
+    const [entRes, diaryRes, testerRes, adminsRes] = await Promise.all([
       admin
         .from("entitlements")
         .select("user_id, state, trial_started_at, trial_ends_at, access_until, updated_at")
@@ -66,9 +66,19 @@ Deno.serve(async (req) => {
         .select("user_id, entry_date")
         .in("user_id", placeholder)
         .gte("entry_date", new Date(Date.now() - 30 * 86_400_000).toISOString().slice(0, 10)),
+      admin
+        .from("beta_invite_redemptions")
+        .select("user_id")
+        .in("user_id", placeholder),
+      admin
+        .from("admin_users")
+        .select("user_id")
+        .in("user_id", placeholder),
     ]);
 
-    if (entRes.error || diaryRes.error) return errorResponse("DB", "Could not load user activity", 500);
+    if (entRes.error || diaryRes.error || testerRes.error || adminsRes.error) return errorResponse("DB", "Could not load user activity", 500);
+    const invitedIds = new Set((testerRes.data ?? []).map((item) => item.user_id));
+    const adminIds = new Set((adminsRes.data ?? []).map((item) => item.user_id));
     const entByUser = new Map((entRes.data ?? []).map((e) => [e.user_id, e]));
     const diaryByUser = new Map<string, { count: number; last: string | null }>();
     for (const d of diaryRes.data ?? []) {
@@ -86,6 +96,7 @@ Deno.serve(async (req) => {
         email: p.email,
         name: p.name,
         createdAt: p.created_at,
+        isBetaTester: invitedIds.has(p.user_id) && !adminIds.has(p.user_id),
         entitlement: e
           ? {
               userId: e.user_id,

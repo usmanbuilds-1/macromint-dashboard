@@ -28,9 +28,11 @@ function ShellGate() {
  *  user, a completed onboarding and active access. The database re-checks
  *  every operation server-side. */
 function AppShell() {
-  const { loading, user, profile, hasAccess } = useSession();
+  const { loading, user, profile, hasAccess, isAdmin } = useSession();
   const navigate = useNavigate();
   const location = useLocation();
+  // Owner administration is an operational right, separate from paid tracking.
+  const ownerAdminRoute = /^\/admin(?:\/|$)/.test(location.pathname) && isAdmin;
 
   useEffect(() => {
     if (loading) return;
@@ -42,10 +44,10 @@ function AppShell() {
       navigate({ to: "/onboarding", replace: true });
       return;
     }
-    if (profile && !hasAccess) {
+    if (profile && !hasAccess && !ownerAdminRoute) {
       navigate({ to: "/upgrade", replace: true });
     }
-  }, [loading, user, profile, hasAccess, location.pathname, navigate]);
+  }, [loading, user, profile, hasAccess, ownerAdminRoute, location.pathname, navigate]);
 
   if (loading || !user) return <ShellGate />;
   if (!profile)
@@ -58,7 +60,7 @@ function AppShell() {
         </button>
       </div>
     );
-  if (!profile.onboardedAt || !hasAccess) return <ShellGate />;
+  if ((!profile.onboardedAt || !hasAccess) && !ownerAdminRoute) return <ShellGate />;
 
   // AppLayout renders <Outlet /> itself (it was ported as a react-router layout).
   return <AppLayout />;
