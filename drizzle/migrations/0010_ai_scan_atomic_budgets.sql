@@ -1,3 +1,5 @@
+BEGIN;
+
 -- 0010: Atomic per-user AI scan attempt budgets. MANUAL CLOUD SQL MIGRATION.
 -- Do not deploy the ai-scan Edge bundle using this RPC until this migration
 -- has been applied and verified in the same environment.
@@ -69,3 +71,5 @@ GRANT EXECUTE ON FUNCTION public.consume_ai_scan_budget(uuid) TO service_role;
 
 -- Manual maintenance: DELETE FROM public.ai_scan_attempt_budgets
 -- WHERE window_start < now() - interval '3 days';
+
+COMMIT;
