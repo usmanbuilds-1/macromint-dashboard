@@ -59,6 +59,9 @@ Deno.serve(async (req) => {
   if (body.action === "create") {
     const days = body.expiresDays ?? 14;
     const maxUses = body.maxUses ?? 1;
+    if (body.note !== undefined && typeof body.note !== "string") {
+      return errorResponse("INPUT", "Invitation note must be text", 400);
+    }
     const note = (body.note ?? "").trim();
     if (!Number.isInteger(days) || days < 1 || days > 90 ||
         !Number.isInteger(maxUses) || maxUses < 1 || maxUses > 100 ||
@@ -83,7 +86,8 @@ Deno.serve(async (req) => {
   }
 
   if (body.action === "revoke") {
-    if (!body.inviteId || !/^[0-9a-f-]{36}$/i.test(body.inviteId)) {
+    if (typeof body.inviteId !== "string" ||
+        !/^[0-9a-f]{8}-(?:[0-9a-f]{4}-){3}[0-9a-f]{12}$/i.test(body.inviteId)) {
       return errorResponse("INPUT", "Invalid invitation ID", 400);
     }
     const { data, error } = await sb.rpc("admin_revoke_beta_invite", {
