@@ -34,6 +34,7 @@ export function Settings() {
   const [weightKg, setWeightKg] = useState("");
   const [targetWeightKg, setTargetWeightKg] = useState("");
   const [busy, setBusy] = useState(false);
+  const [consentSaving, setConsentSaving] = useState(false);
   const [prefs, setPrefs] = useState({ adConsent: false, analyticsConsent: false });
 
   useEffect(() => {
@@ -130,9 +131,25 @@ export function Settings() {
   };
 
   const setConsent = async (kind: "advertising" | "analytics", granted: boolean) => {
-    setPrefs((p) => ({ ...p, [kind === "advertising" ? "adConsent" : "analyticsConsent"]: granted }));
-    await backend.savePreferences(kind === "advertising" ? { adConsent: granted } : { analyticsConsent: granted });
-    await backend.setConsent(kind, "1.0").catch(() => undefined);
+    if (consentSaving) return;
+    setConsentSaving(true);
+    try {
+      // An opt-in needs a successfully persisted consent receipt first.
+      // A withdrawal must never create a new record saying "granted".
+      if (granted) await backend.setConsent(kind, "1.0");
+      const updated = await backend.savePreferences(
+        kind === "advertising" ? { adConsent: granted } : { analyticsConsent: granted },
+      );
+      setPrefs({ adConsent: updated.adConsent, analyticsConsent: updated.analyticsConsent });
+    } catch {
+      // Do not optimistically claim a privacy choice was saved. Read the
+      // authoritative preferences if either server-side step fails.
+      const saved = await backend.getPreferences().catch(() => null);
+      if (saved) setPrefs({ adConsent: saved.adConsent, analyticsConsent: saved.analyticsConsent });
+      toast.error("Privacy preference could not be saved. Please retry.");
+    } finally {
+      setConsentSaving(false);
+    }
   };
 
   return (
@@ -221,12 +238,14 @@ export function Settings() {
             description="Optional product usage analytics. Review the privacy policy for what is collected and how it is handled."
             checked={prefs.analyticsConsent}
             onChange={(v) => void setConsent("analytics", v)}
+            disabled={consentSaving}
           />
           <ConsentRow
             title="Personalised advertising"
             description="Advertising preferences are saved here. Rewarded ads and personalised advertising are not currently enabled."
             checked={prefs.adConsent}
             onChange={(v) => void setConsent("advertising", v)}
+            disabled={consentSaving}
           />
         </div>
       </section>
@@ -252,20 +271,20 @@ export function Settings() {
           <AlertDialog>
             <AlertDialogTrigger asChild>
               <Button variant="ghost" className="min-h-11 justify-start gap-2 self-start text-destructive hover:text-destructive">
-                <Trash2 className="h-4 w-4" /> Delete account and all data
+                <Trash2 className="h-4 w-4" /> Delete account
               </Button>
             </AlertDialogTrigger>
             <AlertDialogContent>
               <AlertDialogHeader>
                 <AlertDialogTitle>Delete your account?</AlertDialogTitle>
                 <AlertDialogDescription>
-                  This permanently removes your profile, diary, recipes, measurements and preferences. This cannot be undone.
+                  This permanently removes your account and its diary, recipes, measurements and preferences. Limited trial-abuse records may be retained as described in the Privacy Policy. This cannot be undone.
                 </AlertDialogDescription>
               </AlertDialogHeader>
               <AlertDialogFooter>
                 <AlertDialogCancel>Keep my account</AlertDialogCancel>
                 <AlertDialogAction onClick={() => void deleteAccount()} className="bg-destructive text-white hover:bg-destructive/90">
-                  Delete everything
+                  Delete account
                 </AlertDialogAction>
               </AlertDialogFooter>
             </AlertDialogContent>
@@ -299,14 +318,14 @@ async function demoReset() {
   window.location.reload();
 }
 
-function ConsentRow({ title, description, checked, onChange }: { title: string; description: string; checked: boolean; onChange: (v: boolean) => void }) {
+function ConsentRow({ title, description, checked, onChange, disabled = false }: { title: string; description: string; checked: boolean; onChange: (v: boolean) => void; disabled?: boolean }) {
   return (
     <div className="flex items-start justify-between gap-4">
       <div>
         <p className="text-sm font-medium">{title}</p>
         <p className="mt-0.5 text-xs text-muted-foreground">{description}</p>
       </div>
-      <Switch checked={checked} onCheckedChange={onChange} aria-label={title} />
+      <Switch checked={checked} onCheckedChange={onChange} aria-label={title} disabled={disabled} />
     </div>
   );
 }
