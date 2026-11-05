@@ -30,6 +30,8 @@ jobs:
         run: node --check scripts/live-auth-security-audit.mjs
       - name: Exercise bounded Edge JSON decoding
         run: node scripts/check-edge-json-reader.mjs
+      - name: Exercise Edge handler negative paths without network
+        run: node scripts/check-edge-negative-paths.mjs
       - name: Nutrition regression tests
         run: pnpm test
       - name: ESLint (existing Prettier violations excluded)
