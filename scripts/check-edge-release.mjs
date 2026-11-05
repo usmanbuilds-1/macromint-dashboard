@@ -58,7 +58,7 @@ const safeJson = read("supabase/functions/_shared/http.ts");
 assert.match(safeJson, /export async function readJsonObject/, "Bounded JSON helper missing");
 for (const name of ["username-register", "username-recovery", "admin-query",
                     "admin-action", "beta-invites", "ai-scan", "food-search"]) {
-  assert.match(read(`supabase/functions/${name}/index.ts`), /readJsonObject\\(/,
+  assert.match(read(`supabase/functions/${name}/index.ts`), /readJsonObject\(/,
     `${name}: must reject malformed JSON object bodies`);
 }
 
