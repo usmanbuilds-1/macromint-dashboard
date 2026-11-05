@@ -832,6 +832,14 @@ export type Database = {
     Functions: {
       am_i_admin: { Args: never; Returns: boolean }
       check_access: { Args: never; Returns: boolean }
+      get_public_app_settings: {
+        Args: never
+        Returns: {
+          trial_days: number
+          reward_access_hours: number
+          max_daily_rewarded_ads: number
+        } | null
+      }
       consume_username_auth_budget: {
         Args: {
           p_key_hash: string
