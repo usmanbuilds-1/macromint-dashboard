@@ -70,7 +70,7 @@ BEGIN
                         ELSE 'trial_expired' END;
       END IF;
     WHEN 'set_expiry' THEN
-      IF p_date IS NULL OR p_date !~ '^[0-9]{4}-[0-9]{2}-[0-9]{2} THEN
+      IF p_date IS NULL OR p_date !~ '^[0-9]{4}-[0-9]{2}-[0-9]{2}$' THEN
         RAISE EXCEPTION 'Expiry must be a YYYY-MM-DD date';
       END IF;
       BEGIN v_date := (p_date::date + interval '1 day' - interval '1 second'); EXCEPTION WHEN others THEN
