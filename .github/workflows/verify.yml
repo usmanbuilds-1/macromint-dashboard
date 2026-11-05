@@ -28,6 +28,8 @@ jobs:
         run: node scripts/check-edge-release.mjs
       - name: Verify guarded postdeploy security test harness
         run: node --check scripts/live-auth-security-audit.mjs
+      - name: Exercise bounded Edge JSON decoding
+        run: node scripts/check-edge-json-reader.mjs
       - name: Nutrition regression tests
         run: pnpm test
       - name: ESLint (existing Prettier violations excluded)
