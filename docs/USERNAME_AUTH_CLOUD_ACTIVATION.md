@@ -27,6 +27,53 @@ the two frontend `VITE_` flags only after the backend passes acceptance
 checks, sign up, store recovery codes privately, and promote the verified
 owner UUID. 8. Run a two-account real RLS and login/recovery test.
 
+## Live security gate — 2026-11-05
+
+Read-only Cloud database verification confirms that the `0006` invitation tables
+and both `auth.users` triggers are installed. There are no users or admins;
+one previously exposed invitation is revoked, and a different unredeemed,
+unexpired single-use owner invitation exists. Do not expose its plaintext.
+The database rate-limit function was previously tested (first 2 calls allowed,
+third rejected, transaction rolled back). The registration and recovery Edge
+functions were redeployed from PR #20, but are still disabled.
+
+**New release blocker:** `username-rate-limit.ts` used the leftmost
+`X-Forwarded-For` value as fallback client IP. That entry may be caller supplied.
+This patch removes that fallback entirely and instead fails closed unless a
+syntactically valid `CF-Connecting-IP` value is present. Unit tests explicitly
+reject forged XFF-only requests and invalid IP formats. This is source hardening,
+**not** proof that the provider overwrites `CF-Connecting-IP`.
+
+Activation now requires:
+1. Merge this patch after CI and have Lovable **redeploy both**
+   `username-register` and `username-recovery` with the changed shared
+   `_shared/username-rate-limit.ts` from the new commit. The PR #20 deployments
+   are no longer sufficient once this lands. Do not modify the website or
+   enable any flags during this redeployment.
+2. Verify the managed ingress (including custom domains / alternate routes)
+   overwrites caller-supplied `CF-Connecting-IP` rather than forwarding it.
+   Run controlled HTTP tests that send forged `CF-Connecting-IP` and
+   `X-Forwarded-For`; verify observed identity and IP rate limits are
+   unchanged. The current `503 NOT_CONFIGURED` guards execute **before** rate
+   limiting, so they cannot demonstrate this. Do not treat Cloudflare presence,
+   a static code audit, or a successful database RPC test alone as proof.
+   Obtain the provider contract or safe observable end-to-end probe;
+   do not publish raw IP addresses or access credentials.
+3. Only after this proof, mark the corresponding backend verification
+   secrets `true`, then explicitly enable registration and recovery backend
+   flags. Keep the public app gated until ready.
+4. Enable frontend build flags in source (`VITE_USERNAME_AUTH_ENABLED` and
+   `VITE_BETA_INVITES_ENABLED`) only once backend checks pass, verify built
+   assets, and let the owner publish.
+5. Register the owner's real username/password through the private invite,
+   store eight recovery codes offline, verify their own auth UUID, then
+   promote that UUID in `admin_users`. Test disposable second account,
+   failed invites, rate limiting, recovery, RLS isolation, and logout.
+
+Do not change the public `app_settings` RLS read policy without reviewing
+`supabase-backend.ts:getPublicSettings`, which reads that table directly;
+an admin-only policy would silently substitute defaults for regular users.
+
 **Owner constraint:** Do not invoke the Lovable agent or any operation consuming Lovable
 build credits automatically. Ask the owner to initiate such a step.
 
