@@ -5,7 +5,7 @@
 // ═══════════════════════════════════════════════════════════════════════
 
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.58.0";
-import { json, errorResponse, preflight } from "../_shared/http.ts";
+import { json, errorResponse, preflight, readJsonObject } from "../_shared/http.ts";
 
 interface ActionBody {
   action: string;
@@ -40,13 +40,16 @@ Deno.serve(async (req) => {
     .maybeSingle();
   if (!adminRow) return errorResponse("FORBIDDEN", "Administrator access required", 403);
 
-  let body: ActionBody;
-  try {
-    body = await req.json();
-  } catch {
-    return errorResponse("BAD_REQUEST", "Invalid JSON", 400);
+  const raw = await readJsonObject(req);
+  if (!raw || typeof raw.action !== "string") {
+    return errorResponse("BAD_REQUEST", "Invalid or oversized request", 400);
   }
+  const body = raw as unknown as ActionBody;
   const { action, targetUserId, reason } = body;
+  if ((reason !== undefined && typeof reason !== "string") ||
+      (body.note !== undefined && typeof body.note !== "string")) {
+    return errorResponse("BAD_REQUEST", "Reason and note must be text", 400);
+  }
 
   // All app configuration and entitlement changes are database-atomic with
   // their audit rows. Applying an update without an audit entry must fail.
