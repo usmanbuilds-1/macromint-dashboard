@@ -86,4 +86,15 @@ assert.doesNotMatch(upgrade, /\$6|\$54/, "Invented subscription pricing must not
 assert.doesNotMatch(upgrade, /Continue free with an ad/,
   "Unconfigured rewarded-ad checkout must not be advertised");
 
+const legal = read("src/features/landing/Legal.tsx");
+assert.match(legal, /Subscription checkout is not enabled/,
+  "Legal page must accurately state unavailable payments");
+assert.match(legal, /account identifier and dates/,
+  "Privacy notice must disclose retained trial-abuse records");
+assert.doesNotMatch(legal, /Subscriptions renew automatically until cancelled/,
+  "Do not claim working paid subscriptions before provider activation");
+const settingsPage = read("src/features/settings/Settings.tsx");
+assert.doesNotMatch(settingsPage, /All personal data has been removed/,
+  "Deletion UI must not contradict retained abuse ledger");
+
 console.log("PASS: all eight Edge handlers, shared modules, audited SQL interfaces and beta feature gates");
