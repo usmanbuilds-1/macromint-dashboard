@@ -21,10 +21,10 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.58.0";
 import { json, errorResponse, preflight, CORS_HEADERS } from "../_shared/http.ts";
 
-const GEMINI_MODELS = [
+const GEMINI_MODELS = Array.from(new Set([
   ...(Deno.env.get("GEMINI_MODELS") ?? "").split(",").map((s) => s.trim()).filter(Boolean),
   "gemini-2.5-flash",
-];
+])).filter((model) => /^[a-zA-Z0-9._-]{1,80}$/.test(model)).slice(0, 3);
 const OPENAI_MODEL = Deno.env.get("AI_MODEL") ?? "gpt-4o-mini";
 const MAX_IMAGE_BYTES = 3_000_000;
 const MATCH_THRESHOLD = 0.55;
@@ -114,11 +114,12 @@ async function callGemini(apiKey: string, mime: string, b64: string, userPrompt:
   for (const model of GEMINI_MODELS) {
     try {
       const res = await fetch(
-        `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`,
+        `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent`,
         {
           method: "POST",
           signal: AbortSignal.timeout(15000),
-          headers: { "Content-Type": "application/json" },
+          // Keep provider secrets out of the URL/query string and proxy logs.
+          headers: { "Content-Type": "application/json", "x-goog-api-key": apiKey },
           body: JSON.stringify({
             system_instruction: { parts: [{ text: SYSTEM_PROMPT }] },
             contents: [
