@@ -90,7 +90,7 @@ interface BetaInviteRow {
 function BetaInvitations() {
   const [invitations, setInvitations] = useState<BetaInviteRow[]>([]);
   const [createdCode, setCreatedCode] = useState<string | null>(null);
-  const [expiresDays, setExpiresDays] = useState(14);
+  const [expiresDays, setExpiresDays] = useState(7);
   const [note, setNote] = useState("");
   const [busy, setBusy] = useState(false);
   const [loaded, setLoaded] = useState(false);
@@ -225,17 +225,38 @@ function AdminUsers() {
   const [noteTarget, setNoteTarget] = useState<AdminUserRow | null>(null);
   const [note, setNote] = useState("");
   const [openRow, setOpenRow] = useState<string | null>(null);
+  const [pending, setPending] = useState<{ action: string; row: AdminUserRow; extra?: Record<string, unknown> } | null>(null);
+  const [reason, setReason] = useState("");
+  const [saving, setSaving] = useState(false);
   const version = useDataVersion();
 
   const users = useAsyncData(() => backend.adminListUsers(search), [search, version]);
 
-  const act = async (action: string, row: AdminUserRow, extra?: Record<string, unknown>) => {
+  const act = async (action: string, row: AdminUserRow, extra?: Record<string, unknown>): Promise<boolean> => {
     try {
       await backend.adminAction({ action, targetUserId: row.userId, ...extra });
       bumpData();
       toast.success(`${action.replace(/_/g, " ")} applied to ${publicAccountLabel({ email: row.email })}`);
+      return true;
     } catch (e) {
       toast.error(e instanceof Error ? e.message : "Action failed");
+      return false;
+    }
+  };
+  const requestAction = (action: string, row: AdminUserRow, extra?: Record<string, unknown>) => {
+    setPending({ action, row, extra });
+    setReason("");
+  };
+  const confirmAction = async () => {
+    if (!pending || reason.trim().length < 3) return;
+    setSaving(true);
+    try {
+      if (await act(pending.action, pending.row, { ...pending.extra, reason: reason.trim() })) {
+        setPending(null);
+        setReason("");
+      }
+    } finally {
+      setSaving(false);
     }
   };
 
@@ -281,15 +302,16 @@ function AdminUsers() {
             </div>
             {openRow === row.userId && (
               <div className="mt-3 flex flex-wrap gap-2 rounded-lg border bg-secondary/40 p-3">
-                {row.entitlement?.state !== "paid_active" && (
-                  <ActionChip label="Grant paid access" onClick={() => void act("grant_access", row)} />
+                <ActionChip label="Grant complimentary" onClick={() => requestAction("grant_complimentary", row)} />
+                {row.isBetaTester && (
+                  <>
+                    <ActionChip label="Extend tester trial +7d" onClick={() => requestAction("extend_trial", row, { days: 7 })} />
+                    <ActionChip label="Shorten tester trial −7d" onClick={() => requestAction("shorten_trial", row, { days: 7 })} />
+                  </>
                 )}
-                <ActionChip label="Grant complimentary" onClick={() => void act("grant_complimentary", row)} />
-                <ActionChip label="Extend trial +7d" onClick={() => void act("extend_trial", row, { days: 7 })} />
-                <ActionChip label="Shorten trial −7d" onClick={() => void act("shorten_trial", row, { days: 7 })} />
-                <ActionChip label="Suspend" onClick={() => void act("suspend", row)} />
-                <ActionChip label="Reactivate" onClick={() => void act("reactivate", row)} />
-                <ActionChip label="Revoke access" destructive onClick={() => void act("revoke_access", row)} />
+                <ActionChip label="Suspend" onClick={() => requestAction("suspend", row)} />
+                <ActionChip label="Reactivate" onClick={() => requestAction("reactivate", row)} />
+                <ActionChip label="Revoke access" destructive onClick={() => requestAction("revoke_access", row)} />
                 <ActionChip label="Add internal note" onClick={() => { setNoteTarget(row); setNote(""); }} />
               </div>
             )}
@@ -299,6 +321,27 @@ function AdminUsers() {
           <p className="px-4 py-8 text-center text-sm text-muted-foreground">No users match "{search}".</p>
         )}
       </div>
+
+      <Dialog open={Boolean(pending)} onOpenChange={(o) => { if (!o && !saving) setPending(null); }}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>{pending?.action.replace(/_/g, " ")} — {publicAccountLabel({ email: pending?.row.email })}</DialogTitle>
+          </DialogHeader>
+          <div className="grid gap-2">
+            <Label htmlFor="adm-action-reason">Reason (required in the audit log)</Label>
+            <Input id="adm-action-reason" value={reason} maxLength={1000}
+              onChange={(event) => setReason(event.target.value)}
+              placeholder="Why is this change necessary?" />
+            <p className="text-xs text-muted-foreground">No access change is applied until you confirm it.</p>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" disabled={saving} onClick={() => setPending(null)}>Cancel</Button>
+            <Button disabled={saving || reason.trim().length < 3} onClick={() => void confirmAction()}>
+              {saving ? "Applying…" : "Confirm change"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       <Dialog open={Boolean(noteTarget)} onOpenChange={(o) => (!o ? setNoteTarget(null) : undefined)}>
         <DialogContent className="sm:max-w-sm">
