@@ -15,12 +15,37 @@ type Consume = (budget: { p_scope: Scope; p_key_hash: string; p_limit: number; p
 
 const encoder = new TextEncoder();
 
-function requestIp(req: Request): string | null {
-  const forwarded = req.headers.get("x-forwarded-for");
-  const ip = (req.headers.get("cf-connecting-ip") ?? forwarded?.split(",")[0] ?? "").trim();
-  // Reject missing, ambiguous or obviously malformed addresses. Proxy forwarding
-  // must be verified separately before release.
-  return /^[0-9a-fA-F:.]{3,65}$/.test(ip) ? ip.toLowerCase() : null;
+/**
+ * Read only the dedicated edge-proxy client-IP header. X-Forwarded-For is
+ * caller-controlled on many proxy chains; its first element is not safe for
+ * rate limiting. If the trusted header is absent or malformed, fail closed.
+ *
+ * DEPLOYMENT GATE: Do not enable USERNAME_*_RATE_LIMIT_VERIFIED until an
+ * external spoofed-header probe confirms that this project's managed ingress
+ * overwrites client-supplied CF-Connecting-IP and has no origin bypass.
+ */
+export function requestIp(req: Request): string | null {
+  const raw = req.headers.get("cf-connecting-ip");
+  if (!raw) return null;
+  const ip = raw.trim().toLowerCase();
+  if (ip.includes(",") || /\s/.test(ip)) return null;
+
+  // Strict dotted-quad IPv4; reject invalid octets and ambiguous leading zeros.
+  const v4 = ip.match(/^(0|[1-9]\d{0,2})\.(0|[1-9]\d{0,2})\.(0|[1-9]\d{0,2})\.(0|[1-9]\d{0,2})$/);
+  if (v4) return v4.slice(1).every((octet) => Number(octet) <= 255) ? ip : null;
+
+  // URL parsing rejects malformed IPv6 and provides one stable canonical form.
+  // Unusual IPv4-mapped spellings fail closed instead of treating variants as
+  // distinct rate-limit keys.
+  if (!ip.includes(":") || !/^[0-9a-f:]+$/.test(ip)) return null;
+  try {
+    const hostname = new URL(`http://[${ip}]/`).hostname;
+    return hostname.startsWith("[") && hostname.endsWith("]")
+      ? hostname.slice(1, -1)
+      : null;
+  } catch {
+    return null;
+  }
 }
 
 export async function checkUsernameAuthBudget(
