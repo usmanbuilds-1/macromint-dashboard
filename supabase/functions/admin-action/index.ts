@@ -48,123 +48,68 @@ Deno.serve(async (req) => {
   }
   const { action, targetUserId, reason } = body;
 
-  // ── Platform configuration actions (no target user) ────────────────────
-  if (action === "set_trial_days" || action === "set_reward_config") {
-    const patch: Record<string, unknown> = { updated_at: new Date().toISOString() };
-    if (action === "set_trial_days") {
-      const days = Number(body.days);
-      if (!Number.isInteger(days) || days < 0 || days > 90) {
-        return errorResponse("BAD_REQUEST", "days must be an integer between 0 and 90", 400);
-      }
-      patch.trial_days = days;
-    } else {
-      const hours = Number(body.days); // reuse field: hours of access per ad
-      const maxAds = Number(body.date); // reuse field: daily ad cap
-      if (!Number.isFinite(hours) || hours <= 0 || hours > 168) {
-        return errorResponse("BAD_REQUEST", "reward hours must be between 1 and 168", 400);
-      }
-      if (Number.isFinite(maxAds)) patch.max_daily_rewarded_ads = Math.min(Math.max(Math.round(maxAds), 0), 20);
-      patch.reward_access_hours = hours;
+  // All app configuration and entitlement changes are database-atomic with
+  // their audit rows. Applying an update without an audit entry must fail.
+  const allowedActions = new Set([
+    "set_trial_days", "set_reward_config",
+    "grant_access", "grant_complimentary", "revoke_access", "restore_access",
+    "extend_trial", "shorten_trial", "set_expiry", "suspend", "reactivate", "add_note",
+  ]);
+  if (!allowedActions.has(action)) return errorResponse("BAD_REQUEST", "Unknown action", 400);
+  if (typeof reason === "string" && reason.length > 1000 ||
+      typeof body.note === "string" && body.note.length > 1000) {
+    return errorResponse("BAD_REQUEST", "Note or reason too long", 400);
+  }
+  const isConfig = action === "set_trial_days" || action === "set_reward_config";
+  if (!isConfig && (typeof targetUserId !== "string" ||
+      !/^[0-9a-f]{8}-(?:[0-9a-f]{4}-){3}[0-9a-f]{12}$/i.test(targetUserId))) {
+    return errorResponse("BAD_REQUEST", "Valid target user ID required", 400);
+  }
+  if (isConfig) {
+    const days = body.days;
+    const hours = action === "set_reward_config" ? Number(days) : null;
+    const ads = action === "set_reward_config" ? Number(body.date) : null;
+    if (action === "set_trial_days" && (!Number.isInteger(days) || days! < 0 || days! > 90) ||
+        action === "set_reward_config" &&
+          (!Number.isFinite(hours) || hours! <= 0 || hours! > 168 ||
+           !Number.isInteger(ads) || ads! < 0 || ads! > 20)) {
+      return errorResponse("BAD_REQUEST", "Invalid application configuration", 400);
     }
-    const { error } = await admin.from("app_settings").update(patch).eq("id", 1);
-    if (error) return errorResponse("DB", error.message, 500);
-    await admin.from("admin_audit_logs").insert({
-      admin_id: caller.id,
-      target_user_id: caller.id,
-      action,
-      reason: reason ?? null,
-      metadata: patch,
+    const { error } = await admin.rpc("admin_set_app_config", {
+      p_admin: caller.id,
+      p_action: action,
+      p_days: action === "set_trial_days" ? days : null,
+      p_hours: hours,
+      p_ads: ads,
+      p_reason: reason ?? null,
     });
+    if (error) return errorResponse("DB", "Could not save application configuration", 500);
     return json({ ok: true });
   }
 
-  if (!targetUserId) return errorResponse("BAD_REQUEST", "targetUserId is required", 400);
-
-  const { data: current } = await admin
-    .from("entitlements")
-    .select("*")
-    .eq("user_id", targetUserId)
-    .maybeSingle();
-  if (!current) return errorResponse("NOT_FOUND", "No entitlement record for that user", 404);
-
-  const patch: Record<string, unknown> = { updated_at: new Date().toISOString() };
-  let newState: string = current.state;
-  let newTrialEnds: string | null = current.trial_ends_at;
-
-  switch (action) {
-    case "grant_access":
-      newState = "paid_active";
-      patch.access_until = null;
-      break;
-    case "grant_complimentary":
-      newState = "complimentary";
-      patch.access_until = null;
-      break;
-    case "revoke_access":
-      newState = "revoked";
-      break;
-    case "restore_access": {
-      const allowed = ["paid_active", "complimentary", "trial_active"];
-      newState = allowed.includes(body.state ?? "") ? body.state! : "paid_active";
-      break;
-    }
-    case "extend_trial":
-    case "shorten_trial": {
-      const days = Number(body.days);
-      if (!Number.isInteger(days) || days <= 0 || days > 365) {
-        return errorResponse("BAD_REQUEST", "days must be a positive integer", 400);
-      }
-      const sign = action === "extend_trial" ? 1 : -1;
-      const base = new Date(Math.max(Date.parse(current.trial_ends_at), Date.now()));
-      newTrialEnds = new Date(base.getTime() + sign * days * 86_400_000).toISOString();
-      patch.trial_ends_at = newTrialEnds;
-      if (newTrialEnds >= new Date().toISOString() && current.state !== "revoked" && current.state !== "suspended") {
-        newState = "trial_active";
-      }
-      break;
-    }
-    case "set_expiry": {
-      const when = body.date ? Date.parse(body.date) : NaN;
-      if (Number.isNaN(when)) return errorResponse("BAD_REQUEST", "date must be ISO 8601", 400);
-      newTrialEnds = new Date(when).toISOString();
-      patch.trial_ends_at = newTrialEnds;
-      if (current.state === "trial_active" || current.state === "trial_expired") {
-        newState = when >= Date.now() ? "trial_active" : "trial_expired";
-      }
-      break;
-    }
-    case "suspend":
-      newState = "suspended";
-      break;
-    case "reactivate":
-      newState = newTrialEnds && newTrialEnds >= new Date().toISOString() ? "trial_active" : "paid_active";
-      break;
-    case "add_note":
-      break;
-    default:
-      return errorResponse("BAD_REQUEST", `Unknown action: ${action}`, 400);
+  if ((action === "extend_trial" || action === "shorten_trial") &&
+      (!Number.isInteger(body.days) || body.days! < 1 || body.days! > 365)) {
+    return errorResponse("BAD_REQUEST", "Invalid trial adjustment", 400);
+  }
+  if (action === "set_expiry" && (typeof body.date !== "string" ||
+      !/^\d{4}-\d{2}-\d{2}$/.test(body.date))) {
+    return errorResponse("BAD_REQUEST", "Expiry must be YYYY-MM-DD", 400);
+  }
+  if (action === "restore_access" &&
+      !["paid_active", "complimentary", "trial_active"].includes(body.state ?? "")) {
+    return errorResponse("BAD_REQUEST", "Select a valid access state", 400);
   }
 
-  if (action !== "add_note") {
-    patch.state = newState;
-    const { error } = await admin.from("entitlements").update(patch).eq("user_id", targetUserId);
-    if (error) return errorResponse("DB", error.message, 500);
-  }
-
-  await admin.from("admin_audit_logs").insert({
-    admin_id: caller.id,
-    target_user_id: targetUserId,
-    action,
-    previous_state: current.state,
-    new_state: action === "add_note" ? null : newState,
-    reason: reason ?? body.note ?? null,
-    metadata: action === "add_note" ? { note: body.note ?? "" } : { patch },
+  const { data: updated, error } = await admin.rpc("admin_change_entitlement", {
+    p_admin: caller.id,
+    p_target: targetUserId,
+    p_action: action,
+    p_days: action === "extend_trial" || action === "shorten_trial" ? body.days : null,
+    p_date: action === "set_expiry" ? body.date : null,
+    p_state: action === "restore_access" ? body.state : null,
+    p_reason: reason ?? null,
+    p_note: body.note ?? null,
   });
-
-  const { data: updated } = await admin
-    .from("entitlements")
-    .select("*")
-    .eq("user_id", targetUserId)
-    .maybeSingle();
+  if (error || !updated) return errorResponse("DB", "Could not apply audited access change", 500);
   return json({ ok: true, entitlement: updated });
 });

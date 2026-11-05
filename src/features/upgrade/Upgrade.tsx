@@ -33,12 +33,10 @@ export function Upgrade() {
           <div className="rounded-xl border bg-card p-5">
             <div className="flex items-baseline justify-between">
               <h2 className="text-sm font-semibold">Premium access</h2>
-              <p className="text-sm text-muted-foreground">
-                <span className="text-xl font-semibold text-foreground">$6</span> / month or <span className="text-xl font-semibold text-foreground">$54</span> / year
-              </p>
+              <p className="text-sm text-muted-foreground">Unavailable during private beta</p>
             </div>
             <ul className="mt-3 flex flex-col gap-1.5 text-sm text-muted-foreground">
-              <li>Unlimited food logging, recipes and AI meal scanning</li>
+              <li>Food logging, recipes and AI meal scanning subject to usage limits</li>
               <li>Full trends, adherence and weekly history</li>
               <li>Data export and account controls included</li>
             </ul>
@@ -46,19 +44,11 @@ export function Upgrade() {
               Payment checkout not available yet
             </Button>
             <p className="mt-2 text-center text-[11px] text-muted-foreground">
-              Illustrative future pricing. No payment provider is configured and no purchase can be made here.
+              No payment provider is configured. Ask the beta administrator about access.
             </p>
           </div>
 
-          <div className="rounded-xl border bg-card p-5">
-            <h2 className="text-sm font-semibold">Continue free with an ad</h2>
-            <p className="mt-1 text-xs text-muted-foreground">
-              Rewarded advertising is not available on this deployment. Contact the beta administrator about access.
-            </p>
-            <Button variant="outline" className="mt-3 w-full" disabled>
-              Rewarded ads not configured
-            </Button>
-          </div>
+
         </div>
 
         <div className="mt-8 flex items-center justify-between">

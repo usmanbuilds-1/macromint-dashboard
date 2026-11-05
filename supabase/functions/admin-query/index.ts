@@ -38,7 +38,13 @@ Deno.serve(async (req) => {
   }
 
   if (body.action === "list_users") {
+    if (body.search != null && (typeof body.search !== "string" || body.search.length > 80)) {
+      return errorResponse("BAD_REQUEST", "Search is too long", 400);
+    }
     const search = (body.search ?? "").trim().toLowerCase();
+    // PostgREST .or() uses comma and parentheses as operators. Reject filter
+    // grammar rather than allowing the search field to alter query structure.
+    if (/[(),%*]/.test(search)) return errorResponse("BAD_REQUEST", "Invalid search characters", 400);
 
     let query = admin
       .from("profiles")
@@ -63,6 +69,7 @@ Deno.serve(async (req) => {
         .gte("entry_date", new Date(Date.now() - 30 * 86_400_000).toISOString().slice(0, 10)),
     ]);
 
+    if (entRes.error || diaryRes.error) return errorResponse("DB", "Could not load user activity", 500);
     const entByUser = new Map((entRes.data ?? []).map((e) => [e.user_id, e]));
     const diaryByUser = new Map<string, { count: number; last: string | null }>();
     for (const d of diaryRes.data ?? []) {
@@ -116,7 +123,9 @@ Deno.serve(async (req) => {
   }
 
   if (body.action === "get_user") {
-    if (!body.targetUserId) return errorResponse("BAD_REQUEST", "targetUserId required", 400);
+    if (!body.targetUserId || !/^[0-9a-f]{8}-(?:[0-9a-f]{4}-){3}[0-9a-f]{12}$/i.test(body.targetUserId)) {
+      return errorResponse("BAD_REQUEST", "Valid targetUserId required", 400);
+    }
     const [{ data: profile }, { data: ent }, { data: payments }] = await Promise.all([
       admin.from("profiles").select("*").eq("user_id", body.targetUserId).maybeSingle(),
       admin.from("entitlements").select("*").eq("user_id", body.targetUserId).maybeSingle(),

@@ -23,9 +23,7 @@ import { json, errorResponse, preflight, CORS_HEADERS } from "../_shared/http.ts
 
 const GEMINI_MODELS = [
   ...(Deno.env.get("GEMINI_MODELS") ?? "").split(",").map((s) => s.trim()).filter(Boolean),
-  "gemini-flash-latest",
   "gemini-2.5-flash",
-  "gemini-2.0-flash",
 ];
 const OPENAI_MODEL = Deno.env.get("AI_MODEL") ?? "gpt-4o-mini";
 const MAX_IMAGE_BYTES = 3_000_000;
@@ -94,6 +92,7 @@ function parseItems(raw: unknown): { items: ModelItem[]; notes: string } {
     const o = it as Record<string, unknown>;
     const label = String(o.label ?? "").trim().slice(0, 120);
     if (!label) continue;
+    if (!Number.isFinite(Number(o.grams)) || Number(o.grams) <= 0) continue;
     const conf = String(o.confidence ?? "low").toLowerCase();
     items.push({
       label,
@@ -118,6 +117,7 @@ async function callGemini(apiKey: string, mime: string, b64: string, userPrompt:
         `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`,
         {
           method: "POST",
+          signal: AbortSignal.timeout(15000),
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
             system_instruction: { parts: [{ text: SYSTEM_PROMPT }] },
@@ -150,6 +150,7 @@ async function callGemini(apiKey: string, mime: string, b64: string, userPrompt:
 async function callOpenAI(apiKey: string, mime: string, b64: string, userPrompt: string, lovable = false): Promise<string> {
   const res = await fetch(lovable ? "https://ai.gateway.lovable.dev/v1/chat/completions" : "https://api.openai.com/v1/chat/completions", {
     method: "POST",
+    signal: AbortSignal.timeout(15000),
     headers: { "Content-Type": "application/json", Authorization: `Bearer ${apiKey}` },
     body: JSON.stringify({
       model: lovable ? Deno.env.get("LOVABLE_VISION_MODEL") ?? "google/gemini-2.5-flash" : OPENAI_MODEL,
@@ -225,6 +226,7 @@ async function searchOff(label: string): Promise<GroundedFood | null> {
       "&fields=product_name,brands,nutriments";
     const res = await fetch(url, {
       headers: { "User-Agent": "Macromint/0.1 (nutrition tracker)" },
+      signal: AbortSignal.timeout(5000),
     });
     if (!res.ok) return null;
     const data = await res.json();
@@ -235,7 +237,8 @@ async function searchOff(label: string): Promise<GroundedFood | null> {
     }>;
     for (const p of products) {
       const n = p.nutriments;
-      if (!p.product_name || !n || n["energy-kcal_100g"] == null) continue;
+      if (!p.product_name || !n || n["energy-kcal_100g"] == null ||
+          matchScore(label, p.product_name) < 0.65) continue;
       return {
         id: "",
         name: p.brands ? `${p.product_name} (${p.brands.split(",")[0]})` : p.product_name,
@@ -316,25 +319,12 @@ Deno.serve(async (req) => {
   const { data: access } = await supabase.rpc("check_access");
   if (access !== true) return errorResponse("NO_ACCESS", "Active access required", 403);
 
-  // Rate limits: 6 scans/minute, 40/day, enforced from persisted events.
+  // Charge atomic budgets BEFORE the provider call, not from successful scan
+  // logs. Concurrent requests must not evade the owner's key usage limits.
   const serviceRole = createClient(
     Deno.env.get("SUPABASE_URL")!,
     Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!,
   );
-  const dayAgo = new Date(Date.now() - 86_400_000).toISOString();
-  const minuteAgo = new Date(Date.now() - 60_000).toISOString();
-  const { count: dayCount } = await serviceRole
-    .from("scan_events")
-    .select("id", { count: "exact", head: true })
-    .eq("user_id", user.id)
-    .gte("created_at", dayAgo);
-  const { count: minuteCount } = await serviceRole
-    .from("scan_events")
-    .select("id", { count: "exact", head: true })
-    .eq("user_id", user.id)
-    .gte("created_at", minuteAgo);
-  if ((dayCount ?? 0) >= 40) return errorResponse("RATE_LIMIT", "Daily scan limit reached", 429);
-  if ((minuteCount ?? 0) >= 6) return errorResponse("RATE_LIMIT", "Please wait a moment", 429);
 
   // Input validation.
   let body: { image?: string; hints?: string; mealType?: string };
@@ -347,7 +337,7 @@ Deno.serve(async (req) => {
   if (
     typeof image !== "string" ||
     !/^data:image\/(jpeg|png|webp);base64,/.test(image) ||
-    image.length > MAX_IMAGE_BYTES
+    image.length > Math.ceil(MAX_IMAGE_BYTES * 4 / 3) + 100
   ) {
     return errorResponse("INVALID_IMAGE", "Image must be a jpeg/png/webp data URI under 3 MB", 400);
   }
@@ -355,7 +345,36 @@ Deno.serve(async (req) => {
   if (!mimeMatch) return errorResponse("INVALID_IMAGE", "Unparseable image", 400);
   const mime = mimeMatch[1];
   const b64 = mimeMatch[2];
-  const hints = String(body.hints ?? "").slice(0, 300);
+  // Validate decoded size AND magic bytes, not just the claimed MIME type.
+  let bytes: string;
+  try {
+    if (b64.length % 4 !== 0 || !/^[A-Za-z0-9+/]+={0,2}$/.test(b64)) throw new Error("encoding");
+    bytes = atob(b64);
+  } catch {
+    return errorResponse("INVALID_IMAGE", "Invalid image encoding", 400);
+  }
+  if (!bytes.length || bytes.length > MAX_IMAGE_BYTES) {
+    return errorResponse("INVALID_IMAGE", "Image exceeds the 3 MB limit", 400);
+  }
+  const hasMagic = mime === "image/jpeg"
+    ? bytes.charCodeAt(0) === 255 && bytes.charCodeAt(1) === 216 && bytes.charCodeAt(2) === 255
+    : mime === "image/png"
+      ? bytes.slice(0, 4) === "\x89PNG" && bytes.charCodeAt(4) === 13
+      : bytes.slice(0, 4) === "RIFF" && bytes.slice(8, 12) === "WEBP";
+  if (!hasMagic) return errorResponse("INVALID_IMAGE", "Image content does not match its type", 400);
+  // Do not retain a second 3 MB decoded copy while calling the provider.
+  bytes = "";
+
+  const { data: budget, error: budgetError } = await serviceRole.rpc(
+    "consume_ai_scan_budget", { p_user_id: user.id },
+  );
+  if (budgetError || typeof budget !== "string" || !["allowed", "minute", "day"].includes(budget)) {
+    return errorResponse("NOT_CONFIGURED", "Scan quota checks are unavailable", 503);
+  }
+  if (budget === "day") return errorResponse("RATE_LIMIT", "Daily scan limit reached", 429);
+  if (budget === "minute") return errorResponse("RATE_LIMIT", "Please wait before scanning again", 429);
+
+  const hints = typeof body.hints === "string" ? body.hints.slice(0, 300) : "";
 
   const startedAt = Date.now();
   let text: string;
@@ -366,12 +385,16 @@ Deno.serve(async (req) => {
     const geminiKey = Deno.env.get("GEMINI_API_KEY");
     const openaiKey = Deno.env.get("OPENAI_API_KEY");
     const lovableKey = Deno.env.get("LOVABLE_API_KEY");
-    if (lovableKey) text = await callOpenAI(lovableKey, mime, b64, userPrompt, true);
-    else if (geminiKey) text = await callGemini(geminiKey, mime, b64, userPrompt);
-    else if (openaiKey) text = await callOpenAI(openaiKey, mime, b64, userPrompt);
-    else return errorResponse("AI_NOT_CONFIGURED", "No vision provider key is configured on the server", 501);
-  } catch (e) {
-    return errorResponse("AI_FAILED", String((e as Error).message ?? e), 502);
+    // Gemini-only by default to avoid silently charging Lovable/OpenAI.
+    // Switching provider requires an explicit backend secret selection.
+    const provider = Deno.env.get("AI_VISION_PROVIDER") ?? "gemini";
+    if (provider === "gemini" && geminiKey) text = await callGemini(geminiKey, mime, b64, userPrompt);
+    else if (provider === "lovable" && lovableKey) text = await callOpenAI(lovableKey, mime, b64, userPrompt, true);
+    else if (provider === "openai" && openaiKey) text = await callOpenAI(openaiKey, mime, b64, userPrompt);
+    else return errorResponse("AI_NOT_CONFIGURED", "Configured vision provider is unavailable", 503);
+  } catch {
+    // Never leak raw provider errors or internal account/quota details.
+    return errorResponse("AI_FAILED", "Food analysis is temporarily unavailable", 502);
   }
 
   const parsed = parseItems(extractJson(text));
@@ -453,7 +476,7 @@ Deno.serve(async (req) => {
   // Persist telemetry (no image data is ever stored).
   await serviceRole.from("scan_events").insert({
     user_id: user.id,
-    provider: Deno.env.get("LOVABLE_API_KEY") ? "lovable" : Deno.env.get("GEMINI_API_KEY") ? "gemini" : "openai",
+    provider: Deno.env.get("AI_VISION_PROVIDER") ?? "gemini",
     item_count: results.length,
     grounded_count: groundedCount,
     overall_confidence: overall,

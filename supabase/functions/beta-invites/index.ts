@@ -67,16 +67,15 @@ Deno.serve(async (req) => {
     const codeHash = await hashCode(invitationCode);
     const expiresAt = new Date(Date.now() + days * 86400000).toISOString();
 
-    const { data, error } = await sb.from("beta_invites")
-      .insert({ code_hash: codeHash, created_by: ownerId, expires_at: expiresAt, max_uses: maxUses, note })
-      .select("id, expires_at, max_uses").single();
-    if (error) return errorResponse("DB", "Could not create invitation", 500);
-    await sb.from("admin_audit_logs").insert({
-      admin_id: ownerId,
-      target_user_id: ownerId,
-      action: "create_beta_invite",
-      metadata: { invite_id: data.id, max_uses: maxUses, expires_at: expiresAt },
+    // Creating a usable invite and recording its audit are one SQL transaction.
+    const { data, error } = await sb.rpc("admin_create_beta_invite", {
+      p_admin: ownerId,
+      p_code_hash: codeHash,
+      p_expires_at: expiresAt,
+      p_max_uses: maxUses,
+      p_note: note || null,
     });
+    if (error || !data?.id) return errorResponse("DB", "Could not create audited invitation", 500);
     // This response is the ONLY time the raw invitation is exposed.
     return json({ invitationCode, invitation: data }, 201);
   }
@@ -85,18 +84,12 @@ Deno.serve(async (req) => {
     if (!body.inviteId || !/^[0-9a-f-]{36}$/i.test(body.inviteId)) {
       return errorResponse("INPUT", "Invalid invitation ID", 400);
     }
-    const { data, error } = await sb.from("beta_invites")
-      .update({ revoked_at: new Date().toISOString() })
-      .eq("id", body.inviteId).is("revoked_at", null)
-      .select("id").maybeSingle();
-    if (error) return errorResponse("DB", "Could not revoke invitation", 500);
-    if (!data) return errorResponse("NOT_FOUND", "Invitation not found or already revoked", 404);
-    await sb.from("admin_audit_logs").insert({
-      admin_id: ownerId,
-      target_user_id: ownerId,
-      action: "revoke_beta_invite",
-      metadata: { invite_id: data.id },
+    const { data, error } = await sb.rpc("admin_revoke_beta_invite", {
+      p_admin: ownerId,
+      p_invite_id: body.inviteId,
     });
+    if (error) return errorResponse("DB", "Could not revoke audited invitation", 500);
+    if (data !== true) return errorResponse("NOT_FOUND", "Invitation not found or already revoked", 404);
     return json({ ok: true });
   }
 

@@ -24,6 +24,8 @@ jobs:
         run: pnpm install --no-frozen-lockfile
       - name: Verify beta-auth migration and Edge syntax
         run: node scripts/check-auth-activation-sources.mjs
+      - name: Check one-shot Edge release contracts
+        run: node scripts/check-edge-release.mjs
       - name: Nutrition regression tests
         run: pnpm test
       - name: ESLint (existing Prettier violations excluded)
