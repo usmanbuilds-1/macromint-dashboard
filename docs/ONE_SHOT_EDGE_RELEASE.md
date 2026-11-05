@@ -86,6 +86,26 @@ stale whenever new code is merged.
 - Static CI and SQL migration existence are **not** proof that the Cloud runtime,
   client IP forwarding, payment or advertising providers work.
 
+## Separate settings privacy patch (frontend-first)
+
+`0013_private_settings_read.sql` resolves the Lovable scanner warning
+without blocking user-visible configuration. It introduces the authenticated
+`get_public_app_settings()` RPC, returning only
+`trial_days`, `reward_access_hours` and `max_daily_rewarded_ads`;
+normal signed-in users no longer SELECT all columns from
+`public.app_settings`, while an owner/admin can still read it.
+
+**Order matters:** Publish/build the revised frontend from GitHub source
+**before** applying `0013` to production, because older clients still
+query the table directly. The frontend has a controlled fallback for Cloud
+environments where the RPC hasn't been installed yet. Apply `0013` only
+after the compatible UI is live; this is independent of the final Edge
+deployment and doesn't require Lovable Build mode for serverless functions.
+CI tests the SQL and RLS behavior in disposable PostgreSQL; it must still
+be verified against real user sessions postdeployment.
+
+Do not falsely mark `0013` applied simply because it exists in Git.
+
 ## 1. Before deploying functions: three NEW additive Cloud SQL migrations
 
 **Owner must verify same production/staging database and take a restorable
