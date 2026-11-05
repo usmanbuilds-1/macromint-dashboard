@@ -40,8 +40,8 @@ assert.doesNotMatch(ai, /\.from\("scan_events"\)\s*\.select\("id"/,
 assert.match(ai, /AI_VISION_PROVIDER/, "Explicit provider choice required");
 assert.match(ai, /provider === "gemini" && geminiKey/, "Gemini default priority missing");
 assert.match(ai, /"x-goog-api-key": apiKey/, "Gemini credentials must use request header");
-assert.doesNotMatch(ai, /generateContent\\?key=/, "Do not leak Gemini API keys into request URL");
-assert.match(ai, /\\.slice\\(0, 3\\)/, "Bound provider retry attempts to avoid runaway token usage");
+assert.doesNotMatch(ai, /generateContent\?key=/, "Do not leak Gemini API keys into request URL");
+assert.match(ai, /\.slice\(0, 3\)/, "Bound provider retry attempts to avoid runaway token usage");
 
 assert.match(ai, /AbortSignal\.timeout/, "AI provider timeout missing");
 assert.match(ai, /Image content does not match its type/, "Image signature checks missing");
