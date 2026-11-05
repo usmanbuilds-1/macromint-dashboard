@@ -113,4 +113,17 @@ const settingsPage = read("src/features/settings/Settings.tsx");
 assert.doesNotMatch(settingsPage, /All personal data has been removed/,
   "Deletion UI must not contradict retained abuse ledger");
 
+const settingsBackend = read("src/lib/backend/supabase-backend.ts");
+assert.match(settingsBackend, /Could not record consent/,
+  "Consent receipt writes must report database errors");
+const settingsUi = read("src/features/settings/Settings.tsx");
+assert.match(settingsUi, /if \(granted\) await backend\.setConsent/,
+  "Consent grant must record a receipt before enabling preferences");
+assert.doesNotMatch(settingsUi, /setConsent\(kind, "1\.0"\)\.catch/,
+  "Consent receipt failures must not be silently ignored");
+assert.doesNotMatch(settingsUi, /Delete everything/,
+  "Account deletion CTA must not misrepresent retained anti-abuse records");
+assert.match(settingsUi, /Limited trial-abuse records may be retained/,
+  "Deletion confirmation must disclose retained anti-abuse records");
+
 console.log("PASS: all eight Edge handlers, shared modules, audited SQL interfaces and beta feature gates");
