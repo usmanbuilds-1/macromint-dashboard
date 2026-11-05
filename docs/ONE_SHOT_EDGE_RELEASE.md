@@ -147,6 +147,29 @@ are captured, and the owner approves this exact deployment plan:
 Update the immutable SHA placeholder **after merge**. Do not send this
 Build-mode prompt from ChatGPT (user controls credit spending).
 
+## Predeploy security and monetization checkpoint
+
+See [PREDEPLOY_SECURITY_AND_COMMERCE.md](./PREDEPLOY_SECURITY_AND_COMMERCE.md).
+A guarded two-disposable-user test script is prepared at
+`scripts/live-auth-security-audit.mjs`, but **must not be marked passed**
+until the latest Edge bundles are deployed, username registration enabled,
+and two disposable accounts exist. The script explicitly requires test
+credentials, has a read-only default, and only creates an isolated water
+fixture with separate write opt-in. Static CI validates its syntax only.
+
+Payment research indicates Safepay supports Pakistan-based sandbox,
+hosted subscription checkout and signed webhook processing; **merchant
+onboarding and credentials are not connected**. AdSense is available in
+Pakistan, but its built-in Offerwall grants web page access, not verifiable
+24-hour access to an authenticated user entitlement. Keep both commercial
+flows disabled until provider approval, secure verified webhooks/reward
+attestation, and user-approved terms are implemented.
+
+**Do not claim that live security and account journeys can be completed
+before the new Edge functions themselves are deployed.** The correct
+sequence is to finish code tests and provider choices, then deploy once
+and execute the real E2E gates against that deployed revision.
+
 ## 5. After deploying: activation and acceptance
 
 1. Confirm source hashes per function and disabled `503` behavior for
