@@ -33,6 +33,13 @@ function mapOffProduct(p: Record<string, unknown>): Record<string, unknown> | nu
   const n = (p.nutriments ?? {}) as Record<string, number | undefined>;
   if (n["energy-kcal_100g"] == null) return null;
   const servingQ = Number(p.serving_quantity ?? 0);
+  // OFF quantities may be millilitres or unspecified. Never silently
+  // convert volume to weight without ingredient-specific density.
+  const measuredInGrams = ["g", "gram", "grams"].includes(
+    String(p.serving_unit ?? "").trim().toLowerCase(),
+  );
+  const servingGrams = measuredInGrams && Number.isFinite(servingQ) &&
+    servingQ > 0 && servingQ <= 3000 ? Math.round(servingQ) : 100;
   return {
     id: null,
     name,
@@ -52,8 +59,8 @@ function mapOffProduct(p: Record<string, unknown>): Record<string, unknown> | nu
       satFat: n["saturated-fat_100g"] ?? null,
       sodium: n.sodium_100g != null ? Math.round(n.sodium_100g * 1000) : null,
     },
-    servingLabel: servingQ > 0 ? `${Math.round(servingQ)} ${p.serving_unit ?? "g"}` : "100 g",
-    servingGrams: servingQ > 0 ? Math.round(servingQ) : 100,
+    servingLabel: `${servingGrams} g`,
+    servingGrams,
   };
 }
 
@@ -84,6 +91,13 @@ Deno.serve(async (req) => {
   );
   const { data: userData, error: userError } = await supabase.auth.getUser();
   if (userError || !userData?.user) return errorResponse("AUTH", "Invalid token", 401);
+
+  // Match diary and AI-scan access control: a signed-in but revoked/expired
+  // user must not be able to proxy arbitrary remote food database requests.
+  const { data: access, error: accessError } = await supabase.rpc("check_access");
+  if (accessError || access !== true) {
+    return errorResponse("NO_ACCESS", "Active access required", 403);
+  }
 
   const attribution = "Includes food data from Open Food Facts (ODbL) — openfoodfacts.org";
 
