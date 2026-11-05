@@ -1,6 +1,6 @@
 # Private-beta decision record
 
-Grill with Docs rounds 1–3 — owner answers received 2026-11-05. This document tracks decisions, observed source gaps, and unresolved tradeoffs. Do not treat this file or green CI as production activation.
+Grill with Docs rounds 1–4 — owner answers received 2026-11-05. This document tracks decisions, observed source gaps, and unresolved tradeoffs. Do not treat this file or green CI as production activation.
 
 ## Resolved decisions
 
@@ -15,6 +15,10 @@ Grill with Docs rounds 1–3 — owner answers received 2026-11-05. This documen
 9. **Expired accounts can sign back in to a restricted account-only area** for data export, deletion and a reactivation request, without being allowed to create food logs or use AI scanning. No automatic extension or new trial is granted.
 10. **Restoring access does not require another invitation or account.** The user signs in with their existing username and password once the owner restores their entitlement.
 11. **Expiry/revocation must sign users out on every device as each connects/refreshes**, with *immediate* server-side denial of protected operations even when a device retains a valid JWT. Immediate remote client UI logout is not guaranteed for offline devices.
+12. **Revoked users also keep restricted account privacy rights**, including exporting or deleting their own data. Revoke product access, not ownership of personal data. This does not restore tracking privileges.
+13. **Reactivation requests go into a private owner-only Admin queue**. Users may request but only the verified owner can decide and grant access. No automatic extension or grant.
+14. **Owner administration does not expire with the owner's product trial**. The verified owner must still be able to sign in to manage users, invitations, settings and requests; that administrative capability is not a blanket bypass of paid tracking entitlement.
+15. **Full data export is available strictly on user request**, including after expiry/revocation; no automatic export or email of user data. Export the user's own records completely, excluding other accounts' data, security secrets and recovery-code hashes. User-initiated deletion remains separate.
 
 ## Source/code alignment findings
 
@@ -26,15 +30,18 @@ Grill with Docs rounds 1–3 — owner answers received 2026-11-05. This documen
 - `src/features/settings/Settings.tsx` only exposes export/delete inside the regular authenticated app; `src/features/upgrade/Upgrade.tsx` remains signed in and has no restricted account controls. They need a distinct, reachable post-expiry flow.
 - `supabase/functions/delete-account/index.ts` validates an authenticated token without requiring active product access; this is compatible with Q9 but needs route/UI access and real-account testing.
 - Restoration should update entitlement only, with no new invite redemption and no new trial; sign-in with existing credentials must remain possible.
+- The approved owner queue does not exist in the inspected `admin-query` or `admin-action` handlers: no user-facing reactivation submission, queue status, owner decision notification or queue audit has been verified. Design server-side ownership, status changes, rate limits and authorization; do not mistake existing audit logs for a request queue.
+- The current `src/routes/_app.tsx` requires active entitlement before reaching nested Admin routes. The owner can be redirected to `/upgrade` after trial expiry even though Q14 requires persistent administration. Separate owner-admin access from product entitlement while continuing server-side role checks.
+- Full export is presently initiated from `src/features/settings/Settings.tsx`, so it is user initiated already, but the route and RLS block expired/revoked accounts. Do not auto-create or auto-send files in the future; require a deliberate authenticated export action.
 - `supabase/functions/username-recovery/index.ts` consumes a one-time code and updates the password, but does not visibly revoke other sessions; its comment flags previous JWT survival. Verify Supabase session revocation and prevent indefinite stale-session access.
 - The scan-budget infrastructure exists. Owner visibility into attempts and failures has not been verified.
 
-## Frontier for round 4 — decisions, not facts
+## Frontier for round 5 — decisions, not facts
 
-- Should an **owner-revoked** user have the same restricted data-export/deletion pathway as an expired tester? The Q9 approval explicitly covered expiry, not revocation.
-- Who receives an expired tester's **reactivation request**: a private in-app owner queue, or an external support channel? No automatic restore should happen.
-- Can the owner recover their own expired entitlement through the existing admin privilege, or should there be an explicit owner-only maintenance path that never overrides revoked/suspended users? Avoid creating an inaccessible first-owner account.
-- If account-only export requires bypassing the paid-access read policies, what precisely is exposed: the full user-owned data export versus a smaller privacy export? This tradeoff requires full export completeness and RLS isolation tests.
+- Should **revoked or suspended users** be allowed to submit a fresh reactivation request, or only export/delete their own data unless the owner proactively restores access? The previous answers explicitly protect exports and deletion.
+- Should expired testers be limited to **one pending reactivation request** at a time, with duplicate submissions merged and status visible to the requester? Rate limiting and audit are needed.
+- When the owner grants an extension, should it start **immediately from the approval time** (even if the tester is offline), rather than on the next login? The existing entitlement model can store expiry timestamps.
+- Should initial beta administration be **strictly owner-only** even if a future support/admin role is added, with explicit role-based permissions designed separately? Q2 establishes owner-only initial authority; this asks whether the first beta should prohibit delegated operations entirely.
 
 ## Release controls
 
