@@ -3,6 +3,7 @@ name: Verify Macro Mint
 on:
   push:
     branches:
+      - main
       - feat/mobile-precision-and-beta-20261103
   pull_request:
   workflow_dispatch:
@@ -32,6 +33,8 @@ jobs:
         run: node scripts/check-edge-json-reader.mjs
       - name: Exercise Edge handler negative paths without network
         run: node scripts/check-edge-negative-paths.mjs
+      - name: Exercise successful enrollment and one-use recovery without network
+        run: node scripts/check-auth-positive-paths.mjs
       - name: Nutrition regression tests
         run: pnpm test
       - name: ESLint (existing Prettier violations excluded)

@@ -3,6 +3,7 @@ name: Mobile browser smoke audit
 on:
   push:
     branches:
+      - main
       - feat/mobile-precision-and-beta-20261103
   pull_request:
   workflow_dispatch:
