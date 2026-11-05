@@ -68,5 +68,6 @@ jobs:
           psql -X -v ON_ERROR_STOP=1 -f drizzle/migrations/0010_ai_scan_atomic_budgets.sql
           psql -X -v ON_ERROR_STOP=1 -f drizzle/migrations/0011_atomic_admin_actions.sql
           psql -X -v ON_ERROR_STOP=1 -f drizzle/migrations/0012_atomic_beta_invites.sql
+          psql -X -v ON_ERROR_STOP=1 -f drizzle/migrations/0013_private_settings_read.sql
       - name: Exercise quota, audit, rollback and privileges
         run: psql -X -v ON_ERROR_STOP=1 -f scripts/sql-release-contracts.sql
