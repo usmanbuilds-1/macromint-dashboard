@@ -89,6 +89,7 @@ function parseItems(raw: unknown): { items: ModelItem[]; notes: string } {
   if (!obj || !Array.isArray(obj.items)) return { items: [], notes: "" };
   const items: ModelItem[] = [];
   for (const it of obj.items) {
+    if (it === null || typeof it !== "object" || Array.isArray(it)) continue;
     const o = it as Record<string, unknown>;
     const label = String(o.label ?? "").trim().slice(0, 120);
     if (!label) continue;
