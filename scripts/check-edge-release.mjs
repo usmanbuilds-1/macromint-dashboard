@@ -28,13 +28,17 @@ for (const name of ["http", "username-rate-limit"]) {
 }
 
 const food = read("supabase/functions/food-search/index.ts");
-assert.match(food, /params\s*=\s*await req\.json\(\)/, "Food search must parse POST JSON");
+assert.match(food, /readJsonObject\\(req, 1024\\)/, "Food search must read bounded POST JSON");
+assert.match(food, /supabase\\.rpc\\("check_access"\\)/, "Food search must enforce account access");
+assert.match(food, /measuredInGrams/, "Food serving quantities must avoid unit conversion guesses");
 assert.doesNotMatch(food, /req\.url.*searchParams/, "Do not read URL-only search params");
 assert.match(food, /AbortSignal\.timeout/, "Food search remote provider must time out");
 assert.match(food, /userData\?\.user/, "Food search must verify signed-in user");
 
 const ai = read("supabase/functions/ai-scan/index.ts");
 assert.match(ai, /consume_ai_scan_budget/, "AI scans must consume atomic preflight quota");
+assert.match(ai, /readJsonObject\\(req, 4_100_000\\)/, "AI scan request must be bounded");
+assert.match(ai, /if \\(it === null/, "Malformed vision items must be safely ignored");
 assert.doesNotMatch(ai, /\.from\("scan_events"\)\s*\.select\("id"/,
   "Counting completed scans is not concurrency-safe");
 assert.match(ai, /AI_VISION_PROVIDER/, "Explicit provider choice required");
@@ -49,6 +53,14 @@ assert.match(ai, /matchScore\(label, p\.product_name\) < 0\.65/,
   "Unrelated food database matches must not overwrite estimates");
 assert.doesNotMatch(ai, /String\(\(e as Error\)\.message/,
   "Never send raw provider errors to the client");
+
+const safeJson = read("supabase/functions/_shared/http.ts");
+assert.match(safeJson, /export async function readJsonObject/, "Bounded JSON helper missing");
+for (const name of ["username-register", "username-recovery", "admin-query",
+                    "admin-action", "beta-invites", "ai-scan", "food-search"]) {
+  assert.match(read(`supabase/functions/${name}/index.ts`), /readJsonObject\\(/,
+    `${name}: must reject malformed JSON object bodies`);
+}
 
 const action = read("supabase/functions/admin-action/index.ts");
 assert.match(action, /admin_change_entitlement/, "Atomic entitlement RPC not wired");
