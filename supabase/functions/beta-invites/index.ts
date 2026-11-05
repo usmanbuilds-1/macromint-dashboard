@@ -1,7 +1,7 @@
 // Admin-only, server-side invite issuance and revocation.
 // Never return invite hashes or persist the raw one-time code in a table.
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.58.0";
-import { json, errorResponse, preflight } from "../_shared/http.ts";
+import { json, errorResponse, preflight, readJsonObject } from "../_shared/http.ts";
 
 type RequestBody =
   | { action: "create"; expiresDays?: number; maxUses?: number; note?: string }
@@ -42,9 +42,11 @@ Deno.serve(async (req) => {
     .select("role").eq("user_id", ownerId).maybeSingle();
   if (adminError || !admin) return errorResponse("FORBIDDEN", "Administrator only", 403);
 
-  let body: RequestBody;
-  try { body = await req.json(); }
-  catch { return errorResponse("INPUT", "Invalid request", 400); }
+  const raw = await readJsonObject(req);
+  if (!raw || !["list", "create", "revoke"].includes(String(raw.action))) {
+    return errorResponse("INPUT", "Invalid or oversized request", 400);
+  }
+  const body = raw as RequestBody;
 
   if (body.action === "list") {
     const { data, error } = await sb.from("beta_invites")
