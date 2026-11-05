@@ -6,7 +6,7 @@
 // ═══════════════════════════════════════════════════════════════════════
 
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.58.0";
-import { json, errorResponse, preflight } from "../_shared/http.ts";
+import { json, errorResponse, preflight, readJsonObject } from "../_shared/http.ts";
 
 interface FoodRow {
   id: string;
@@ -65,14 +65,8 @@ Deno.serve(async (req) => {
 
   // The browser's Supabase functions.invoke() sends JSON POST bodies, not
   // URL search params. Previously every normal food lookup returned 400.
-  let params: { q?: unknown; barcode?: unknown };
-  try {
-    params = await req.json();
-    if (!params || typeof params !== "object" || Array.isArray(params))
-      return errorResponse("BAD_REQUEST", "Invalid search request", 400);
-  } catch {
-    return errorResponse("BAD_REQUEST", "Invalid JSON", 400);
-  }
+  const params = await readJsonObject(req, 1024);
+  if (!params) return errorResponse("BAD_REQUEST", "Invalid or oversized search request", 400);
   const q = typeof params.q === "string" ? params.q.trim() : "";
   const barcode = typeof params.barcode === "string" ? params.barcode.trim() : "";
   if (!q && !barcode) return errorResponse("BAD_REQUEST", "Provide q or barcode", 400);
