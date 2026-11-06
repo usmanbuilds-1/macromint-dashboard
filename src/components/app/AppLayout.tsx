@@ -31,12 +31,9 @@ const NAV = [
   { to: "/trends", label: "Progress", icon: ChartLine },
 ];
 
-const MOBILE_NAV = [
-  { to: "/today", label: "Today" },
-  { to: "/diary", label: "Diary" },
-  { to: "/foods", label: "Foods" },
-  { to: "/trends", label: "Progress" },
-];
+// Reuse the same familiar icons as the desktop sidebar so navigation
+// stays recognizable across screen sizes without a new icon dependency.
+const MOBILE_NAV = NAV;
 
 const SECONDARY = [
   { to: "/goals", label: "Goals", icon: Target },
@@ -182,13 +179,17 @@ export function AppLayout() {
         {/* The four daily destinations stay available on every mobile screen.
             Settings and account actions are in the always-present header menu. */}
         <nav className="ref-mobile-tabs fixed inset-x-0 bottom-0 z-40 grid grid-cols-4 border-t bg-background pb-[env(safe-area-inset-bottom)] md:hidden" aria-label="Primary">
-          {MOBILE_NAV.map((item) => (
-            <NavLink key={item.to} to={item.to} className={({ isActive }) =>
-              cn("ref-mobile-tab", isActive && "ref-mobile-tab--active")
-            }>
-              <span>{item.label}</span>
-            </NavLink>
-          ))}
+          {MOBILE_NAV.map((item) => {
+            const Icon = item.icon;
+            return (
+              <NavLink key={item.to} to={item.to} className={({ isActive }) =>
+                cn("ref-mobile-tab", isActive && "ref-mobile-tab--active")
+              }>
+                <Icon aria-hidden="true" className="ref-mobile-tab-icon" />
+                <span>{item.label}</span>
+              </NavLink>
+            );
+          })}
         </nav>
       </div>
     </div>
