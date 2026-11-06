@@ -100,7 +100,7 @@ export function Today() {
               strokeDasharray={String(target !== null && target > 0 ? Math.min(100, (consumed / target) * 100) : 0) + " 100"} />
           </svg>
           <div className="mm-today-arc-label">
-            <strong className="tabular-nums">{diary.loading && !diary.data ? "—" : formatNumber(consumed)}</strong>
+            <strong className="tabular-nums">{diary.loading && !diary.data ? "—" : formatNumber(Math.round(consumed))}</strong>
             <span className="tabular-nums">{target === null ? "kcal logged" : `of ${formatNumber(target)} kcal`}</span>
           </div>
         </div>
