@@ -1,0 +1,69 @@
+import { fireEvent, render, screen } from "@testing-library/react";
+import { describe, expect, it, vi } from "vitest";
+import { TodayOverview } from "./TodayOverview";
+import { TodayMeals } from "./TodayMeals";
+import type { DiaryEntry } from "@/types";
+
+vi.mock("@tanstack/react-router", () => ({
+  Link: ({ to, children, ...rest }: { to: string; children: React.ReactNode }) =>
+    <a href={to} {...rest}>{children}</a>,
+}));
+
+const onRetry = vi.fn();
+const onAddMeal = vi.fn();
+
+describe("Today: clear hierarchy and contextual entry", () => {
+  it("shows real numbers without an oversized calorie ring", () => {
+    const { container } = render(
+      <TodayOverview
+        totals={{ kcal: 1420, protein: 91, carbs: 152, fat: 44 }}
+        target={2200} proteinTarget={120} carbsTarget={250} fatTarget={70}
+        loading={false} hasEntries
+      />,
+    );
+    expect(screen.getByRole("heading", { name: "The daily ledger" })).toBeInTheDocument();
+    expect(screen.getByText("1,420")).toBeInTheDocument();
+    expect(screen.getByText(/780 kcal to your daily target/)).toBeInTheDocument();
+    const meter = screen.getByRole("progressbar", { name: "Daily calorie progress" });
+    expect(meter).toHaveAttribute("aria-valuenow", "1420");
+    expect(meter).toHaveAttribute("aria-valuemax", "2200");
+    expect(container.querySelector("svg, .mm-today-arc")).toBeNull();
+  });
+
+  it("shows that nutrition is unknown rather than inventing zero calories", () => {
+    render(
+      <TodayOverview totals={{ protein: null }} target={1800} proteinTarget={100}
+        carbsTarget={200} fatTarget={60} hasEntries loading={false} />,
+    );
+    expect(screen.getByText("Calories aren't available for the foods entered yet.")).toBeInTheDocument();
+    expect(screen.getByText("—", { selector: "strong" })).toBeInTheDocument();
+  });
+
+  it("suggests a relevant first meal instead of rendering four empty sections", () => {
+    onAddMeal.mockClear();
+    const { container } = render(
+      <TodayMeals entries={[]} error={null} loading={false}
+        onRetry={onRetry} onAddMeal={onAddMeal} suggestedMeal="lunch" />,
+    );
+    expect(screen.getByText("What’s on the menu?")).toBeInTheDocument();
+    expect(container.querySelectorAll(".mm-home-meal")).toHaveLength(0);
+    fireEvent.click(screen.getByRole("button", { name: "Add lunch" }));
+    expect(onAddMeal).toHaveBeenCalledWith("lunch");
+  });
+
+  it("keeps meal-specific logging and honest calorie values available", () => {
+    const meal = {
+      id: "logged-1", entryDate: "2026-11-06", mealType: "dinner",
+      name: "Chapati", grams: 80, nutrients: { kcal: 170 },
+    } as DiaryEntry;
+    onAddMeal.mockClear();
+    render(
+      <TodayMeals entries={[meal]} error={null} loading={false}
+        onRetry={onRetry} onAddMeal={onAddMeal} suggestedMeal="dinner" />,
+    );
+    fireEvent.click(screen.getByRole("button", { name: /Dinner.*1 item/ }));
+    expect(screen.getByText("Chapati")).toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: "Add food to Dinner" }));
+    expect(onAddMeal).toHaveBeenCalledWith("dinner");
+  });
+});
