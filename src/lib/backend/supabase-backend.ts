@@ -858,11 +858,11 @@ export const supabaseBackend: Backend = {
     });
     if (error || data?.error) throw new BackendError("SERVER", "Could not load request status");
     return ((data?.requests ?? []) as Record<string, unknown>[]).map((r): ReactivationRequest => ({
-      id: String(r.id),
-      status: r.status as ReactivationRequest["status"],
-      createdAt: String(r.created_at),
-      reviewedAt: (r.reviewed_at as string | null) ?? null,
-      approvedDays: (r.approved_days as number | null) ?? null,
+      id: String(r["id"]),
+      status: r["status"] as ReactivationRequest["status"],
+      createdAt: String(r["created_at"]),
+      reviewedAt: (r["reviewed_at"] as string | null) ?? null,
+      approvedDays: (r["approved_days"] as number | null) ?? null,
     }));
   },
 
@@ -879,16 +879,16 @@ export const supabaseBackend: Backend = {
     });
     if (error || data?.error) throw new BackendError("SERVER", "Could not load the beta request queue");
     return ((data?.requests ?? []) as Record<string, unknown>[]).map((r): AdminReactivationRequest => {
-      const account = r.account as Record<string, unknown> | null;
+      const account = r["account"] as Record<string, unknown> | null;
       return {
-        id: String(r.id),
-        userId: String(r.user_id),
-        status: r.status as AdminReactivationRequest["status"],
-        createdAt: String(r.created_at),
-        reviewedAt: (r.reviewed_at as string | null) ?? null,
-        approvedDays: (r.approved_days as number | null) ?? null,
-        message: String(r.message ?? ""),
-        account: account ? { name: String(account.name ?? ""), email: String(account.email ?? "") } : null,
+        id: String(r["id"]),
+        userId: String(r["user_id"]),
+        status: r["status"] as AdminReactivationRequest["status"],
+        createdAt: String(r["created_at"]),
+        reviewedAt: (r["reviewed_at"] as string | null) ?? null,
+        approvedDays: (r["approved_days"] as number | null) ?? null,
+        message: String(r["message"] ?? ""),
+        account: account ? { name: String(account["name"] ?? ""), email: String(account["email"] ?? "") } : null,
       };
     });
   },
