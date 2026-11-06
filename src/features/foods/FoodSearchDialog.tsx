@@ -18,6 +18,7 @@ import { foodToLoggable, offToLoggable, type LoggableFood } from "./FoodLogProvi
 import { kcalOf } from "@/components/app/bits";
 import { formatNumber } from "@/lib/utils";
 import { cn } from "@/lib/utils";
+import { useMobileDialogViewport } from "@/hooks/useMobileDialogViewport";
 
 function ResultRow({ food, onSelect }: { food: LoggableFood; onSelect: (f: LoggableFood) => void }) {
   return (
@@ -41,6 +42,7 @@ export function FoodSearchDialog({
   open,
   onClose,
   onPicked,
+  target,
 }: {
   open: boolean;
   onClose: () => void;
@@ -51,6 +53,7 @@ export function FoodSearchDialog({
   const [hit, setHit] = useState<FoodSearchHit | null>(null);
   const [searching, setSearching] = useState(false);
   const reqId = useRef(0);
+  const sheetStyle = useMobileDialogViewport(open, "bottom");
 
   const recents = useAsyncData(() => backend.getRecentEntries(8), [], "recent:8");
   const favorites = useAsyncData(() => backend.getFavorites(), [], "favorites");
@@ -108,9 +111,11 @@ export function FoodSearchDialog({
   const showRecents = q.trim().length < 2;
 
   return (
-    <CommandDialog open={open} onOpenChange={(o) => (!o ? onClose() : undefined)} className="!top-auto !bottom-0 !translate-y-0 max-h-[88dvh] w-full !max-w-none rounded-t-xl rounded-b-none sm:!top-1/2 sm:!bottom-auto sm:!-translate-y-1/2 sm:!max-w-lg sm:rounded-lg">
-      <CommandInput placeholder="Search foods, brands, or paste a barcode…" value={q} onValueChange={setQ} />
-      <CommandList>
+    <CommandDialog open={open} onOpenChange={(o) => (!o ? onClose() : undefined)}
+      preventInputAutoFocus contentStyle={sheetStyle}
+      className="!translate-y-0 bottom-0 max-h-[88dvh] w-full !max-w-none overflow-hidden rounded-t-xl rounded-b-none sm:!top-1/2 sm:!bottom-auto sm:!-translate-y-1/2 sm:!max-w-lg sm:rounded-lg">
+      <CommandInput autoFocus={false} placeholder="Tap to search foods, brands, or barcodes…" value={q} onValueChange={setQ} />
+      <CommandList className="min-h-0 flex-1 !max-h-none">
         {searching && <p className="px-4 py-3 text-sm text-muted-foreground">Searching…</p>}
         {!searching && showRecents && (
           <>
