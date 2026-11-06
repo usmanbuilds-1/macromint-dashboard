@@ -115,6 +115,14 @@ assert.match(appeals, /role !== "owner"/,
   "Appeal review must be owner-only");
 assert.match(appeals, /beta_review_reactivation/,
   "Appeal decisions must be transactional and audited");
+const publicSql = read("drizzle/migrations/0016_public_registration_tickets.sql");
+assert.match(publicSql, /issue_public_signup_ticket/,
+  "Public signup must have service-issued one-use admission tickets");
+assert.match(publicSql, /beta_record_signup/,
+  "Public signup must not lose beta invite classification");
+assert.match(publicSql, /REVOKE ALL ON FUNCTION public\.issue_public_signup_ticket/,
+  "Only the service role may mint signup tickets");
+
 const lifecycleSql = read("drizzle/migrations/0015_beta_account_lifecycle.sql");
 assert.match(lifecycleSql, /status='pending'/,
   "A user cannot create simultaneous pending appeals");
