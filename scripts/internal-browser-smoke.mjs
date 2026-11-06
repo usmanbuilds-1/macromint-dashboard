@@ -94,6 +94,16 @@ try {
   await page.getByRole("button", { name: /Start tracking/ }).click();
   await page.getByRole("heading", { name: "Today", exact: true }).waitFor({ timeout: 20000 });
   await screenshotEverySize("today");
+  // A compact phone is narrower than our usual 390px screen audit.
+  await page.setViewportSize({ width: 320, height: 740 });
+  await page.screenshot({ path: "mobile-audit/screens/today-320.png", fullPage: true });
+  const smallPhoneOverflow = await page.evaluate(() => document.documentElement.scrollWidth - innerWidth);
+  assert.ok(smallPhoneOverflow <= 2, "Today must not horizontally overflow a 320px phone");
+  const primaryAction = await page.getByRole("button", { name: "Add food", exact: true }).boundingBox();
+  const bottomNav = await page.locator(".ref-mobile-tabs").boundingBox();
+  assert.ok(primaryAction && bottomNav && primaryAction.y + primaryAction.height <= bottomNav.y,
+    "Add food must remain visible above the fixed navigation on a compact 320px phone");
+  await page.setViewportSize({ width: 390, height: 844 });
 
   // Daily navigation never buries diary, the task users perform most often.
   const nav = page.locator(".ref-mobile-tabs");
@@ -131,8 +141,8 @@ try {
         // continued animating for 550–720 ms on every return.
         await page.waitForFunction(() => {
           const today = document.querySelector(".ref-live-today");
-          const calories = today?.querySelector(".mm-today-arc-label strong");
-          const summary = today?.querySelector(".ref-live-today-summary");
+          const calories = today?.querySelector(".mm-home-calories");
+          const summary = today?.querySelector(".mm-home-overview");
           return Boolean(today && summary && calories &&
             calories.textContent?.trim() !== "—");
         }, null, { timeout: 5000 });
