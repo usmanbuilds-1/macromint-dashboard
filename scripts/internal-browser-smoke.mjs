@@ -125,6 +125,24 @@ try {
       const started = performance.now();
       await nav.getByRole("link", { name: tab, exact: true }).click();
       await page.getByRole("heading", { name: heading, exact: true }).waitFor();
+      if (tab === "Today") {
+        // Benchmark meaningful content, not merely the route heading. In the
+        // previous build the heading appeared quickly but calories and sections
+        // continued animating for 550–720 ms on every return.
+        await page.waitForFunction(() => {
+          const today = document.querySelector(".ref-live-today");
+          const calories = today?.querySelector(".mm-today-arc-label strong");
+          const summary = today?.querySelector(".ref-live-today-summary");
+          return Boolean(today && summary && calories &&
+            calories.textContent?.trim() !== "—");
+        }, null, { timeout: 5000 });
+        const animations = await page.locator(".ref-live-today").evaluate((el) =>
+          el.getAnimations({ subtree: true })
+            .filter((animation) => animation.playState === "running")
+            .map((animation) => animation.id || "unnamed"));
+        assert.deepEqual(animations, [],
+          "Today should not replay entrance or number animations after a tab switch");
+      }
       const elapsedMs = Math.round(performance.now() - started);
       tabTimings.push({ pass, tab, elapsedMs });
     }
@@ -132,6 +150,8 @@ try {
   const warmTimes = tabTimings.filter((timing) => timing.pass === "warm").map((timing) => timing.elapsedMs);
   const warmMedian = [...warmTimes].sort((a, b) => a - b)[Math.floor(warmTimes.length / 2)];
   console.log("TAB NAV BENCH", JSON.stringify({ warmMedianMs: warmMedian, timings: tabTimings }));
+  const todayTimes = tabTimings.filter((timing) => timing.tab === "Today");
+  console.log("TODAY CONTENT BENCH", JSON.stringify(todayTimes));
   await writeFile("mobile-audit/screens/tab-timing.json", JSON.stringify(tabTimings, null, 2));
   assert.ok(warmTimes.every((time) => time < 2200),
     "Repeated tab navigation must not stall for more than 2.2 seconds in the isolated demo");
@@ -166,8 +186,14 @@ try {
   await screenshotEverySize("food-entry-choices");
   await page.getByRole("button", { name: /Search or type a food/ }).click();
   await page.getByPlaceholder(/Search foods, brands/i).waitFor();
-  await page.keyboard.press("Escape");
+  // Close explicitly. Escape can be consumed by the focused command input
+  // while a modal is transitioning, leaving nav inaccessible behind it.
+  const searchDialog = page.getByRole("dialog");
+  await searchDialog.getByRole("button", { name: "Close" }).click();
+  await searchDialog.waitFor({ state: "hidden" });
   await screenshotEverySize("food-search");
+  assert.equal(await page.getByRole("dialog").count(), 0,
+    "Food search must release modal focus before switching tabs");
 
   await nav.getByRole("link", { name: "Diary" }).click();
   await page.getByRole("heading", { name: "Diary", exact: true }).waitFor();

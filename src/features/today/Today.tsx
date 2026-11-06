@@ -11,7 +11,6 @@ import { formatDateLong, todayStr, addDaysStr } from "@/lib/nutrition/datetime";
 import { MEAL_LABELS, MEAL_TYPES, type DiaryEntry, type MealType } from "@/types";
 import { useFoodLog } from "@/features/foods/FoodLogProvider";
 import { formatNumber } from "@/lib/utils";
-import { useAnimatedNumber, useEntered } from "@/lib/motion";
 import { toast } from "sonner";
 
 function mealForCurrentHour(): MealType {
@@ -30,8 +29,6 @@ export function Today() {
   const entries = diary.data ?? [];
   const totals = useMemo(() => dailyTotals(entries), [entries]);
   const consumed = totals.kcal ?? 0;
-  const displayedConsumed = useAnimatedNumber(consumed);
-  const entered = useEntered();
   const target = goals?.calorieTarget ?? null;
   const remaining = target === null ? null : target - consumed;
   const protein = totals.protein ?? 0;
@@ -77,7 +74,7 @@ export function Today() {
 
   return (
     <div className="mm-live-page mm6-today ref-live-today mx-auto flex w-full max-w-2xl flex-col gap-7 pb-2">
-      <header className="mm-live-enter mm6-today-header flex items-end justify-between gap-3">
+      <header className="mm6-today-header flex items-end justify-between gap-3">
         <div>
           <p className="text-sm text-muted-foreground">{formatDateLong(today)}</p>
           <h1 className="mt-1 text-2xl font-semibold tracking-tight">Today</h1>
@@ -87,7 +84,7 @@ export function Today() {
         </Link>
       </header>
 
-      <section aria-labelledby="energy-heading" className="mm-today-summary mm6-today-summary ref-live-today-summary mm-live-enter" style={{ animationDelay: "75ms" }}>
+      <section aria-labelledby="energy-heading" className="mm-today-summary mm6-today-summary ref-live-today-summary">
         <div className="mm-today-summary-head">
           <div>
             <p className="text-xs font-medium text-muted-foreground">DAILY NUTRITION</p>
@@ -100,10 +97,10 @@ export function Today() {
             <circle cx="93" cy="93" r="77" pathLength="100" stroke="var(--color-secondary)" strokeWidth="12" fill="none" />
             <circle cx="93" cy="93" r="77" pathLength="100" stroke="var(--color-primary)" strokeWidth="12" strokeLinecap="round" fill="none"
               transform="rotate(-90 93 93)"
-              strokeDasharray={String(entered && target !== null && target > 0 ? Math.min(100, (consumed / target) * 100) : 0) + " 100"} />
+              strokeDasharray={String(target !== null && target > 0 ? Math.min(100, (consumed / target) * 100) : 0) + " 100"} />
           </svg>
           <div className="mm-today-arc-label">
-            <strong className="tabular-nums">{diary.loading && !diary.data ? "—" : formatNumber(Math.round(displayedConsumed))}</strong>
+            <strong className="tabular-nums">{diary.loading && !diary.data ? "—" : formatNumber(Math.round(consumed))}</strong>
             <span className="tabular-nums">{target === null ? "kcal logged" : `of ${formatNumber(target)} kcal`}</span>
           </div>
         </div>
@@ -132,7 +129,7 @@ export function Today() {
         </div>
       </section>
 
-      <section aria-label="Add food" className="mm-live-enter mm6-today-log ref-live-log grid grid-cols-[minmax(0,1fr)_auto] gap-2" style={{ animationDelay: "155ms" }}>
+      <section aria-label="Add food" className="mm6-today-log ref-live-log grid grid-cols-[minmax(0,1fr)_auto] gap-2">
         <Button size="lg" className="h-12 min-w-0 justify-center gap-2 text-sm font-semibold shadow-none"
           onClick={() => openSearch()}>
           <Plus className="h-5 w-5" aria-hidden="true" /> Add food
@@ -143,7 +140,7 @@ export function Today() {
         </Button>
       </section>
 
-      <section aria-labelledby="meals-heading" className="mm-live-enter mm6-today-diary ref-live-diary" style={{ animationDelay: "230ms" }}>
+      <section aria-labelledby="meals-heading" className="mm6-today-diary ref-live-diary">
         <div className="flex items-center justify-between gap-2">
           <h2 id="meals-heading" className="text-base font-semibold">Meals</h2>
           <Link to="/diary" className="inline-flex min-h-11 items-center text-sm text-muted-foreground underline underline-offset-4">View full diary</Link>

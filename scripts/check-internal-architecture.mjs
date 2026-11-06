@@ -14,6 +14,9 @@ const budgets = {
   "src/hooks/useCachedData.ts": 80,
   "src/hooks/useAppDataInvalidation.ts": 60,
   "src/hooks/usePrimaryRoutePreload.ts": 80,
+  "src/hooks/useTodayWarmup.ts": 100,
+  "src/hooks/app-data-key.ts": 30,
+  "src/features/today/Today.tsx": 250,
   "src/features/trends/WeeklyArchive.tsx": 135,
   "src/features/trends/Trends.tsx": 330,
   "src/lib/backend/supabase/saved-meal-log.ts": 100,
@@ -45,4 +48,11 @@ assert.match(backend, /logSavedMealBatch\(/,
   "Saved meal logging must use one atomic batch instead of N inserts");
 assert.doesNotMatch(backend.slice(backend.indexOf("async logSavedMeal("), backend.indexOf("async getDiary(")),
   /for\s*\(/, "Do not reintroduce per-food insertion loops");
+const todayScreen = readFileSync("src/features/today/Today.tsx", "utf8");
+const todayWarmup = readFileSync("src/hooks/useTodayWarmup.ts", "utf8");
+assert.doesNotMatch(todayScreen, /useAnimatedNumber|useEntered|mm-live-enter|animationDelay/,
+  "Today must display cached values directly without entrance/count-up animations");
+assert.match(todayWarmup, /warmTodayQueries/,
+  "Today data must be warmed while the authenticated shell is mounted");
+console.log("PASS: Today instant content, no animation delay, account-scoped prefetch");
 console.log("PASS: tab data caching, no weekly N+1 reads, and atomic saved-meal batch");
