@@ -8,8 +8,21 @@ CREATE ROLE service_role NOLOGIN BYPASSRLS;
 
 CREATE TABLE auth.users (
   id uuid PRIMARY KEY,
-  email text NOT NULL
+  email text NOT NULL,
+  raw_user_meta_data jsonb NOT NULL DEFAULT '{}'::jsonb
 );
+
+-- The real database already has these auth triggers from migration 0006.
+-- CI only needs their names and signatures before migration 0016 replaces
+-- the implementations; do not copy these stubs to production.
+CREATE FUNCTION public.beta_require_invite() RETURNS trigger
+LANGUAGE plpgsql AS $$ BEGIN RETURN NEW; END $$;
+CREATE TRIGGER beta_check_before_signup BEFORE INSERT ON auth.users
+FOR EACH ROW EXECUTE FUNCTION public.beta_require_invite();
+CREATE FUNCTION public.beta_record_signup() RETURNS trigger
+LANGUAGE plpgsql AS $$ BEGIN RETURN NEW; END $$;
+CREATE TRIGGER beta_record_after_signup AFTER INSERT ON auth.users
+FOR EACH ROW EXECUTE FUNCTION public.beta_record_signup();
 CREATE TABLE public.admin_users (
   user_id uuid PRIMARY KEY REFERENCES auth.users(id),
   role text NOT NULL

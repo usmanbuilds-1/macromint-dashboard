@@ -177,7 +177,7 @@ export interface Backend {
   adminAction(input: AdminActionInput): Promise<{ ok: boolean; entitlement?: Entitlement }>;
   adminGetAudit(targetUserId?: string): Promise<AuditLogEntry[]>;
   adminGetSettings(): Promise<AppSettings>;
-  getReactivationRequests(): Promise<ReactivationRequest[]>;
+  getReactivationRequests(): Promise<{ requests: ReactivationRequest[]; isBetaTester: boolean }>;
   submitReactivationRequest(message: string): Promise<void>;
   adminGetReactivationQueue(): Promise<AdminReactivationRequest[]>;
   adminReviewReactivation(id: string, approve: boolean, days: number | null, reason: string): Promise<void>;

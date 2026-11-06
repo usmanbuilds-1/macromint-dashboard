@@ -44,7 +44,7 @@ export function Privacy() {
       </p>
       <h2>Advertising and analytics</h2>
       <p>
-        Paid advertising and rewarded access are not active in the current private beta.
+        Paid advertising and rewarded access are not active in the current release.
         Settings may record your advertising preferences, but this does not mean an advertising
         provider is enabled. We will update these details before introducing advertisements.
       </p>
@@ -78,7 +78,7 @@ export function Terms() {
       <p>
         New accounts join by private invitation. Eligible accounts may receive a limited free
         trial, and the administrator can grant, suspend or revoke access. Payments and
-        rewarded-ad access are unavailable during this private beta. Accounts that abuse access
+        rewarded-ad access are unavailable in the current release. Accounts that abuse access
         controls or violate these terms may be suspended.
       </p>
       <h2>Payments</h2>

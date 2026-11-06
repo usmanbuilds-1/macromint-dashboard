@@ -103,8 +103,8 @@ export const supabaseBackend: Backend = {
   },
 
   async signUp(identifier, password, name, inviteCode) {
-    if (!isValidInviteCode(inviteCode ?? "")) {
-      throw new BackendError("INVITE", "Enter the invitation code from your beta invitation");
+    if (inviteCode?.trim() && !isValidInviteCode(inviteCode)) {
+      throw new BackendError("INVITE", "Enter a valid beta invitation code or leave the field blank");
     }
     if (USERNAME_AUTH_ENABLED) {
       if (!isValidUsername(identifier)) {
@@ -115,10 +115,10 @@ export const supabaseBackend: Backend = {
       }
       const { data, error } = await getSupabase().functions.invoke<{ needsVerification: boolean; recoveryCodes: string[]; error?: string }>(
         "username-register",
-        { body: { username: canonicalUsername(identifier), name: name.trim(), password, inviteCode: inviteCode.trim() } },
+        { body: { username: canonicalUsername(identifier), name: name.trim(), password, ...(inviteCode.trim() ? { inviteCode: inviteCode.trim() } : {}) } },
       );
       if (error || !data || data.error) {
-        throw new BackendError("AUTH", "Could not create account. Check the invitation and username, or contact the administrator.");
+        throw new BackendError("AUTH", "Could not create account. Check your username or try again later.");
       }
       if (!Array.isArray(data.recoveryCodes) || data.recoveryCodes.length !== 8 ||
           !data.recoveryCodes.every(code => /^MMR-(?:[A-F0-9]{8}-){3}[A-F0-9]{8}$/.test(code))) {
@@ -857,13 +857,14 @@ export const supabaseBackend: Backend = {
       body: { action: "status" },
     });
     if (error || data?.error) throw new BackendError("SERVER", "Could not load request status");
-    return ((data?.requests ?? []) as Record<string, unknown>[]).map((r): ReactivationRequest => ({
+    const requests = ((data?.requests ?? []) as Record<string, unknown>[]).map((r): ReactivationRequest => ({
       id: String(r["id"]),
       status: r["status"] as ReactivationRequest["status"],
       createdAt: String(r["created_at"]),
       reviewedAt: (r["reviewed_at"] as string | null) ?? null,
       approvedDays: (r["approved_days"] as number | null) ?? null,
     }));
+    return { requests, isBetaTester: data?.isBetaTester === true };
   },
 
   async submitReactivationRequest(message) {

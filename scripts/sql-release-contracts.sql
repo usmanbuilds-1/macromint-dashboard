@@ -299,3 +299,104 @@ BEGIN
   IF NOT rejected THEN RAISE EXCEPTION 'Non-tester appealed'; END IF;
   RAISE NOTICE 'PASS: revoked deny, one pending appeal, owner approval and audit';
 END $$;
+
+
+-- Public signups and private beta invitations may coexist without letting
+-- direct Supabase auth.signUp() bypass server-side rate limiting.
+\i drizzle/migrations/0016_public_registration_tickets.sql
+
+DO $$
+DECLARE
+  allowed boolean;
+  ticket text := repeat('a',64);
+  digest text := encode(pg_catalog.sha256(convert_to(ticket,'UTF8')),'hex');
+  invite_code text := 'MM-' || repeat('B',40);
+  invite_digest text := encode(pg_catalog.sha256(
+    convert_to(lower(invite_code),'UTF8')),'hex');
+  fake_beta uuid := '66666666-6666-4666-8666-666666666666';
+  fake_normal uuid := '77777777-7777-4777-8777-777777777777';
+  denied boolean;
+  metadata jsonb;
+  count_rows integer;
+BEGIN
+  -- A plain direct GoTrue signup must NOT be enough.
+  denied := false;
+  BEGIN
+    INSERT INTO auth.users(id,email,raw_user_meta_data)
+    VALUES ('55555555-5555-4555-8555-555555555555','bypass@example.invalid',
+      '{"name":"No ticket"}'::jsonb);
+  EXCEPTION WHEN OTHERS THEN denied:=true; END;
+  IF NOT denied THEN RAISE EXCEPTION 'Direct signup bypassed guarded trigger'; END IF;
+
+  -- Each issued signup token is redeemed atomically and stripped from auth metadata.
+  allowed := public.issue_public_signup_ticket(digest);
+  IF allowed IS DISTINCT FROM true THEN RAISE EXCEPTION 'Ticket issue failed'; END IF;
+  INSERT INTO auth.users(id,email,raw_user_meta_data)
+  VALUES (fake_normal,'normal@example.invalid',
+    jsonb_build_object('name','Normal User','public_signup_ticket',ticket,
+                       'beta_invite_id','99999999-9999-4999-8999-999999999999'));
+  SELECT raw_user_meta_data INTO metadata FROM auth.users WHERE id=fake_normal;
+  IF metadata ? 'public_signup_ticket' OR metadata ? 'beta_invite_id' THEN
+    RAISE EXCEPTION 'Signup authorization metadata leaked into auth user';
+  END IF;
+  SELECT count(*) INTO count_rows FROM public.beta_invite_redemptions
+   WHERE user_id=fake_normal;
+  IF count_rows <> 0 THEN
+    RAISE EXCEPTION 'Public user was incorrectly classified as invited tester';
+  END IF;
+  denied:=false;
+  BEGIN
+    INSERT INTO auth.users(id,email,raw_user_meta_data)
+    VALUES ('88888888-8888-4888-8888-888888888888','reused@example.invalid',
+      jsonb_build_object('name','Reused','public_signup_ticket',ticket));
+  EXCEPTION WHEN OTHERS THEN denied:=true; END;
+  IF NOT denied THEN RAISE EXCEPTION 'Reused public ticket was accepted'; END IF;
+
+  INSERT INTO public.beta_invites(id,code_hash,expires_at,max_uses)
+  VALUES ('aaaa1111-aaaa-4111-8111-aaaaaaaa1111',
+    invite_digest,now()+interval '7 days',1);
+  -- An invite alone must not bypass the rate-limited Edge signup path.
+  denied:=false;
+  BEGIN
+    INSERT INTO auth.users(id,email,raw_user_meta_data)
+    VALUES ('bbbb1111-bbbb-4111-8111-bbbbbbbb1111','rawinvite@example.invalid',
+      jsonb_build_object('name','Direct invite attempt','beta_invite_code',invite_code));
+  EXCEPTION WHEN OTHERS THEN denied:=true; END;
+  IF NOT denied THEN RAISE EXCEPTION 'Native Auth signup accepted invite without server ticket'; END IF;
+
+  PERFORM public.issue_public_signup_ticket(encode(pg_catalog.sha256(
+    convert_to(repeat('c',64),'UTF8')),'hex'));
+  INSERT INTO auth.users(id,email,raw_user_meta_data)
+  VALUES (fake_beta,'tester2@example.invalid',
+    jsonb_build_object('name','Invited Tester','beta_invite_code',invite_code,
+      'public_signup_ticket',repeat('c',64)));
+  SELECT raw_user_meta_data INTO metadata FROM auth.users WHERE id=fake_beta;
+  IF metadata ? 'beta_invite_code' OR NOT metadata ? 'beta_invite_id' THEN
+    RAISE EXCEPTION 'Beta invitation not securely consumed';
+  END IF;
+  SELECT count(*) INTO count_rows FROM public.beta_invite_redemptions WHERE user_id=fake_beta;
+  IF count_rows<>1 THEN RAISE EXCEPTION 'Invited tester was not marked invited'; END IF;
+  denied:=false;
+  BEGIN
+    PERFORM public.issue_public_signup_ticket(encode(pg_catalog.sha256(
+      convert_to(repeat('d',64),'UTF8')),'hex'));
+    INSERT INTO auth.users(id,email,raw_user_meta_data)
+    VALUES ('99999999-9999-4999-8999-999999999999','reuseinvite@example.invalid',
+      jsonb_build_object('name','Invitation reuse','beta_invite_code',invite_code,
+        'public_signup_ticket',repeat('d',64)));
+  EXCEPTION WHEN OTHERS THEN denied:=true; END;
+  IF NOT denied THEN RAISE EXCEPTION 'Single-use beta invitation reused'; END IF;
+
+  RAISE NOTICE 'PASS: gated public signup, one-use tickets and private beta classification';
+END $$;
+
+DO $$
+BEGIN
+  IF has_function_privilege('authenticated','public.issue_public_signup_ticket(text)','EXECUTE')
+     OR has_function_privilege('anon','public.issue_public_signup_ticket(text)','EXECUTE')
+     OR NOT has_function_privilege('service_role','public.issue_public_signup_ticket(text)','EXECUTE')
+  THEN
+    RAISE EXCEPTION 'Public ticket issuer has incorrect privileges';
+  END IF;
+  RAISE NOTICE 'PASS: ticket issuer is service-role only';
+END $$;

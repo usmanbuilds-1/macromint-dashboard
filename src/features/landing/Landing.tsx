@@ -94,7 +94,7 @@ export function Landing() {
               <Link to="/register" className="ref-primary">Start tracking</Link>
               <a href="#how-it-works" className="ref-outline">See how it works</a>
             </div>
-            <span className="ref-private-beta">Early access is invitation only while account registration is being configured.</span>
+            <span className="ref-private-beta">Create an account to start your free trial. Invited testers can enter their code when registering.</span>
           </div>
           <div className="ref-hero-media">
             <div className="ref-hero-photo">

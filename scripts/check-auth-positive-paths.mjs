@@ -40,6 +40,8 @@ function setup(name, options = {}) {
     ["USERNAME_REGISTRATION_ENABLED", "true"],
     ["USERNAME_INVITE_TRIGGER_VERIFIED", "true"],
     ["USERNAME_REGISTRATION_RATE_LIMIT_VERIFIED", "true"],
+    ["USERNAME_PUBLIC_SIGNUP_TICKET_VERIFIED", options.publicTicketDisabled ? "false" : "true"],
+    ["PUBLIC_REGISTRATION_ENABLED", options.publicDisabled ? "false" : "true"],
     ["USERNAME_RECOVERY_ENABLED", "true"],
     ["USERNAME_RECOVERY_RATE_LIMIT_VERIFIED", "true"],
   ]);
@@ -49,8 +51,13 @@ function setup(name, options = {}) {
         calls.push("createUser");
         assert.equal(payload.email, "beta_user@macromint.internal");
         assert.equal(payload.user_metadata.username, "beta_user");
-        assert.equal(payload.user_metadata.beta_invite_code, INVITE);
-        inviteUsed++;
+        assert.match(payload.user_metadata.public_signup_ticket, /^[0-9a-f]{64}$/);
+        if (options.publicSignUp) {
+          assert.equal(payload.user_metadata.beta_invite_code, undefined);
+        } else {
+          assert.equal(payload.user_metadata.beta_invite_code, INVITE);
+          inviteUsed++;
+        }
         return { data: { user: { id: USER_ID } }, error: null };
       },
       async deleteUser(id) {
@@ -105,6 +112,12 @@ function setup(name, options = {}) {
       throw Error("Unexpected table: " + table);
     },
     async rpc(name, args) {
+      if (name === "issue_public_signup_ticket") {
+        assert.match(args.p_hash, /^[0-9a-f]{64}$/);
+        calls.push("issueTicket");
+        return { data: options.ticketIssueFailure ? null : true,
+                 error: options.ticketIssueFailure ? { message:"simulated" } : null };
+      }
       assert.equal(name, "consume_username_recovery_code");
       assert.equal(args.p_user_id, USER_ID);
       assert.match(args.p_code_hash, /^[0-9a-f]{64}$/);
@@ -119,7 +132,7 @@ function setup(name, options = {}) {
     createClient: fakeClient,
     checkUsernameAuthBudget: async (_request, kind, identifier) => {
       calls.push("budget:" + kind);
-      assert.equal(identifier.toLowerCase(), kind === "register" ? INVITE.toLowerCase() : "beta_user");
+      assert.equal(identifier.toLowerCase(), "beta_user");
       return options.limitBudget ? "limited" : "allowed";
     },
     json: (data, status = 200) => new Response(JSON.stringify(data), {
@@ -158,11 +171,36 @@ let checked = 0;
   assert.equal(body.recoveryCodes.length, 8);
   assert.equal(new Set(body.recoveryCodes).size, 8);
   assert.ok(body.recoveryCodes.every(code => /^MMR-(?:[A-F0-9]{8}-){3}[A-F0-9]{8}$/.test(code)));
-  assert.ok(calls.indexOf("budget:register") < calls.indexOf("createUser"));
+  assert.ok(calls.indexOf("budget:register") < calls.indexOf("issueTicket"));
+  assert.ok(calls.indexOf("issueTicket") < calls.indexOf("createUser"));
   assert.ok(calls.indexOf("createUser") < calls.indexOf("storeRecovery"));
   checked++;
 }
-// No invite or missing recovery infrastructure must never create an account.
+// Public registration can create an account with a server-only one-use ticket.
+{
+  const { handler, calls } = setup("username-register", { publicSignUp: true });
+  const response = await handler(makePost({ username: "Beta_User", name: "Public User", password: PASSWORD }));
+  assert.equal(response.status, 201);
+  assert.equal((await response.json()).recoveryCodes.length, 8);
+  assert.ok(calls.indexOf("budget:register") < calls.indexOf("issueTicket"));
+  assert.ok(calls.indexOf("issueTicket") < calls.indexOf("createUser"));
+  checked++;
+}
+// Public registration fails closed if ticket issuance or activation is missing.
+for (const options of [
+  { publicSignUp: true, publicDisabled: true },
+  { publicSignUp: true, publicTicketDisabled: true },
+  { publicSignUp: true, ticketIssueFailure: true },
+]) {
+  const { handler, calls } = setup("username-register", options);
+  const response = await handler(makePost({
+    username: "Beta_User", name: "Public User", password: PASSWORD,
+  }));
+  assert.equal(response.status, 503);
+  assert.ok(!calls.includes("createUser"));
+  checked++;
+}
+// Invalid invitation or missing recovery infrastructure must never create an account.
 for (const options of [{ invalidInvite: true }, { missingRecoveryTable: true }, { limitBudget: true }]) {
   const { handler, calls } = setup("username-register", options);
   const response = await handler(makePost(signup));

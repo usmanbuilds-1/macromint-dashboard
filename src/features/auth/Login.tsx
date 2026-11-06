@@ -77,8 +77,8 @@ export function Login() {
         </label>
         <Button type="submit" disabled={busy}>{busy ? "Signing in…" : "Sign in"}</Button>
         {USERNAME_AUTH_ENABLED && <p className="text-xs leading-5 text-muted-foreground">
-          Username accounts do not receive password reset emails. Keep your password secure;
-          if you lose access, contact the beta administrator for account recovery.
+          Username accounts use the one-time recovery codes issued at registration.
+          Keep them safe; no password reset email is sent.
         </p>}
         <p className="text-center text-sm text-muted-foreground">
           New here?{" "}
