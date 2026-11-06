@@ -166,6 +166,9 @@ describe("Atwater plausibility checks", () => {
     expect(result.ok).toBe(false);
     expect(result.issues[0]).toMatch(/Atwater/);
   });
+  it("does not invent missing macros for an Atwater contradiction", () => {
+    expect(checkPlausibility({ kcal: 420, protein: 15, carbs: null, fat: null }).ok).toBe(true);
+  });
   it("flags impossible portion bounds", () => {
     expect(checkItemBounds(3000, 400).ok).toBe(false);
     expect(checkItemBounds(200, 2500).ok).toBe(false);
