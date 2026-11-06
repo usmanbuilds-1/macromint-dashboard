@@ -53,10 +53,12 @@ export function SessionProvider({ children }: { children: React.ReactNode }) {
   const trackedUser = useRef<string | null>(null);
   const seenInitialAuth = useRef(false);
   const lastAuthUser = useRef<string | null>(null);
-  const refreshInFlight = useRef<Promise<void> | null>(null);
+  const authGeneration = useRef(0);
+  const refreshInFlight = useRef<{ generation: number; promise: Promise<void> } | null>(null);
 
-  const loadAccount = useCallback(async () => {
+  const loadAccount = useCallback(async (generation: number) => {
     const current = await backend.getSessionUser();
+    if (generation !== authGeneration.current) return;
     setUser((prev) => sameSessionRecord(prev, current) ? prev : current);
     if (!current) {
       trackedUser.current = null;
@@ -72,6 +74,9 @@ export function SessionProvider({ children }: { children: React.ReactNode }) {
       backend.getEntitlement().catch(() => undefined),
       backend.amIAdmin().catch(() => false),
     ]);
+    // A sign-out/account switch may finish while an earlier network request
+    // is pending. Never restore a previous account's private data afterward.
+    if (generation !== authGeneration.current) return;
     if (!a && trackedUser.current === current.id && e !== undefined && !hasAccessClient(e)) {
       // Server RLS independently blocks requests made with stale JWTs.
       trackedUser.current = null;
@@ -94,11 +99,14 @@ export function SessionProvider({ children }: { children: React.ReactNode }) {
 
   // Focus, polling and initial auth can overlap on mobile. Share one request.
   const refresh = useCallback((): Promise<void> => {
-    if (refreshInFlight.current) return refreshInFlight.current;
-    const request = loadAccount().finally(() => {
-      if (refreshInFlight.current === request) refreshInFlight.current = null;
+    const generation = authGeneration.current;
+    if (refreshInFlight.current?.generation === generation) {
+      return refreshInFlight.current.promise;
+    }
+    const request = loadAccount(generation).finally(() => {
+      if (refreshInFlight.current?.promise === request) refreshInFlight.current = null;
     });
-    refreshInFlight.current = request;
+    refreshInFlight.current = { generation, promise: request };
     return request;
   }, [loadAccount]);
 
@@ -112,6 +120,7 @@ export function SessionProvider({ children }: { children: React.ReactNode }) {
       if (seenInitialAuth.current && lastAuthUser.current === nextId) return;
       const previousId = lastAuthUser.current;
       seenInitialAuth.current = true;
+      if (previousId !== nextId) authGeneration.current += 1;
       lastAuthUser.current = nextId;
       if (!u) {
         trackedUser.current = null;
@@ -158,7 +167,9 @@ export function SessionProvider({ children }: { children: React.ReactNode }) {
 
   const setAuthUser = useCallback(
     (u: SessionUser | null) => {
-      lastAuthUser.current = u?.id ?? null;
+      const nextId = u?.id ?? null;
+      if (nextId !== lastAuthUser.current) authGeneration.current += 1;
+      lastAuthUser.current = nextId;
       seenInitialAuth.current = true;
       setUser(u);
       if (!u) {
