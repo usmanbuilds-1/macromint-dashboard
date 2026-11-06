@@ -141,7 +141,7 @@ export function Trends() {
               ))}
             </TabsList>
           </Tabs>
-        )}
+        ) : undefined}
       />
 
       {diaryData.loading && !diaryData.data && (
