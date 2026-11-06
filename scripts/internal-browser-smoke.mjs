@@ -211,6 +211,7 @@ try {
     "Selected tab indicator should follow navigation");
   await page.getByRole("button", { name: "Add food", exact: true }).waitFor();
   await page.getByRole("button", { name: "Scan photo", exact: true }).waitFor();
+  await page.locator(".mm-journey-ledger").waitFor();
   await screenshotEverySize("diary");
 
   await nav.getByRole("link", { name: "Foods" }).click();
