@@ -850,7 +850,7 @@ export const demoBackend: Backend & DemoExtras = {
     return st.auditLogs.filter((a) => !targetUserId || a.targetUserId === targetUserId).slice(0, 200);
   },
 
-  async getReactivationRequests() { return []; },
+  async getReactivationRequests() { return { requests: [], isBetaTester: false }; },
   async submitReactivationRequest() {
     throw new BackendError("DEMO", "Reactivation requests require a live beta account");
   },
