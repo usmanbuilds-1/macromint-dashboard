@@ -1,4 +1,4 @@
-import { createContext, useCallback, useContext, useEffect, useMemo, useState } from "react";
+import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from "react";
 import { backend } from "@/lib/backend";
 
 // Session.tsx creates the auth context at module scope, so a hot-swapped copy
@@ -30,7 +30,7 @@ interface SessionState {
 const SessionContext = createContext<SessionState | null>(null);
 
 export function hasAccessClient(entitlement: Entitlement | null): boolean {
-  if (!entitlement) return false;
+  if (!entitlement || ["revoked","suspended","trial_expired","payment_overdue"].includes(entitlement.state)) return false;
   if (["paid_active", "complimentary"].includes(entitlement.state)) return true;
   if (entitlement.state === "trial_active" && new Date(entitlement.trialEndsAt).getTime() >= Date.now()) return true;
   if (entitlement.accessUntil && new Date(entitlement.accessUntil).getTime() > Date.now()) return true;
@@ -44,11 +44,15 @@ export function SessionProvider({ children }: { children: React.ReactNode }) {
   const [goals, setGoals] = useState<GoalSet | null>(null);
   const [entitlement, setEntitlement] = useState<Entitlement | null>(null);
   const [isAdmin, setIsAdmin] = useState(false);
+  // An already-active tracking session is signed out when access is lost.
+  // An expired user may subsequently sign back in for account-only functions.
+  const trackedUser = useRef<string | null>(null);
 
   const refresh = useCallback(async () => {
     const current = await backend.getSessionUser();
     setUser(current);
     if (!current) {
+      trackedUser.current = null;
       setProfile(null);
       setGoals(null);
       setEntitlement(null);
@@ -58,12 +62,24 @@ export function SessionProvider({ children }: { children: React.ReactNode }) {
     const [p, g, e, a] = await Promise.all([
       backend.getProfile().catch(() => null),
       backend.getGoals().catch(() => null),
-      backend.getEntitlement().catch(() => null),
+      backend.getEntitlement().catch(() => undefined),
       backend.amIAdmin().catch(() => false),
     ]);
+    if (!a && trackedUser.current === current.id && e !== undefined && !hasAccessClient(e)) {
+      // Server RLS independently blocks requests made with stale JWTs.
+      trackedUser.current = null;
+      await backend.signOut().catch(() => undefined);
+      setUser(null);
+      setProfile(null);
+      setGoals(null);
+      setEntitlement(null);
+      setIsAdmin(false);
+      return;
+    }
+    if (e !== undefined && hasAccessClient(e)) trackedUser.current = current.id;
     setProfile(p);
     setGoals(g);
-    setEntitlement(e);
+    if (e !== undefined) setEntitlement(e);
     setIsAdmin(a);
   }, []);
 
@@ -72,6 +88,7 @@ export function SessionProvider({ children }: { children: React.ReactNode }) {
     const unsubscribe = backend.onAuthChange((u) => {
       if (!mounted) return;
       if (!u) {
+        trackedUser.current = null;
         setUser(null);
         setProfile(null);
         setGoals(null);
@@ -87,6 +104,20 @@ export function SessionProvider({ children }: { children: React.ReactNode }) {
     return () => {
       mounted = false;
       unsubscribe();
+    };
+  }, [refresh]);
+
+  // Catch expiry/revocation on tabs that stay open without navigation.
+  useEffect(() => {
+    const poll = () => { void refresh().catch(() => undefined); };
+    const interval = window.setInterval(poll, 45_000);
+    window.addEventListener("focus", poll);
+    const onVisibility = () => { if (!document.hidden) poll(); };
+    document.addEventListener("visibilitychange", onVisibility);
+    return () => {
+      window.clearInterval(interval);
+      window.removeEventListener("focus", poll);
+      document.removeEventListener("visibilitychange", onVisibility);
     };
   }, [refresh]);
 

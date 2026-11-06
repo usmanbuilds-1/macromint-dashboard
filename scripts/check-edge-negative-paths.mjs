@@ -88,7 +88,7 @@ for (const name of ["username-register", "username-recovery"]) {
   assertions++;
 }
 
-for (const name of ["admin-action", "admin-query", "beta-invites", "delete-account", "food-search", "ai-scan"]) {
+for (const name of ["admin-action", "admin-query", "beta-invites", "delete-account", "food-search", "ai-scan", "account-data", "beta-appeals"]) {
   const { handler, calls } = makeHandler(name);
   const response = await handler(post({ action: "get_settings", q: "rice" }));
   assert.equal(response.status, 401, `${name} must require bearer JWT`);
@@ -96,7 +96,7 @@ for (const name of ["admin-action", "admin-query", "beta-invites", "delete-accou
   assertions++;
 }
 
-for (const name of ["admin-action", "admin-query", "beta-invites", "food-search", "ai-scan"]) {
+for (const name of ["admin-action", "admin-query", "beta-invites", "food-search", "ai-scan", "account-data", "beta-appeals"]) {
   const { handler } = makeHandler(name);
   for (const obj of invalidBodies) {
     const response = await handler(post(obj, true));

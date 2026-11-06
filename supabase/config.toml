@@ -22,3 +22,11 @@ verify_jwt = false
 # Password recovery uses non-email one-use backup codes.
 [functions.username-recovery]
 verify_jwt = false
+
+# Explicit handler-level bearer checks protect the account export and appeals
+# endpoints. Gateway verifies JWT where supported; deny missing bearer tokens.
+[functions.account-data]
+verify_jwt = false
+
+[functions.beta-appeals]
+verify_jwt = false

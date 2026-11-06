@@ -850,6 +850,15 @@ export const demoBackend: Backend & DemoExtras = {
     return st.auditLogs.filter((a) => !targetUserId || a.targetUserId === targetUserId).slice(0, 200);
   },
 
+  async getReactivationRequests() { return []; },
+  async submitReactivationRequest() {
+    throw new BackendError("DEMO", "Reactivation requests require a live beta account");
+  },
+  async adminGetReactivationQueue() { return []; },
+  async adminReviewReactivation() {
+    throw new BackendError("DEMO", "Reactivation requests require a live beta account");
+  },
+
   async adminGetSettings() {
     const st = s();
     const adminId = requireUser();
@@ -931,7 +940,7 @@ function canReadFood(food: Food, userId: string): boolean {
 
 function hasAccess(st: DemoStore, userId: string): boolean {
   const e = st.entitlements[userId];
-  if (!e) return false;
+  if (!e || ["revoked","suspended","trial_expired","payment_overdue"].includes(e.state)) return false;
   if (["paid_active", "complimentary"].includes(e.state)) return true;
   if (e.state === "trial_active" && new Date(e.trialEndsAt).getTime() >= Date.now()) return true;
   if (e.accessUntil && new Date(e.accessUntil).getTime() > Date.now()) return true;

@@ -1,3 +1,4 @@
+import { BetaAppeals } from "./BetaAppeals";
 import { publicAccountLabel } from "@/lib/auth/username";
 import { LIMITS, validateNumeric } from "@/lib/validation/limits";
 import { useEffect, useState } from "react";
@@ -262,6 +263,7 @@ function AdminUsers() {
 
   return (
     <div className="flex flex-col gap-4">
+      <BetaAppeals />
       <BetaInvitations />
       <div className="relative">
         <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
