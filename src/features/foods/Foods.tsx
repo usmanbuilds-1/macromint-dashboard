@@ -1,19 +1,13 @@
-import { LIMITS, validateNumeric } from "@/lib/validation/limits";
 import { useState } from "react";
 import { toast } from "sonner";
-import { Camera, Plus, Search, Star } from "lucide-react";
+import { Search, Star } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { JourneyIntro } from "@/components/app/JourneyIntro";
+import { JourneyEmpty } from "@/components/app/JourneyEmpty";
+import { CustomFoodDialog } from "./CustomFoodDialog";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import {
-  Dialog,
-  DialogContent,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
-import { Label } from "@/components/ui/label";
 import { kcalOf } from "@/components/app/bits";
 import { backend, bumpData } from "@/lib/backend";
 import { useAsyncData } from "@/hooks/useData";
@@ -21,16 +15,6 @@ import { todayStr } from "@/lib/nutrition/datetime";
 import { foodToLoggable, offToLoggable, useFoodLog, type LoggableFood } from "./FoodLogProvider";
 import { formatNumber } from "@/lib/utils";
 import { cn } from "@/lib/utils";
-
-const MACRO_INPUTS = [
-  { key: "kcal", label: "Calories (kcal)" },
-  { key: "protein", label: "Protein (g)" },
-  { key: "carbs", label: "Carbohydrates (g)" },
-  { key: "fat", label: "Fat (g)" },
-  { key: "fiber", label: "Fiber (g, optional)" },
-  { key: "sugar", label: "Sugars (g, optional)" },
-  { key: "sodium", label: "Sodium (mg, optional)" },
-] as const;
 
 function FoodRow({ food, onLog, favActive, onFav }: { food: LoggableFood; onLog: (f: LoggableFood) => void; favActive?: boolean; onFav?: () => void }) {
   return (
@@ -91,14 +75,12 @@ export function Foods() {
   };
 
   return (
-    <div className="mm6-subpage mm6-page-foods ref-live-foods flex flex-col gap-6">
-      <header className="flex flex-wrap items-center justify-between gap-3">
-        <div>
-          <h1 className="text-2xl font-semibold tracking-tight">Foods</h1>
-          <p className="mt-0.5 text-sm text-muted-foreground">Search for a food, scan a photo, or create your own entry.</p>
-        </div>
-
-      </header>
+    <div className="mm6-subpage mm6-page-foods mm-journey-foods flex flex-col gap-6">
+      <JourneyIntro
+        eyebrow="FOOD LIBRARY"
+        title="Foods"
+        description="Find something you ate, choose a portion and add it to your day."
+      />
 
       <Tabs value={activeTab} onValueChange={setActiveTab}>
         <TabsList className="w-full justify-start">
@@ -106,9 +88,9 @@ export function Foods() {
           <TabsTrigger value="favorites">Favorites</TabsTrigger>
         </TabsList>
 
-        <TabsContent value="search" className="mt-4 flex flex-col gap-4">
+        <TabsContent value="search" className="mm-journey-food-search mt-4 flex flex-col gap-4">
           <form
-            className="flex gap-2"
+            className="mm-journey-search-form flex gap-2"
             onSubmit={(e) => {
               e.preventDefault();
               void runSearch(q);
@@ -126,17 +108,17 @@ export function Foods() {
             </div>
             <Button type="submit" disabled={searching}>{searching ? "Searching…" : "Search"}</Button>
           </form>
-          <div className="ref-food-shortcuts" aria-label="Food logging options">
+          <div className="mm-journey-food-options" aria-label="Other ways to log food">
             <button type="button" onClick={() => foodLog.openScan({ entryDate: today, mealType: "snacks" })}>
-              <span>Scan a photo</span><small>Take or upload a meal photo</small>
+              <span>Scan a photo</span><small>Camera or existing image</small>
             </button>
             <button type="button" onClick={() => setCustomOpen(true)}>
-              <span>Custom food</span><small>Add your own entry</small>
+              <span>Create a food</span><small>Enter nutrition from a label</small>
             </button>
           </div>
 
           {hit && (
-            <div className="overflow-hidden rounded-xl border">
+            <div className="mm-journey-food-results overflow-hidden border-y">
               {hit.local.length === 0 && hit.remote.length === 0 ? (
                 <p className="px-4 py-8 text-center text-sm text-muted-foreground">
                   No matches for "{q}". You can create it as a custom food.
@@ -163,7 +145,7 @@ export function Foods() {
         </TabsContent>
 
         <TabsContent value="favorites" className="mt-4">
-          <div className="overflow-hidden rounded-xl border">
+          <div className="mm-journey-food-results overflow-hidden border-y">
             {favorites.data && favorites.data.length > 0 ? (
               favorites.data.map((fav) => (
                 <FoodRow
@@ -191,99 +173,3 @@ export function Foods() {
   );
 }
 
-function CustomFoodDialog({ open, onClose, onCreated }: { open: boolean; onClose: () => void; onCreated: (food: Awaited<ReturnType<typeof backend.createCustomFood>>) => void }) {
-  const [name, setName] = useState("");
-  const [brand, setBrand] = useState("");
-  const [values, setValues] = useState<Record<string, string>>({});
-  const [busy, setBusy] = useState(false);
-
-  const submit = async () => {
-    if (!name.trim()) {
-      toast.error("Give the food a name");
-      return;
-    }
-    if (name.trim().length > 120 || brand.trim().length > 120) {
-      toast.error("Food name and brand must be under 120 characters");
-      return;
-    }
-    const kcalResult = validateNumeric(values["kcal"] ?? "", "foodKcalPer100g", "Calories");
-    if ("error" in kcalResult) { toast.error(kcalResult.error); return; }
-    const optionalKeys = ["protein", "carbs", "fat", "fiber", "sugar", "sodium"] as const;
-    for (const key of optionalKeys) {
-      const raw = values[key];
-      if (raw === undefined || raw.trim() === "") continue;
-      const result = validateNumeric(raw, key === "sodium" ? "foodSodiumMgPer100g" : "foodMacroPer100g", key);
-      if ("error" in result) { toast.error(result.error); return; }
-    }
-    const kcal = kcalResult.value;
-    setBusy(true);
-    try {
-      const per100g: Record<string, number | null> = {
-        kcal,
-        protein: values["protein"]?.trim() ? Number(values["protein"]) : null,
-        carbs: values["carbs"]?.trim() ? Number(values["carbs"]) : null,
-        fat: values["fat"]?.trim() ? Number(values["fat"]) : null,
-        fiber: values["fiber"] ? Number(values["fiber"]) : null,
-        sugar: values["sugar"] ? Number(values["sugar"]) : null,
-        sodium: values["sodium"] ? Number(values["sodium"]) : null,
-      };
-      const food = await backend.createCustomFood({
-        name: name.trim(),
-        brand: brand.trim() || null,
-        per100g,
-        servingLabel: "100 g",
-        servingGrams: 100,
-      });
-      bumpData();
-      toast.success("Custom food created");
-      onClose();
-      onCreated(food);
-    } catch {
-      toast.error("Could not create the food");
-    } finally {
-      setBusy(false);
-    }
-  };
-
-  return (
-    <Dialog open={open} onOpenChange={(o) => (!o ? onClose() : undefined)}>
-      <DialogContent className="sm:max-w-md">
-        <DialogHeader>
-          <DialogTitle>New custom food</DialogTitle>
-        </DialogHeader>
-        <div className="grid gap-3">
-          <div className="grid grid-cols-2 gap-3">
-            <div className="grid gap-1.5">
-              <Label htmlFor="cf-name">Name</Label>
-              <Input id="cf-name" maxLength={120} value={name} onChange={(e) => setName(e.target.value)} placeholder="Mum's biryani" />
-            </div>
-            <div className="grid gap-1.5">
-              <Label htmlFor="cf-brand">Brand (optional)</Label>
-              <Input id="cf-brand" maxLength={120} value={brand} onChange={(e) => setBrand(e.target.value)} />
-            </div>
-          </div>
-          <p className="text-xs text-muted-foreground">Values per 100 g or 100 ml. Leave optional fields empty if unknown — Macromint never invents values.</p>
-          <div className="grid grid-cols-2 gap-3">
-            {MACRO_INPUTS.map((m) => (
-              <div key={m.key} className="grid gap-1.5">
-                <Label htmlFor={`cf-${m.key}`}>{m.label}</Label>
-                <Input
-                  id={`cf-${m.key}`}
-                  type="number" min={0}
-                  max={m.key === "kcal" ? LIMITS.foodKcalPer100g.max : m.key === "sodium" ? LIMITS.foodSodiumMgPer100g.max : LIMITS.foodMacroPer100g.max}
-                  step="any" inputMode="decimal"
-                  value={values[m.key] ?? ""}
-                  onChange={(e) => setValues((v) => ({ ...v, [m.key]: e.target.value }))}
-                />
-              </div>
-            ))}
-          </div>
-        </div>
-        <DialogFooter>
-          <Button variant="outline" onClick={onClose}>Cancel</Button>
-          <Button onClick={submit} disabled={busy}>{busy ? "Saving…" : "Create and log"}</Button>
-        </DialogFooter>
-      </DialogContent>
-    </Dialog>
-  );
-}
