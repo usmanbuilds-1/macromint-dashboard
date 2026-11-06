@@ -18,6 +18,7 @@ import type { MealType, ScanItem } from "@/types";
 import { ScanCapture } from "./ScanCapture";
 import { ScanReview } from "./ScanReview";
 import { useFoodLog } from "@/features/foods/FoodLogProvider";
+import { useMobileDialogViewport } from "@/hooks/useMobileDialogViewport";
 
 type Phase = "capture" | "scanning" | "review";
 
@@ -31,6 +32,7 @@ export function ScanDialog({
   onClose: () => void;
 }) {
   const cameraButtonRef = useRef<HTMLButtonElement>(null);
+  const sheetStyle = useMobileDialogViewport(open);
   const foodLog = useFoodLog();
   const originalItems = useRef<ScanItem[]>([]);
   const saving = useRef(false);
@@ -136,6 +138,8 @@ export function ScanDialog({
   return (
     <Dialog open onOpenChange={(o) => (!o ? onClose() : undefined)}>
       <DialogContent className="mm-scan-dialog max-h-[calc(100dvh-1rem)] overflow-y-auto sm:max-w-lg"
+        style={sheetStyle}
+        onCloseAutoFocus={(event) => event.preventDefault()}
         onOpenAutoFocus={(event) => {
           // Radix otherwise focuses the notes input and opens the phone
           // keyboard on a screen whose main action is selecting a photo.
