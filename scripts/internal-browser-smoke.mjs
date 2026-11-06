@@ -135,7 +135,7 @@ try {
           const summary = today?.querySelector(".ref-live-today-summary");
           return Boolean(today && summary && calories &&
             calories.textContent?.trim() !== "—");
-        }, { timeout: 5000 });
+        }, null, { timeout: 5000 });
         const animations = await page.locator(".ref-live-today").evaluate((el) =>
           el.getAnimations({ subtree: true })
             .filter((animation) => animation.playState === "running")
@@ -186,8 +186,14 @@ try {
   await screenshotEverySize("food-entry-choices");
   await page.getByRole("button", { name: /Search or type a food/ }).click();
   await page.getByPlaceholder(/Search foods, brands/i).waitFor();
-  await page.keyboard.press("Escape");
+  // Close explicitly. Escape can be consumed by the focused command input
+  // while a modal is transitioning, leaving nav inaccessible behind it.
+  const searchDialog = page.getByRole("dialog");
+  await searchDialog.getByRole("button", { name: "Close" }).click();
+  await searchDialog.waitFor({ state: "hidden" });
   await screenshotEverySize("food-search");
+  assert.equal(await page.getByRole("dialog").count(), 0,
+    "Food search must release modal focus before switching tabs");
 
   await nav.getByRole("link", { name: "Diary" }).click();
   await page.getByRole("heading", { name: "Diary", exact: true }).waitFor();
