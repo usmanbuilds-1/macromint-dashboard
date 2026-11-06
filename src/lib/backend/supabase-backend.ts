@@ -16,13 +16,14 @@ import type {
   Backend,
   AddEntryInput,
   AdminActionInput,
+  ReactivationRequest,
+  AdminReactivationRequest,
   CustomFoodInput,
   FoodSearchHit,
   RecipeInput,
 } from "./types";
 import { getSupabase, mapFoodRow } from "@/lib/supabase";
 import { applyPortionPercent, sumNutrients } from "@/lib/nutrition/math";
-import { fetchEveryExportPage } from "@/lib/export/pagination";
 import type {
   AdminUserRow,
   AppSettings,
@@ -851,6 +852,55 @@ export const supabaseBackend: Backend = {
     return supabaseBackend.getPublicSettings();
   },
 
+  async getReactivationRequests() {
+    const { data, error } = await getSupabase().functions.invoke("beta-appeals", {
+      body: { action: "status" },
+    });
+    if (error || data?.error) throw new BackendError("SERVER", "Could not load request status");
+    return ((data?.requests ?? []) as Record<string, unknown>[]).map((r): ReactivationRequest => ({
+      id: String(r.id),
+      status: r.status as ReactivationRequest["status"],
+      createdAt: String(r.created_at),
+      reviewedAt: (r.reviewed_at as string | null) ?? null,
+      approvedDays: (r.approved_days as number | null) ?? null,
+    }));
+  },
+
+  async submitReactivationRequest(message) {
+    const { data, error } = await getSupabase().functions.invoke("beta-appeals", {
+      body: { action: "submit", message },
+    });
+    if (error || data?.error) throw new BackendError("SERVER", "Could not submit your request");
+  },
+
+  async adminGetReactivationQueue() {
+    const { data, error } = await getSupabase().functions.invoke("beta-appeals", {
+      body: { action: "queue" },
+    });
+    if (error || data?.error) throw new BackendError("SERVER", "Could not load the beta request queue");
+    return ((data?.requests ?? []) as Record<string, unknown>[]).map((r): AdminReactivationRequest => {
+      const account = r.account as Record<string, unknown> | null;
+      return {
+        id: String(r.id),
+        userId: String(r.user_id),
+        status: r.status as AdminReactivationRequest["status"],
+        createdAt: String(r.created_at),
+        reviewedAt: (r.reviewed_at as string | null) ?? null,
+        approvedDays: (r.approved_days as number | null) ?? null,
+        message: String(r.message ?? ""),
+        account: account ? { name: String(account.name ?? ""), email: String(account.email ?? "") } : null,
+      };
+    });
+  },
+
+  async adminReviewReactivation(id, approve, days, reason) {
+    const { data, error } = await getSupabase().functions.invoke("beta-appeals", {
+      body: { action: "review", requestId: id, approve, days, reason },
+    });
+    if (error || data?.error || !data?.ok)
+      throw new BackendError("SERVER", "The request could not be reviewed");
+  },
+
   // ── Notifications, consents, export ─────────────────────────────────────
   async getNotifications() {
     const { data, error } = await getSupabase()
@@ -889,74 +939,15 @@ export const supabaseBackend: Backend = {
   },
 
   async exportAllData() {
-    // All exports are scoped to the authenticated user's ID. RLS remains the
-    // database authority; explicit filters are an additional safety layer.
-    const sb = getSupabase();
-    const uid = await currentUserId();
-    const [
-      profile, goals, preferences, customFoods, diary, savedMeals, recipes,
-      weights, water, favorites, entitlements, trialRecords, subscriptions,
-      payments, scanCorrections, scanEvents, rewardedAds, consents, notifications,
-    ] = await Promise.all([
-      fetchEveryExportPage("profile", (a, z) => sb.from("profiles").select("*").eq("user_id", uid).order("user_id").range(a, z)),
-      fetchEveryExportPage("goals", (a, z) => sb.from("nutritional_goals").select("*").eq("user_id", uid).order("user_id").range(a, z)),
-      fetchEveryExportPage("preferences", (a, z) => sb.from("user_preferences").select("*").eq("user_id", uid).order("user_id").range(a, z)),
-      fetchEveryExportPage("custom foods", (a, z) => sb.from("foods").select("*").eq("owner_id", uid).order("id").range(a, z)),
-      fetchEveryExportPage("diary", (a, z) => sb.from("diary_entries").select("*").eq("user_id", uid).order("entry_date").order("id").range(a, z)),
-      fetchEveryExportPage("saved meals", (a, z) => sb.from("saved_meals").select("*").eq("user_id", uid).order("id").range(a, z)),
-      fetchEveryExportPage("recipes", (a, z) => sb.from("recipes").select("*").eq("user_id", uid).order("id").range(a, z)),
-      fetchEveryExportPage("weight", (a, z) => sb.from("weight_entries").select("*").eq("user_id", uid).order("entry_date").order("id").range(a, z)),
-      fetchEveryExportPage("water", (a, z) => sb.from("water_entries").select("*").eq("user_id", uid).order("entry_date").order("id").range(a, z)),
-      fetchEveryExportPage("favorites", (a, z) => sb.from("favorites").select("*").eq("user_id", uid).order("id").range(a, z)),
-      fetchEveryExportPage("entitlements", (a, z) => sb.from("entitlements").select("*").eq("user_id", uid).order("user_id").range(a, z)),
-      fetchEveryExportPage("trial records", (a, z) => sb.from("trial_records").select("*").eq("user_id", uid).order("id").range(a, z)),
-      fetchEveryExportPage("subscriptions", (a, z) => sb.from("subscriptions").select("*").eq("user_id", uid).order("id").range(a, z)),
-      fetchEveryExportPage("payments", (a, z) => sb.from("payments").select("*").eq("user_id", uid).order("id").range(a, z)),
-      fetchEveryExportPage("scan corrections", (a, z) => sb.from("scan_corrections").select("*").eq("user_id", uid).order("id").range(a, z)),
-      fetchEveryExportPage("scan events", (a, z) => sb.from("scan_events").select("*").eq("user_id", uid).order("id").range(a, z)),
-      fetchEveryExportPage("rewarded ads", (a, z) => sb.from("rewarded_ad_events").select("*").eq("user_id", uid).order("id").range(a, z)),
-      fetchEveryExportPage("consents", (a, z) => sb.from("user_consents").select("*").eq("user_id", uid).order("id").range(a, z)),
-      fetchEveryExportPage("notifications", (a, z) => sb.from("notifications").select("*").eq("user_id", uid).order("id").range(a, z)),
-    ]);
-
-    // recipe_ingredients has no user_id. Scope through the owner's recipe IDs,
-    // in small batches so URLs stay bounded and each page remains deterministic.
-    const recipeIngredients: unknown[] = [];
-    const ids = recipes.map((r) => r.id);
-    for (let i = 0; i < ids.length; i += 60) {
-      const part = ids.slice(i, i + 60);
-      recipeIngredients.push(...await fetchEveryExportPage("recipe ingredients", (a, z) =>
-        sb.from("recipe_ingredients").select("*").in("recipe_id", part).order("id").range(a, z),
-      ));
+    // Only a deliberate user action invokes this endpoint. It verifies the
+    // bearer token and exports that user's records even after trial expiry.
+    const { data, error } = await getSupabase().functions.invoke("account-data", {
+      body: { action: "export" },
+    });
+    if (error || !data || data.error || data.formatVersion !== 2) {
+      throw new BackendError("EXPORT_FAILED", "Could not produce a complete account export");
     }
-
-    // Recovery code hashes and other users' data are deliberately excluded.
-    // Never report success if ANY required collection failed to load.
-    return {
-      exportedAt: new Date().toISOString(),
-      formatVersion: 2,
-      profile,
-      goals,
-      preferences,
-      customFoods,
-      diary,
-      savedMeals,
-      recipes,
-      recipeIngredients,
-      weightEntries: weights,
-      waterEntries: water,
-      favorites,
-      entitlements,
-      trialRecords,
-      subscriptions,
-      payments,
-      scanCorrections,
-      scanEvents,
-      rewardedAdEvents: rewardedAds,
-      consents,
-      notifications,
-    };
-
+    return data as Record<string, unknown>;
   },
 };
 
