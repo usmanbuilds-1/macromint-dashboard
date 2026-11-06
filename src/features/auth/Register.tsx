@@ -7,7 +7,7 @@ import { Label } from "@/components/ui/label";
 import { AuthShell } from "./AuthShell";
 import { backend, BackendError, IS_DEMO } from "@/lib/backend";
 import { useSession } from "@/context/Session";
-import { INVITE_REGISTRATION_ENABLED } from "@/lib/beta/config";
+import { INVITE_REGISTRATION_ENABLED, PUBLIC_REGISTRATION_ENABLED } from "@/lib/beta/config";
 import { isValidInviteCode } from "@/lib/beta/invite-code";
 import { USERNAME_AUTH_ENABLED, USERNAME_MIN_PASSWORD_LENGTH } from "@/lib/auth/username-config";
 import { isValidUsername } from "@/lib/auth/username";
@@ -26,16 +26,18 @@ export function Register() {
 
   const submit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!INVITE_REGISTRATION_ENABLED && !IS_DEMO) {
-      toast.error("New account invitations are temporarily unavailable.");
+    if ((!USERNAME_AUTH_ENABLED || (!INVITE_REGISTRATION_ENABLED && !PUBLIC_REGISTRATION_ENABLED)) && !IS_DEMO) {
+      toast.error("New account registration is temporarily unavailable.");
       return;
     }
     if (!name.trim() || name.trim().length < 2) {
       toast.error("Enter your name");
       return;
     }
-    if (!isValidInviteCode(inviteCode) && !IS_DEMO) {
-      toast.error("Enter your beta invitation code");
+    if (!IS_DEMO && (!PUBLIC_REGISTRATION_ENABLED || inviteCode.trim()) && !isValidInviteCode(inviteCode)) {
+      toast.error(PUBLIC_REGISTRATION_ENABLED
+        ? "Enter a valid beta invitation code or leave it blank"
+        : "Enter your beta invitation code");
       return;
     }
     if (USERNAME_AUTH_ENABLED && !isValidUsername(username)) {
@@ -82,7 +84,7 @@ export function Register() {
         <div className="grid gap-4">
           <p className="text-sm leading-6 text-muted-foreground">
             Your account was created as <strong>@{username.trim().toLowerCase()}</strong>.
-            There is no recovery email. These codes are the only self-service method to reset a forgotten password.
+            No recovery email is collected. These codes are the self-service method to reset your password.
           </p>
           <div className="max-h-64 overflow-auto rounded-md border bg-muted/30 p-3 font-mono text-xs leading-8" aria-label="One-time account recovery codes">
             {recoveryCodes.map((code, index) => <div className="select-all" key={code}>{index + 1}. {code}</div>)}
@@ -116,12 +118,12 @@ export function Register() {
   }
 
 
-  if (!INVITE_REGISTRATION_ENABLED && !IS_DEMO) {
+  if ((!USERNAME_AUTH_ENABLED || (!INVITE_REGISTRATION_ENABLED && !PUBLIC_REGISTRATION_ENABLED)) && !IS_DEMO) {
     return (
-      <AuthShell title="Invitation access" subtitle="Macromint is live. New account invitations are temporarily unavailable while account sign-in is configured.">
+      <AuthShell title="Registration unavailable" subtitle="New account registration is temporarily unavailable while secure sign-in is being configured.">
         <div className="flex flex-col gap-5">
           <p className="text-sm leading-6 text-muted-foreground">
-            Already a member? Use your existing account to sign in. New beta invitations are managed separately by the administrator.
+            Already have an account? You can still sign in. New registrations will reopen after security checks.
           </p>
           <Link className="inline-flex min-h-12 items-center justify-center rounded-md bg-primary px-4 text-sm font-semibold text-primary-foreground" to="/">
             Back to Macromint
@@ -135,17 +137,23 @@ export function Register() {
   }
 
   return (
-    <AuthShell title="Join the private beta" subtitle={USERNAME_AUTH_ENABLED
-      ? "Choose a username and a strong password. No email address is required."
-      : "Enter your name and personal invitation. Add an email and password so you can securely return to your diary."}>
+    <AuthShell title={PUBLIC_REGISTRATION_ENABLED ? "Create your account" : "Join the private beta"}
+      subtitle={USERNAME_AUTH_ENABLED
+        ? "Choose a username and a strong password. Every new account gets the standard free trial."
+        : "Enter your name, invitation and a secure email account."}>
       <form onSubmit={submit} className="flex flex-col gap-4">
-        <div className="grid gap-1.5">
-          <Label htmlFor="invite">Invitation code</Label>
-          <Input id="invite" required={!IS_DEMO} autoComplete="off" spellCheck={false}
-            value={inviteCode} onChange={(e) => setInviteCode(e.target.value.toUpperCase().replace(/[^A-Z0-9-]/g, ""))}
-            placeholder="MM-..." className="font-mono text-sm tracking-wide" maxLength={43} />
-          <p className="text-xs text-muted-foreground">Codes are single-use. Contact the beta administrator if you need access.</p>
-        </div>
+        {INVITE_REGISTRATION_ENABLED && (
+          <div className="grid gap-1.5">
+            <Label htmlFor="invite">{PUBLIC_REGISTRATION_ENABLED ? "Beta tester invitation (optional)" : "Invitation code"}</Label>
+            <Input id="invite" required={!PUBLIC_REGISTRATION_ENABLED && !IS_DEMO}
+              autoComplete="off" spellCheck={false}
+              value={inviteCode} onChange={(e) => setInviteCode(e.target.value.toUpperCase().replace(/[^A-Z0-9-]/g, ""))}
+              placeholder="MM-..." className="font-mono text-sm tracking-wide" maxLength={43} />
+            <p className="text-xs text-muted-foreground">{PUBLIC_REGISTRATION_ENABLED
+              ? "Only invited beta testers need a code. Everyone else can leave this blank."
+              : "Invitations are single-use. Contact the beta owner for a code."}</p>
+          </div>
+        )}
         <div className="grid gap-1.5">
           <Label htmlFor="name">Name</Label>
           <Input id="name" required maxLength={100} autoComplete="name" value={name} onChange={(e) => setName(e.target.value)} placeholder="Your name" />
@@ -176,7 +184,7 @@ export function Register() {
             {USERNAME_AUTH_ENABLED && " Email-based password recovery is unavailable for username accounts."}
           </p>
         </div>
-        <Button type="submit" disabled={busy}>{busy ? "Creating account…" : "Create beta account"}</Button>
+        <Button type="submit" disabled={busy}>{busy ? "Creating account…" : "Create account"}</Button>
         <p className="text-center text-sm text-muted-foreground">
           Already have an account?{" "}
           <Link to="/login" className="font-medium text-foreground underline underline-offset-2">Sign in</Link>
