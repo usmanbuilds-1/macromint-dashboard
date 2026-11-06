@@ -6,6 +6,7 @@ import type { TablesUpdate, Json } from "@/integrations/supabase/types";
 import { BackendError } from "./types";
 import { selectDiaryRange } from "./supabase/diary-range";
 import { logSavedMealBatch } from "./supabase/saved-meal-log";
+import { toSavedMealItem } from "@/lib/nutrition/saved-meal";
 import { USERNAME_AUTH_ENABLED } from "@/lib/auth/username-config";
 import { isValidInviteCode } from "@/lib/beta/invite-code";
 import {
@@ -420,20 +421,18 @@ export const supabaseBackend: Backend = {
     if (error) throw new BackendError("DB", error.message);
     const items = (entries ?? []).map((e) => {
       const row = e as Record<string, unknown>;
-      return {
+      return toSavedMealItem({
         foodId: (row["food_id"] as string | null) ?? null,
         name: String(row["name"]),
         brand: (row["brand"] as string | null) ?? null,
         grams: n(row["grams"]),
-        per100g: scaleBackToPer100g(
-          (row["base_nutrients"] ?? {}) as NutrientRecord,
-          n(row["grams"]),
-        ),
-      };
+        portionPercent: n(row["portion_percent"]),
+        baseNutrients: (row["base_nutrients"] ?? {}) as NutrientRecord,
+      });
     });
     const { data: saved, error: insertError } = await getSupabase()
       .from("saved_meals")
-      .insert({ user_id: await currentUserId(), name, items })
+      .insert({ user_id: await currentUserId(), name, items: items as unknown as Json })
       .select()
       .single();
     if (insertError) throw new BackendError("DB", insertError.message);

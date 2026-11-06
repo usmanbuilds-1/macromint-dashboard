@@ -35,6 +35,7 @@ export function ScanReview({
   originalItems: RefObject<ScanItem[]>;
 }) {
   const totalKcal = items.reduce((sum, item) => sum + kcalOf(item.nutrients), 0);
+  const hasUnknownEnergy = items.some((item) => item.nutrients.kcal == null);
   return (
     <div className="flex flex-col gap-4">
       {preview && (
@@ -51,7 +52,7 @@ export function ScanReview({
           )}
         </div>
         <span className="text-sm tabular-nums text-muted-foreground">
-          ≈ {formatNumber(totalKcal)} kcal estimated
+          {hasUnknownEnergy ? "Known energy: " : "≈ "}{formatNumber(totalKcal)} kcal{hasUnknownEnergy ? " (incomplete)" : " estimated"}
         </span>
       </div>
       {items.length === 0 ? (
@@ -76,7 +77,7 @@ export function ScanReview({
                   </div>
                   <div className="shrink-0 text-right">
                     <p className="text-base font-semibold tabular-nums">
-                      {formatNumber(kcalOf(item.nutrients))} <span className="text-xs font-normal">kcal</span>
+                      {item.nutrients.kcal == null ? "—" : formatNumber(item.nutrients.kcal)} <span className="text-xs font-normal">kcal</span>
                     </p>
                   </div>
                 </div>
@@ -110,7 +111,7 @@ export function ScanReview({
                     })}
                   />
                   <span id={`grams-help-${idx}`} className="text-xs tabular-nums text-muted-foreground">
-                    Protein {formatNumber(item.nutrients.protein ?? 0)} g · Carbs {formatNumber(item.nutrients.carbs ?? 0)} g · Fat {formatNumber(item.nutrients.fat ?? 0)} g
+                    Protein {item.nutrients.protein == null ? "—" : formatNumber(item.nutrients.protein)} g · Carbs {item.nutrients.carbs == null ? "—" : formatNumber(item.nutrients.carbs)} g · Fat {item.nutrients.fat == null ? "—" : formatNumber(item.nutrients.fat)} g
                   </span>
                 </div>
                 {(!plausibility.ok || item.warnings.length > 0) && (

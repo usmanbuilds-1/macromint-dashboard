@@ -1,6 +1,6 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
-import { Loader2, Trash2 } from "lucide-react";
+import { Loader2, Trash2, Star } from "lucide-react";
 import {
   Dialog,
   DialogContent,
@@ -34,6 +34,8 @@ import { formatNumber } from "@/lib/utils";
 import { cn } from "@/lib/utils";
 import type { FoodLogTarget, LoggableFood } from "./FoodLogProvider";
 import { LIMITS } from "@/lib/validation/limits";
+import { useMobileDialogViewport } from "@/hooks/useMobileDialogViewport";
+import { useAsyncData } from "@/hooks/useData";
 
 const PORTION_PRESETS = [25, 50, 75, 100];
 
@@ -95,15 +97,34 @@ export function ServingConfigDialog({
     return null;
   }, [food, entry]);
 
+  const dialogRef = useRef<HTMLDivElement>(null);
   const [mealType, setMealType] = useState<MealType>("breakfast");
   const [grams, setGrams] = useState("100");
   const [unit, setUnit] = useState("g");
   const [pct, setPct] = useState(100);
+  const [customPortion, setCustomPortion] = useState(false);
   const [busy, setBusy] = useState(false);
   const [manualValues, setManualValues] = useState<Record<"kcal" | "protein" | "carbs" | "fat", string>>({
     kcal: "", protein: "", carbs: "", fat: "",
   });
   const quickAdd = Boolean(!editing && food && food.sourceLabel === "Quick add");
+  const sheetStyle = useMobileDialogViewport(Boolean(view && target));
+  const favorites = useAsyncData(() => backend.getFavorites(), [], "favorites", Boolean(view?.foodId && target));
+  const isFavorite = Boolean(view?.foodId && favorites.data?.some((favorite) => favorite.foodId === view.foodId));
+  const [favoriteBusy, setFavoriteBusy] = useState(false);
+  const favoriteCurrent = async () => {
+    if (!view?.foodId || favoriteBusy) return;
+    setFavoriteBusy(true);
+    try {
+      const added = await backend.toggleFavorite(view.foodId);
+      bumpData();
+      toast.success(added ? "Added to favorites" : "Removed from favorites");
+    } catch {
+      toast.error("Could not update favorites");
+    } finally {
+      setFavoriteBusy(false);
+    }
+  };
 
   useEffect(() => {
     if (!view || !target) return;
@@ -113,9 +134,11 @@ export function ServingConfigDialog({
     if (entry) {
       setGrams(String(entry.grams));
       setPct(entry.portionPercent);
+      setCustomPortion(!PORTION_PRESETS.includes(entry.portionPercent));
     } else {
       setGrams(String(view.servingGrams));
       setPct(100);
+      setCustomPortion(false);
     }
   }, [view, target, entry]);
 
@@ -203,9 +226,26 @@ export function ServingConfigDialog({
 
   return (
     <Dialog open onOpenChange={(o) => (!o ? onClose() : undefined)}>
-      <DialogContent className="max-h-[88dvh] overflow-y-auto sm:max-w-md">
+      <DialogContent ref={dialogRef} className="max-h-[88dvh] overflow-y-auto sm:max-w-md"
+        style={sheetStyle}
+        onOpenAutoFocus={(event) => {
+          event.preventDefault();
+          dialogRef.current?.focus({ preventScroll: true });
+        }}
+        onCloseAutoFocus={(event) => event.preventDefault()}>
         <DialogHeader>
-          <DialogTitle className="pr-6">{editing ? "Edit entry" : view.name}</DialogTitle>
+          <div className="flex items-center gap-2 pr-6">
+            <DialogTitle className="min-w-0 flex-1">{editing ? "Edit entry" : view.name}</DialogTitle>
+            {view.foodId && (
+              <Button type="button" variant="ghost" size="icon"
+                aria-label={isFavorite ? "Remove from favorites" : "Add to favorites"}
+                aria-pressed={isFavorite}
+                disabled={favoriteBusy}
+                onClick={() => { void favoriteCurrent(); }}>
+                <Star aria-hidden="true" className={cn("h-5 w-5", isFavorite && "fill-primary text-primary")} />
+              </Button>
+            )}
+          </div>
           <DialogDescription className="flex flex-wrap items-center gap-x-3 gap-y-1">
             <span>{view.brand ?? view.sourceLabel}</span>
             {!view.verified && <span className="text-warning">Unverified values</span>}
@@ -299,7 +339,7 @@ export function ServingConfigDialog({
           <div className="grid gap-2">
             <div className="flex items-baseline justify-between">
               <Label htmlFor="sc-pct">Portion eaten</Label>
-              <span className="text-xs text-muted-foreground">{pct}% of the amount above</span>
+              <span className="text-xs text-muted-foreground">Choose a preset or enter your own</span>
             </div>
             <div className="flex items-center gap-2">
               <div className="flex flex-1 gap-1.5">
@@ -308,25 +348,29 @@ export function ServingConfigDialog({
                     key={p}
                     type="button"
                     size="sm"
-                    variant={pct === p ? "default" : "outline"}
+                    variant={!customPortion && pct === p ? "default" : "outline"}
                     className="flex-1 tabular-nums"
-                    onClick={() => setPct(p)}
+                    onClick={() => { setPct(p); setCustomPortion(false); }}
                   >
                     {p}%
                   </Button>
                 ))}
               </div>
-              <Input
-                id="sc-pct"
-                inputMode="numeric"
-                className="w-20 text-center tabular-nums"
-                value={pct}
-                onChange={(e) => {
-                  const v = Number(e.target.value.replace(/\D/g, ""));
-                  setPct(Math.min(Math.max(v || 0, 1), 100));
-                }}
-              />
+              <Button type="button" variant={customPortion ? "default" : "outline"}
+                size="sm" onClick={() => setCustomPortion(true)}>Other</Button>
             </div>
+            {customPortion && (
+              <div className="flex items-center gap-2">
+                <Input id="sc-pct" aria-label="Custom portion percentage"
+                  type="number" min={1} max={100} step={1} inputMode="numeric"
+                  className="w-24 text-center tabular-nums" value={pct}
+                  onChange={(e) => {
+                    const next = Number(e.target.value);
+                    if (Number.isFinite(next)) setPct(Math.min(100, Math.max(1, Math.trunc(next))));
+                  }} />
+                <span className="text-sm text-muted-foreground">% eaten</span>
+              </div>
+            )}
             <p className="text-xs text-muted-foreground">
               Log part of the portion — for example 70% of a 500 kcal dish records 350 kcal.
             </p>

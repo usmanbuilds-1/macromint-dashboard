@@ -9,6 +9,7 @@ import { BackendError } from "./types";
 import { USERNAME_AUTH_ENABLED } from "@/lib/auth/username-config";
 import { canonicalUsername, identifierToAuthEmail, usernameFromAuthEmail, isValidUsername } from "@/lib/auth/username";
 import { applyPortionPercent, scaleNutrients, sumNutrients } from "@/lib/nutrition/math";
+import { toSavedMealItem } from "@/lib/nutrition/saved-meal";
 import { todayStr } from "@/lib/nutrition/datetime";
 import type {
   AdminUserRow,
@@ -539,13 +540,7 @@ export const demoBackend: Backend & DemoExtras = {
     }
     const items = st.diary
       .filter((d) => d.userId === userId && entryIds.includes(d.id))
-      .map((d) => ({
-        foodId: d.foodId,
-        name: d.name,
-        brand: d.brand,
-        grams: d.grams,
-        per100g: scaleNutrients(d.baseNutrients, 100, (100 * 100) / Math.max(d.grams, 1)),
-      }));
+      .map(toSavedMealItem);
     const meal: SavedMeal = { id: uid("meal"), userId, name, items, createdAt: new Date().toISOString() };
     st.savedMeals.unshift(meal);
     save(st);

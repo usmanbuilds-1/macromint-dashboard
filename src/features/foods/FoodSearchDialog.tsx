@@ -11,15 +11,21 @@ import {
   CommandSeparator,
 } from "@/components/ui/command";
 import type { MealType, NutrientRecord } from "@/types";
-import { backend } from "@/lib/backend";
+import { backend, bumpData } from "@/lib/backend";
 import type { FoodSearchHit } from "@/lib/backend/types";
 import { useAsyncData } from "@/hooks/useData";
 import { foodToLoggable, offToLoggable, type LoggableFood } from "./FoodLogProvider";
 import { kcalOf } from "@/components/app/bits";
 import { formatNumber } from "@/lib/utils";
 import { cn } from "@/lib/utils";
+import { useMobileDialogViewport } from "@/hooks/useMobileDialogViewport";
 
-function ResultRow({ food, onSelect }: { food: LoggableFood; onSelect: (f: LoggableFood) => void }) {
+function ResultRow({ food, onSelect, isFavorite, onToggleFavorite }: {
+  food: LoggableFood;
+  onSelect: (f: LoggableFood) => void;
+  isFavorite?: boolean;
+  onToggleFavorite?: () => void;
+}) {
   return (
     <CommandItem value={`${food.name} ${food.brand ?? ""}`} onSelect={() => onSelect(food)} className="min-h-14 items-start gap-3 py-3">
       <div className="min-w-0 flex-1">
@@ -29,6 +35,15 @@ function ResultRow({ food, onSelect }: { food: LoggableFood; onSelect: (f: Logga
           <span>{food.servingLabel}</span>
         </p>
       </div>
+      {onToggleFavorite && (
+        <button type="button" aria-label={isFavorite ? "Remove from favorites" : "Add to favorites"}
+          aria-pressed={Boolean(isFavorite)}
+          className="inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-md text-muted-foreground hover:text-primary focus-visible:outline-2 focus-visible:outline-primary"
+          onPointerDown={(event) => event.stopPropagation()}
+          onClick={(event) => { event.preventDefault(); event.stopPropagation(); onToggleFavorite(); }}>
+          <Star aria-hidden="true" className={cn("h-5 w-5", isFavorite && "fill-primary text-primary")} />
+        </button>
+      )}
       <div className="shrink-0 text-right">
         <p className="text-sm font-semibold tabular-nums">{formatNumber(kcalOf(food.per100g), 0)} <span className="text-xs font-normal text-muted-foreground">kcal/100g</span></p>
         <p className={cn("text-[11px]", food.verified ? "text-primary" : "text-muted-foreground")}>{food.sourceLabel}</p>
@@ -41,6 +56,7 @@ export function FoodSearchDialog({
   open,
   onClose,
   onPicked,
+  target,
 }: {
   open: boolean;
   onClose: () => void;
@@ -51,9 +67,43 @@ export function FoodSearchDialog({
   const [hit, setHit] = useState<FoodSearchHit | null>(null);
   const [searching, setSearching] = useState(false);
   const reqId = useRef(0);
+  const sheetStyle = useMobileDialogViewport(open, "bottom");
+  const [savingMeal, setSavingMeal] = useState(false);
+  const [favoriteBusy, setFavoriteBusy] = useState<string | null>(null);
 
-  const recents = useAsyncData(() => backend.getRecentEntries(8), [], "recent:8");
-  const favorites = useAsyncData(() => backend.getFavorites(), [], "favorites");
+  const recents = useAsyncData(() => backend.getRecentEntries(8), [], "recent:8", open);
+  const favorites = useAsyncData(() => backend.getFavorites(), [], "favorites", open);
+  const savedMeals = useAsyncData(() => backend.getSavedMeals(), [], "saved-meals", open);
+  const favoriteIds = useMemo(() => new Set((favorites.data ?? []).map((fav) => fav.foodId)), [favorites.data]);
+
+  const toggleFavorite = async (foodId: string) => {
+    if (favoriteBusy) return;
+    setFavoriteBusy(foodId);
+    try {
+      const added = await backend.toggleFavorite(foodId);
+      bumpData();
+      toast.success(added ? "Added to favorites" : "Removed from favorites");
+    } catch {
+      toast.error("Could not update favorites");
+    } finally {
+      setFavoriteBusy(null);
+    }
+  };
+
+  const reuseMeal = async (id: string, name: string) => {
+    if (!target || savingMeal) return;
+    setSavingMeal(true);
+    try {
+      await backend.logSavedMeal(id, target.entryDate, target.mealType);
+      bumpData();
+      toast.success("Logged " + name + " to " + target.mealType);
+      onClose();
+    } catch {
+      toast.error("Saved meal could not be logged");
+    } finally {
+      setSavingMeal(false);
+    }
+  };
 
   useEffect(() => {
     if (!open) {
@@ -108,16 +158,33 @@ export function FoodSearchDialog({
   const showRecents = q.trim().length < 2;
 
   return (
-    <CommandDialog open={open} onOpenChange={(o) => (!o ? onClose() : undefined)} className="!top-auto !bottom-0 !translate-y-0 max-h-[88dvh] w-full !max-w-none rounded-t-xl rounded-b-none sm:!top-1/2 sm:!bottom-auto sm:!-translate-y-1/2 sm:!max-w-lg sm:rounded-lg">
-      <CommandInput placeholder="Search foods, brands, or paste a barcode…" value={q} onValueChange={setQ} />
-      <CommandList>
+    <CommandDialog open={open} onOpenChange={(o) => (!o ? onClose() : undefined)}
+      preventInputAutoFocus contentStyle={sheetStyle ? { ...sheetStyle, height: sheetStyle.maxHeight } : undefined}
+      className="!translate-y-0 bottom-0 max-h-[88dvh] w-full !max-w-none overflow-hidden rounded-t-xl rounded-b-none sm:!top-1/2 sm:!bottom-auto sm:!-translate-y-1/2 sm:!max-w-lg sm:rounded-lg">
+      <CommandInput autoFocus={false} placeholder="Tap to search foods, brands, or barcodes…" value={q} onValueChange={setQ} />
+      <CommandList className="min-h-0 flex-1 !max-h-none">
         {searching && <p className="px-4 py-3 text-sm text-muted-foreground">Searching…</p>}
         {!searching && showRecents && (
           <>
             {favorites.data && favorites.data.length > 0 && (
               <CommandGroup heading="Favourites">
                 {favorites.data.map((fav) => (
-                  <ResultRow key={fav.id} food={foodToLoggable(fav.food)} onSelect={onPicked} />
+                  <ResultRow key={fav.id} food={foodToLoggable(fav.food)} onSelect={onPicked}
+                    isFavorite onToggleFavorite={() => { void toggleFavorite(fav.foodId); }} />
+                ))}
+              </CommandGroup>
+            )}
+            {savedMeals.data && savedMeals.data.length > 0 && (
+              <CommandGroup heading="Saved meals · tap to log again">
+                {savedMeals.data.map((meal) => (
+                  <CommandItem key={meal.id} value={"saved-meal-" + meal.id}
+                    disabled={savingMeal}
+                    onSelect={() => { void reuseMeal(meal.id, meal.name); }}
+                    className="min-h-14 gap-3 py-3">
+                    <Database className="h-4 w-4 shrink-0 text-muted-foreground" />
+                    <span className="min-w-0 flex-1 truncate text-sm font-medium">{meal.name}</span>
+                    <span className="text-xs text-muted-foreground">{meal.items.length} items</span>
+                  </CommandItem>
                 ))}
               </CommandGroup>
             )}
@@ -133,8 +200,8 @@ export function FoodSearchDialog({
                         name: entry.name,
                         brand: entry.brand,
                         per100g: per100gFromBase(entry.baseNutrients, entry.grams),
-                        servingLabel: `${formatNumber(entry.grams, 0)} g`,
-                        servingGrams: entry.grams,
+                        servingLabel: `${formatNumber(entry.grams * entry.portionPercent / 100, 0)} g eaten`,
+                        servingGrams: entry.grams * entry.portionPercent / 100,
                         verified: false,
                         sourceLabel: "Previously logged",
                       })
@@ -151,7 +218,7 @@ export function FoodSearchDialog({
                 ))}
               </CommandGroup>
             )}
-            {!recents.loading && (recents.data?.length ?? 0) === 0 && (favorites.data?.length ?? 0) === 0 && (
+            {!recents.loading && (recents.data?.length ?? 0) === 0 && (favorites.data?.length ?? 0) === 0 && (savedMeals.data?.length ?? 0) === 0 && (
               <p className="px-4 py-6 text-center text-sm text-muted-foreground">
                 Search the food database to log your first item.
               </p>
@@ -163,7 +230,8 @@ export function FoodSearchDialog({
             {hit.local.length > 0 && (
               <CommandGroup heading="Food database">
                 {hit.local.map((food) => (
-                  <ResultRow key={food.id} food={foodToLoggable(food)} onSelect={onPicked} />
+                  <ResultRow key={food.id} food={foodToLoggable(food)} onSelect={onPicked}
+                    isFavorite={favoriteIds.has(food.id)} onToggleFavorite={() => { void toggleFavorite(food.id); }} />
                 ))}
               </CommandGroup>
             )}
