@@ -111,7 +111,7 @@ export function TodayOverview({
         </div>
       </div>
 
-      <p className="mm-home-balance-copy" role="status">{context}</p>
+      <p className={`mm-home-balance-copy ${!hasEntries ? "mm-home-balance-copy--empty" : ""}`} role="status">{context}</p>
 
       {targetReady && (
         <div className="mm-home-energy-track" role="progressbar"
