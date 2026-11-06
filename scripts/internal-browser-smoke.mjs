@@ -110,6 +110,31 @@ try {
   }
   assert.equal(await nav.getByRole("link", { name: "Today" }).getAttribute("aria-current"), "page",
     "Selected tab should be indicated accessibly");
+  // Measure navigation as an interaction, not just page startup.
+  // Cold pass includes any remaining route chunk fetch; warm pass checks
+  // repeat tab switching after all routes have been visited once.
+  const tabTimings = [];
+  const destinations = [
+    ["Diary", "Diary"],
+    ["Foods", "Foods"],
+    ["Progress", "Progress"],
+    ["Today", "Today"],
+  ];
+  for (const pass of ["first", "warm"]) {
+    for (const [tab, heading] of destinations) {
+      const started = performance.now();
+      await nav.getByRole("link", { name: tab, exact: true }).click();
+      await page.getByRole("heading", { name: heading, exact: true }).waitFor();
+      const elapsedMs = Math.round(performance.now() - started);
+      tabTimings.push({ pass, tab, elapsedMs });
+    }
+  }
+  const warmTimes = tabTimings.filter((timing) => timing.pass === "warm").map((timing) => timing.elapsedMs);
+  const warmMedian = [...warmTimes].sort((a, b) => a - b)[Math.floor(warmTimes.length / 2)];
+  console.log("TAB NAV BENCH", JSON.stringify({ warmMedianMs: warmMedian, timings: tabTimings }));
+  await writeFile("mobile-audit/screens/tab-timing.json", JSON.stringify(tabTimings, null, 2));
+  assert.ok(warmTimes.every((time) => time < 2200),
+    "Repeated tab navigation must not stall for more than 2.2 seconds in the isolated demo");
   await page.getByRole("button", { name: "More and settings" }).waitFor();
   await page.getByRole("button", { name: "Add food", exact: true }).waitFor();
   await page.getByRole("button", { name: "Scan photo", exact: true }).click();
