@@ -58,7 +58,8 @@
   line-height: 1.6;
 }
 .mm-app-shell .mm6-page-goals .mm-journey-edit-section:first-of-type {
-  margin-top: 4px;
+  margin-top: 0;
+  border-top: 0;
 }
 .mm-app-shell .mm-journey-goal-grid input {
   min-width: 0;
