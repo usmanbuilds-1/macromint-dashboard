@@ -123,7 +123,9 @@ export function checkPlausibility(rec: NutrientRecord): PlausibilityCheck {
   if (protein < 0 || carbs < 0 || fat < 0) issues.push("Negative macro value");
 
   const implied = atwaterKcal(rec);
-  if (implied > 20 && kcal > 20) {
+  // Without all three macronutrients the Atwater number is only a lower bound.
+  // A partially known food must not be flagged as inconsistent on that basis.
+  if ([rec.protein, rec.carbs, rec.fat].every((value) => typeof value === "number" && Number.isFinite(value)) && implied > 20 && kcal > 20) {
     const deviation = Math.abs(kcal - implied) / Math.max(implied, kcal);
     if (deviation > SCAN_ATWATER_TOLERANCE) {
       issues.push(`Calories are inconsistent with the macros (Atwater check off by ${Math.round(deviation * 100)}%)`);
