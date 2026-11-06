@@ -14,7 +14,7 @@ import { Label } from "@/components/ui/label";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Link } from "react-router-dom";
 import { backend, bumpData } from "@/lib/backend";
-import { useAsyncData, useDataVersion } from "@/hooks/useData";
+import { useAsyncData } from "@/hooks/useData";
 import { ACCESS_STATES, type AccessState, type AdminUserRow } from "@/types";
 import { formatDateShort, todayStr } from "@/lib/nutrition/datetime";
 import { cn } from "@/lib/utils";
@@ -236,9 +236,8 @@ function AdminUsers() {
   const [pending, setPending] = useState<{ action: string; row: AdminUserRow; extra?: Record<string, unknown> } | null>(null);
   const [reason, setReason] = useState("");
   const [saving, setSaving] = useState(false);
-  const version = useDataVersion();
 
-  const users = useAsyncData(() => backend.adminListUsers(search), [search, version]);
+  const users = useAsyncData(() => backend.adminListUsers(search), [search], "admin:users");
 
   const act = async (action: string, row: AdminUserRow, extra?: Record<string, unknown>): Promise<boolean> => {
     try {
@@ -379,7 +378,7 @@ function AdminUsers() {
 }
 
 function AdminAudit() {
-  const audit = useAsyncData(() => backend.adminGetAudit(), []);
+  const audit = useAsyncData(() => backend.adminGetAudit(), [], "admin:audit");
   const entries = audit.data ?? [];
   return (
     <div className="overflow-hidden rounded-xl border">
@@ -409,7 +408,7 @@ function AdminAudit() {
 }
 
 function AdminSettings() {
-  const settings = useAsyncData(() => backend.adminGetSettings(), []);
+  const settings = useAsyncData(() => backend.adminGetSettings(), [], "admin:settings");
   const [trialDays, setTrialDays] = useState("");
   const [rewardHours, setRewardHours] = useState("");
   const [maxAds, setMaxAds] = useState("");
