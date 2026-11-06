@@ -145,6 +145,8 @@ export interface Backend {
 
   // Diary
   getDiary(entryDate: string): Promise<DiaryEntry[]>;
+  /** One bounded read for progress charts instead of 7–30 HTTP requests. */
+  getDiaryRange(startDate: string, endDate: string): Promise<DiaryEntry[]>;
   addEntry(input: AddEntryInput): Promise<DiaryEntry>;
   updateEntry(id: string, patch: Partial<Pick<DiaryEntry, "grams" | "portionPercent" | "mealType" | "baseNutrients" | "nutrients" | "name">>): Promise<DiaryEntry>;
   deleteEntry(id: string): Promise<void>;
