@@ -13,6 +13,9 @@ import { useFoodLog } from "@/features/foods/FoodLogProvider";
 import { formatNumber } from "@/lib/utils";
 import { cn } from "@/lib/utils";
 import { ServingConfigDialog } from "@/features/foods/ServingConfig";
+import { JourneyIntro } from "@/components/app/JourneyIntro";
+import { JourneyEmpty } from "@/components/app/JourneyEmpty";
+import { DiarySummary } from "./DiarySummary";
 
 function preferredMeal(): MealType {
   const hour = new Date().getHours();
@@ -30,9 +33,6 @@ export function Diary() {
 
   const entries = diary.data ?? [];
   const totals = useMemo(() => dailyTotals(entries), [entries]);
-  const kcal = totals.kcal ?? 0;
-  const target = goals?.calorieTarget ?? null;
-  const remaining = target === null ? null : target - kcal;
 
   const byMeal = useMemo(() => {
     const map = new Map<string, DiaryEntry[]>();
@@ -118,49 +118,36 @@ export function Diary() {
 
   return (
     <div className="mm6-subpage mm6-page-diary flex flex-col gap-6">
-      <header className="flex items-center justify-between gap-3">
-        <div>
-          <h1 className="text-2xl font-semibold tracking-tight">Diary</h1>
-          <p className="mt-0.5 text-sm text-muted-foreground">{formatDateLong(date)}</p>
-        </div>
-        <div className="flex items-center gap-1">
-          <Button variant="ghost" size="icon" aria-label="Previous day" onClick={() => setDate((d) => addDaysStr(d, -1))}>
-            <ChevronLeft className="h-4 w-4" />
-          </Button>
-          <Button variant="ghost" size="icon" aria-label="Next day" disabled={date >= todayStr()} onClick={() => setDate((d) => addDaysStr(d, 1))}>
-            <ChevronRight className="h-4 w-4" />
-          </Button>
-        </div>
-      </header>
-
-      <section aria-label="Diary totals" className="border-y py-5">
-        <div className="flex flex-wrap items-baseline justify-between gap-4">
-          <div>
-            <p className="text-xs font-medium text-muted-foreground">{remaining === null ? "Energy eaten" : remaining < 0 ? "Above energy target" : "Energy remaining"}</p>
-            <p className="mt-1 text-3xl font-semibold tracking-tight tabular-nums">
-              {formatNumber(remaining === null ? kcal : Math.abs(remaining))}
-              <span className="ml-2 text-sm font-normal text-muted-foreground">kcal</span>
-            </p>
-            <p className="mt-1 text-sm text-muted-foreground tabular-nums">{formatNumber(kcal)} logged{target !== null ? ` of ${formatNumber(target)} kcal` : ""}</p>
+      <JourneyIntro
+        eyebrow="YOUR FOOD JOURNAL"
+        title="Diary"
+        description={formatDateLong(date)}
+        action={(
+          <div className="mm-journey-date-switch" aria-label="Change diary day">
+            <Button variant="ghost" size="icon" aria-label="Previous day"
+              onClick={() => setDate((d) => addDaysStr(d, -1))}>
+              <ChevronLeft className="h-4 w-4" />
+            </Button>
+            <Button variant="ghost" size="icon" aria-label="Next day"
+              disabled={date >= todayStr()}
+              onClick={() => setDate((d) => addDaysStr(d, 1))}>
+              <ChevronRight className="h-4 w-4" />
+            </Button>
           </div>
-          <div className="min-w-[125px]">
-            <p className="text-xs font-medium text-muted-foreground">Protein</p>
-            <p className="mt-1 text-lg font-semibold tabular-nums">
-              {formatNumber(totals.protein ?? 0)} g
-              {goals?.proteinG != null && <span className="text-sm font-normal text-muted-foreground"> / {goals.proteinG} g</span>}
-            </p>
-            <p className="mt-1 text-xs text-muted-foreground tabular-nums">
-              Carbs {formatNumber(totals.carbs ?? 0)} g · Fat {formatNumber(totals.fat ?? 0)} g
-            </p>
-          </div>
-        </div>
-      </section>
+        )}
+      />
+      <DiarySummary totals={totals}
+        calorieTarget={goals?.calorieTarget ?? null}
+        proteinTarget={goals?.proteinG ?? null}
+        hasEntries={entries.length > 0}
+        loading={diary.loading && !diary.data}
+      />
 
-      <div className="flex flex-wrap items-center gap-3">
-        <Button className="min-h-11 flex-1 gap-2 sm:flex-none" onClick={() => foodLog.open({ entryDate: date, mealType: preferredMeal() })}>
+      <div className="mm-journey-actions">
+        <Button className="mm-journey-primary" onClick={() => foodLog.open({ entryDate: date, mealType: preferredMeal() })}>
           <Plus className="h-4 w-4" /> Add food
         </Button>
-        <Button variant="outline" className="min-h-11 gap-2"
+        <Button variant="outline" className="mm-journey-secondary"
           onClick={() => foodLog.openScan({ entryDate: date, mealType: preferredMeal() })}>
           <Camera className="h-4 w-4" aria-hidden="true" /> Scan photo
         </Button>
@@ -186,13 +173,20 @@ export function Diary() {
         </div>
       )}
       {!diary.loading && !diary.error && entries.length === 0 && (
-        <p className="text-sm text-muted-foreground">Nothing logged on this day yet. Add food to start your diary.</p>
+        <JourneyEmpty
+          title={date === todayStr() ? "What have you eaten today?" : "Nothing recorded for this day."}
+          description={date === todayStr()
+            ? "Start with a meal or snack. You'll be able to edit portions and foods afterwards."
+            : "You can add a meal for this date or copy foods from another day."}
+          actionLabel="Add your first food"
+          onAction={() => foodLog.open({ entryDate: date, mealType: preferredMeal() })}
+        />
       )}
 
-      {MEAL_TYPES.map((meal) => {
+      {entries.length > 0 && MEAL_TYPES.map((meal) => {
         const mealEntries = byMeal.get(meal) ?? [];
         return (
-          <section key={meal} aria-label={MEAL_LABELS[meal]} className="overflow-hidden border-b">
+          <section key={meal} aria-label={MEAL_LABELS[meal]} className="mm-journey-meal-section overflow-hidden border-b">
             <div className="flex min-h-14 items-center justify-between gap-2 py-2.5">
               <div className="flex items-baseline gap-2.5">
                 <h2 className="text-sm font-semibold">{MEAL_LABELS[meal]}</h2>
@@ -212,7 +206,7 @@ export function Diary() {
               </div>
             </div>
             {mealEntries.length === 0 ? (
-              <p className="px-4 py-4 text-sm text-muted-foreground">Nothing logged.</p>
+              <p className="mm-journey-meal-empty">Add food to this meal using the plus button.</p>
             ) : (
               <ul>
                 {mealEntries.map((entry) => (
