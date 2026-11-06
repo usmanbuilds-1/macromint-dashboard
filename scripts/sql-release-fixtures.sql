@@ -16,11 +16,11 @@ CREATE TABLE auth.users (
 -- CI only needs their names and signatures before migration 0016 replaces
 -- the implementations; do not copy these stubs to production.
 CREATE FUNCTION public.beta_require_invite() RETURNS trigger
-LANGUAGE plpgsql AS $ BEGIN RETURN NEW; END $;
+LANGUAGE plpgsql AS $$ BEGIN RETURN NEW; END $$;
 CREATE TRIGGER beta_check_before_signup BEFORE INSERT ON auth.users
 FOR EACH ROW EXECUTE FUNCTION public.beta_require_invite();
 CREATE FUNCTION public.beta_record_signup() RETURNS trigger
-LANGUAGE plpgsql AS $ BEGIN RETURN NEW; END $;
+LANGUAGE plpgsql AS $$ BEGIN RETURN NEW; END $$;
 CREATE TRIGGER beta_record_after_signup AFTER INSERT ON auth.users
 FOR EACH ROW EXECUTE FUNCTION public.beta_record_signup();
 CREATE TABLE public.admin_users (
