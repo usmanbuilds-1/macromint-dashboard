@@ -136,12 +136,12 @@ export function Diary() {
           </div>
         )}
       />
-      <DiarySummary totals={totals}
+      {(!diary.error || diary.data) && <DiarySummary totals={totals}
         calorieTarget={goals?.calorieTarget ?? null}
         proteinTarget={goals?.proteinG ?? null}
         hasEntries={entries.length > 0}
         loading={diary.loading && !diary.data}
-      />
+      />}
 
       <div className="mm-journey-actions">
         <Button className="mm-journey-primary" onClick={() => foodLog.open({ entryDate: date, mealType: preferredMeal() })}>
