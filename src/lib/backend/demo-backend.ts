@@ -553,6 +553,28 @@ export const demoBackend: Backend & DemoExtras = {
     return st.savedMeals.filter((m) => m.userId === userId);
   },
 
+  async renameSavedMeal(id, name) {
+    const st = s();
+    const userId = requireUser();
+    const trimmed = name.trim();
+    if (trimmed.length < 1 || trimmed.length > 100) throw new BackendError("VALIDATION", "Meal name must be 1–100 characters");
+    const meal = st.savedMeals.find((item) => item.id === id && item.userId === userId);
+    if (!meal) throw new BackendError("NOT_FOUND", "Saved meal not found");
+    meal.name = trimmed;
+    save(st);
+    return meal;
+  },
+
+  async deleteSavedMeal(id) {
+    const st = s();
+    const userId = requireUser();
+    if (!st.savedMeals.some((item) => item.id === id && item.userId === userId)) {
+      throw new BackendError("NOT_FOUND", "Saved meal not found");
+    }
+    st.savedMeals = st.savedMeals.filter((item) => !(item.id === id && item.userId === userId));
+    save(st);
+  },
+
   async logSavedMeal(id, entryDate, mealType) {
     const st = s();
     const userId = requireUser();
