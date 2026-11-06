@@ -1,4 +1,5 @@
 import { useRef } from "react";
+import { useMobileDialogViewport } from "@/hooks/useMobileDialogViewport";
 import { Camera, Search, ArrowUpRight } from "lucide-react";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 
@@ -13,10 +14,13 @@ export function FoodEntryChooser({
   onScan: () => void;
 }) {
   const firstChoiceRef = useRef<HTMLButtonElement>(null);
+  const sheetStyle = useMobileDialogViewport(open);
   return (
     <Dialog open={open} onOpenChange={(next) => { if (!next) onClose(); }}>
       <DialogContent
         className="mm-food-entry-chooser max-h-[calc(100dvh-2rem)] overflow-y-auto sm:max-w-md"
+        style={sheetStyle}
+        onCloseAutoFocus={(event) => event.preventDefault()}
         onOpenAutoFocus={(event) => {
           event.preventDefault();
           firstChoiceRef.current?.focus({ preventScroll: true });
