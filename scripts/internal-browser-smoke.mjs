@@ -127,6 +127,10 @@ try {
   assert.equal(await images.nth(1).getAttribute("capture"), null,
     "Existing-image input must not force camera capture");
   await screenshotEverySize("photo-choices");
+  // A photo user must be able to switch to text without closing everything
+  // and losing the selected meal/date.
+  await page.getByRole("button", { name: "Search or enter a meal instead" }).click();
+  await page.getByPlaceholder(/Search foods, brands/i).waitFor();
   await page.keyboard.press("Escape");
   await page.getByRole("button", { name: "Add food", exact: true }).click();
   await page.getByRole("heading", { name: "Add food", exact: true }).waitFor();
