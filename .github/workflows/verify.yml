@@ -35,6 +35,8 @@ jobs:
         run: node scripts/check-edge-negative-paths.mjs
       - name: Exercise successful enrollment and one-use recovery without network
         run: node scripts/check-auth-positive-paths.mjs
+      - name: Guard modular app and bundle architecture
+        run: node scripts/check-internal-architecture.mjs
       - name: Nutrition regression tests
         run: pnpm test
       - name: ESLint (existing Prettier violations excluded)
