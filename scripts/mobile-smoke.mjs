@@ -1,5 +1,13 @@
 import { chromium } from "playwright";
 import { mkdir } from "node:fs/promises";
+import { readFileSync } from "node:fs";
+
+// The Node test process does not automatically load Vite's .env variables.
+// Read the same release flags the production Vite build consumes.
+const buildEnv = readFileSync(new URL("../.env", import.meta.url), "utf8");
+const expectSignup = /^VITE_USERNAME_AUTH_ENABLED=true$/m.test(buildEnv)
+  && /^VITE_PUBLIC_REGISTRATION_ENABLED=true$/m.test(buildEnv);
+const expectTesterInvites = /^VITE_BETA_INVITES_ENABLED=true$/m.test(buildEnv);
 
 const url = process.env.MACROMINT_PREVIEW_URL ?? "http://127.0.0.1:4173";
 await mkdir("mobile-audit", { recursive: true });
@@ -81,13 +89,35 @@ for (const [width, height] of sizes) {
     console.log("PASS reference visual & navigation", width, dims.heading);
     const reg = await page.goto(url + "/register", { waitUntil: "networkidle", timeout: 30000 });
     if (!reg || reg.status() >= 400) throw new Error("Registration HTTP status " + reg?.status());
-    if (process.env.VITE_BETA_INVITES_ENABLED === "true") {
-      await page.locator("#invite").waitFor({ timeout: 15000 });
+    if (expectSignup) {
+      await page.getByRole("heading", { name: "Create your account" }).waitFor({ timeout: 15000 });
       await page.locator("#name").waitFor({ timeout: 15000 });
+      await page.locator("#username").waitFor({ timeout: 15000 });
+      await page.locator("#password").waitFor({ timeout: 15000 });
+      if (await page.locator("#username").getAttribute("type") !== "text") {
+        throw new Error("Unified signup must use username, not email");
+      }
+      if (expectTesterInvites) {
+        await page.locator("#invite").waitFor({ timeout: 15000 });
+        if (await page.locator("#invite").getAttribute("required") !== null) {
+          throw new Error("Normal signup should not require a beta invitation");
+        }
+        await page.getByText("Beta tester invitation (optional)").waitFor();
+      }
+      if (width === 390) {
+        const login = await page.goto(url + "/login", { waitUntil: "networkidle" });
+        if (!login || login.status() >= 400) throw new Error("Unified login page unavailable");
+        await page.locator("#identifier").waitFor();
+        if (await page.locator("#identifier").getAttribute("type") !== "text") {
+          throw new Error("Login must support usernames");
+        }
+        await page.locator("#password").waitFor();
+        await page.goto(url + "/register", { waitUntil: "networkidle" });
+      }
     } else {
-      await page.getByRole("heading", { name: /Invitation access/i }).waitFor({ timeout: 15000 });
+      await page.getByRole("heading", { name: /Registration unavailable/i }).waitFor({ timeout: 15000 });
       if (await page.locator("#password").count()) {
-        throw new Error("Registration must be disabled until Cloud Auth and invite backend are activated");
+        throw new Error("Registration must be disabled until Cloud Auth is activated");
       }
     }
     const registerSize = await page.evaluate(() => ({ viewport: window.innerWidth, doc: document.documentElement.scrollWidth }));
