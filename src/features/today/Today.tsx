@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useSession } from "@/context/Session";
 import { backend, bumpData } from "@/lib/backend";
-import { useAsyncData, useDataVersion } from "@/hooks/useData";
+import { useAsyncData } from "@/hooks/useData";
 import { dailyTotals, sumNutrients } from "@/lib/nutrition/math";
 import { formatDateLong, todayStr, addDaysStr } from "@/lib/nutrition/datetime";
 import { MEAL_LABELS, MEAL_TYPES, type DiaryEntry, type MealType } from "@/types";
@@ -21,13 +21,12 @@ function mealForCurrentHour(): MealType {
 
 export function Today() {
   const { goals } = useSession();
-  const version = useDataVersion();
   const foodLog = useFoodLog();
   const today = todayStr();
   const [expandedMeal, setExpandedMeal] = useState<MealType | null>(null);
 
-  const diary = useAsyncData(() => backend.getDiary(today), [today, version]);
-  const water = useAsyncData(() => backend.getWater(today), [today, version]);
+  const diary = useAsyncData(() => backend.getDiary(today), [today], "diary:day");
+  const water = useAsyncData(() => backend.getWater(today), [today], "water:day");
   const entries = diary.data ?? [];
   const totals = useMemo(() => dailyTotals(entries), [entries]);
   const consumed = totals.kcal ?? 0;

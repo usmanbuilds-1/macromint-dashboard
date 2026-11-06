@@ -1,4 +1,5 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from "react";
+import { useQueryClient } from "@tanstack/react-query";
 import { backend } from "@/lib/backend";
 
 // Session.tsx creates the auth context at module scope, so a hot-swapped copy
@@ -38,6 +39,8 @@ export function hasAccessClient(entitlement: Entitlement | null): boolean {
 }
 
 export function SessionProvider({ children }: { children: React.ReactNode }) {
+  const queryClient = useQueryClient();
+  const previousAccount = useRef<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [user, setUser] = useState<SessionUser | null>(null);
   const [profile, setProfile] = useState<Profile | null>(null);
@@ -133,6 +136,17 @@ export function SessionProvider({ children }: { children: React.ReactNode }) {
     },
     [],
   );
+
+  // Remove private cached results when an account signs out or changes.
+  // The cache is memory-only, but the transition must never show old data.
+  useEffect(() => {
+    const previous = previousAccount.current;
+    const next = user?.id ?? null;
+    if (previous && previous !== next) {
+      queryClient.removeQueries({ queryKey: ["app-data", previous] });
+    }
+    previousAccount.current = next;
+  }, [queryClient, user?.id]);
 
   const value = useMemo<SessionState>(
     () => ({

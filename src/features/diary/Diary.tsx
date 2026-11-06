@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { useSession } from "@/context/Session";
 import { backend, bumpData } from "@/lib/backend";
-import { useAsyncData, useDataVersion } from "@/hooks/useData";
+import { useAsyncData } from "@/hooks/useData";
 import { dailyTotals } from "@/lib/nutrition/math";
 import { addDaysStr, formatDateLong, formatDateShort, todayStr } from "@/lib/nutrition/datetime";
 import { MEAL_LABELS, MEAL_TYPES, type DiaryEntry, type MealType } from "@/types";
@@ -21,13 +21,12 @@ function preferredMeal(): MealType {
 
 export function Diary() {
   const { goals } = useSession();
-  const version = useDataVersion();
   const [date, setDate] = useState(todayStr());
   const [editEntry, setEditEntry] = useState<DiaryEntry | null>(null);
   const [openRow, setOpenRow] = useState<string | null>(null);
   const foodLog = useFoodLog();
 
-  const diary = useAsyncData(() => backend.getDiary(date), [date, version]);
+  const diary = useAsyncData(() => backend.getDiary(date), [date], "diary:day");
 
   const entries = diary.data ?? [];
   const totals = useMemo(() => dailyTotals(entries), [entries]);

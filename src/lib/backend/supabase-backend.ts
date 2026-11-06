@@ -5,6 +5,7 @@ import type { TablesUpdate, Json } from "@/integrations/supabase/types";
 
 import { BackendError } from "./types";
 import { selectDiaryRange } from "./supabase/diary-range";
+import { logSavedMealBatch } from "./supabase/saved-meal-log";
 import { USERNAME_AUTH_ENABLED } from "@/lib/auth/username-config";
 import { isValidInviteCode } from "@/lib/beta/invite-code";
 import {
@@ -461,23 +462,7 @@ export const supabaseBackend: Backend = {
   },
 
   async logSavedMeal(id, entryDate, mealType) {
-    const meals = await supabaseBackend.getSavedMeals();
-    const meal = meals.find((m) => m.id === id);
-    if (!meal) throw new BackendError("NOT_FOUND", "Saved meal not found");
-    for (const item of meal.items) {
-      const base = applyPortionPercent(scaleToBase(item.per100g, item.grams), 100);
-      await supabaseBackend.addEntry({
-        entryDate,
-        mealType,
-        foodId: item.foodId,
-        name: item.name,
-        brand: item.brand,
-        grams: item.grams,
-        portionPercent: 100,
-        baseNutrients: base,
-        source: "favorite",
-      });
-    }
+    return logSavedMealBatch(id, entryDate, mealType, await currentUserId());
   },
 
   // ── Diary ───────────────────────────────────────────────────────────────
