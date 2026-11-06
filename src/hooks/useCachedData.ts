@@ -15,6 +15,7 @@ export function useAsyncData<T>(
   loader: () => Promise<T>,
   deps: readonly (string | number | boolean | null | undefined)[],
   resource: string,
+  enabled = true,
 ): {
   data: T | null;
   loading: boolean;
@@ -25,7 +26,7 @@ export function useAsyncData<T>(
   const query = useQuery<T, Error>({
     queryKey: appDataKey(user?.id ?? "signed-out", resource, deps),
     queryFn: loader,
-    enabled: Boolean(user?.id),
+    enabled: enabled && Boolean(user?.id),
     staleTime: APP_DATA_STALE_MS,
     gcTime: APP_DATA_GC_MS,
     retry: false,
