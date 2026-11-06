@@ -124,6 +124,24 @@
   max-width: 100%;
   gap: 19px;
 }
+/* Tabs are editorial underlines, not filled/outlined segmented cards. */
+.mm-app-shell .mm-journey-foods [role="tab"] {
+  min-height: 47px;
+  padding: 0 4px;
+  border: 0 !important;
+  border-bottom: 2px solid transparent !important;
+  border-radius: 0 !important;
+  background: transparent !important;
+  box-shadow: none !important;
+  color: var(--journey-muted);
+  font-size: 14px;
+  font-weight: 600;
+}
+.mm-app-shell .mm-journey-foods [role="tab"][data-state="active"] {
+  color: var(--journey-ink);
+  border-bottom-color: var(--journey-green) !important;
+  font-weight: 750;
+}
 .mm-app-shell .mm-journey-food-search {
   margin-top: 19px;
 }
@@ -197,6 +215,21 @@
   display: flex;
   min-height: 45px;
   border-bottom: 1px solid var(--journey-rule);
+}
+.mm-app-shell .mm6-page-trends .mm-journey-intro-action [role="tab"] {
+  min-height: 43px;
+  padding: 0 4px;
+  border: 0 !important;
+  border-bottom: 2px solid transparent !important;
+  border-radius: 0 !important;
+  background: transparent !important;
+  box-shadow: none !important;
+  color: var(--journey-muted);
+}
+.mm-app-shell .mm6-page-trends .mm-journey-intro-action [role="tab"][data-state="active"] {
+  border-bottom-color: var(--journey-green) !important;
+  color: var(--journey-ink);
+  font-weight: 750;
 }
 .mm-app-shell .mm6-page-trends section[aria-label] {
   padding-block: 15px 30px;
