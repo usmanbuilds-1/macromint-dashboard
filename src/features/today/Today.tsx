@@ -66,7 +66,7 @@ export function Today() {
       : `Ready to log ${MEAL_LABELS[suggestedMeal].toLowerCase()}? Your day starts with one entry.`;
 
   return (
-    <div className="mm-home ref-live-today">
+    <div className="mm-home mm-live-page ref-live-today">
       <header className="mm-home-header">
         <div className="mm-home-heading">
           <time dateTime={date}>{formatDateLong(date)}</time>
