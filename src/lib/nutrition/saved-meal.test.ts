@@ -40,6 +40,15 @@ describe("saved meal portion integrity", () => {
     }
   });
 
+  it("retains fractional source calories even for larger irregular gram weights", () => {
+    const original = { ...entry(70), grams: 731, baseNutrients: { kcal: 1277, protein: 36.7, carbs: 140.3, fat: 25.6 } };
+    const item = toSavedMealItem(original);
+    const [row] = savedMealEntryRows([item], "person", "2026-11-07", "dinner");
+    expect(item.grams).toBeCloseTo(511.7, 6);
+    expect(row?.nutrients.kcal).toBeCloseTo(893.9, 1);
+    expect(row?.nutrients.protein).toBeCloseTo(25.7, 1);
+  });
+
   it("rejects invalid gram amounts and percentages", () => {
     expect(() => toSavedMealItem(entry(0))).toThrow(RangeError);
     expect(() => toSavedMealItem(entry(101))).toThrow(RangeError);
