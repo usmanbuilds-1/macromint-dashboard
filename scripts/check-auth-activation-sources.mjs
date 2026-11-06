@@ -25,6 +25,26 @@ for (const name of [
 assert.match(migration, /revoke all on function public\.beta_require_invite\(\), public\.beta_record_signup\(\)/);
 assert.match(migration, /new\.raw_user_meta_data\s*:=/);
 
+const publicMigration = read("drizzle/migrations/0016_public_registration_tickets.sql");
+assert.match(publicMigration, /issue_public_signup_ticket/);
+assert.match(publicMigration, /CREATE OR REPLACE FUNCTION public\.beta_require_invite/);
+assert.match(publicMigration, /consumed_at IS NULL/);
+assert.match(publicMigration, /new\.raw_user_meta_data :=/);
+assert.match(publicMigration, /GRANT EXECUTE ON FUNCTION public\.issue_public_signup_ticket\(text\) TO service_role/);
+assert.match(publicMigration, /IF invitation_id IS NOT NULL THEN/,
+  "Public users must not be written into beta invite redemptions");
+
+const registration = read("supabase/functions/username-register/index.ts");
+assert.match(registration, /PUBLIC_REGISTRATION_ENABLED/);
+assert.match(registration, /USERNAME_PUBLIC_SIGNUP_TICKET_VERIFIED/);
+assert.match(registration, /issue_public_signup_ticket/);
+assert.match(registration, /public_signup_ticket: signupTicket/);
+assert.match(registration, /checkUsernameAuthBudget\(request, "register", normalizedUsername/,
+  "Rate limit both public and beta registration using the account identifier");
+const signupUi = read("src/features/auth/Register.tsx");
+assert.match(signupUi, /Beta tester invitation \(optional\)/);
+assert.match(signupUi, /PUBLIC_REGISTRATION_ENABLED/);
+
 for (const handler of ["username-register", "username-recovery", "beta-invites"]) {
   const path = `supabase/functions/${handler}/index.ts`;
   const source = read(path);
