@@ -257,6 +257,17 @@ describe("daysToKcal", () => {
       nutrients: { kcal },
     }) as DiaryEntry;
 
+  it("never scores incomplete days as trustworthy calorie totals", () => {
+    const items = [
+      entry("2026-11-07", 350),
+      { ...entry("2026-11-07", 0), nutrients: { kcal: null } },
+      entry("2026-11-08", 650),
+    ];
+    const output = daysToKcal(items, ["2026-11-07", "2026-11-08"]);
+    expect(output).toEqual([{ date: "2026-11-07", kcal: null }, { date: "2026-11-08", kcal: 650 }]);
+    expect(adherenceStats(output, 600).loggedDays).toBe(1);
+  });
+
   it("sums per day and leaves unlogged days null", () => {
     const days = daysToKcal(
       [entry("2026-01-01", 300), entry("2026-01-01", 200), entry("2026-01-02", 550)],
