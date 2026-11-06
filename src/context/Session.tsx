@@ -1,6 +1,7 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { backend } from "@/lib/backend";
+import { sameSessionRecord } from "./session-equality";
 
 // Session.tsx creates the auth context at module scope, so a hot-swapped copy
 // would leave the mounted provider on the old context while new consumers read
@@ -50,10 +51,13 @@ export function SessionProvider({ children }: { children: React.ReactNode }) {
   // An already-active tracking session is signed out when access is lost.
   // An expired user may subsequently sign back in for account-only functions.
   const trackedUser = useRef<string | null>(null);
+  const seenInitialAuth = useRef(false);
+  const lastAuthUser = useRef<string | null>(null);
+  const refreshInFlight = useRef<Promise<void> | null>(null);
 
-  const refresh = useCallback(async () => {
+  const loadAccount = useCallback(async () => {
     const current = await backend.getSessionUser();
-    setUser(current);
+    setUser((prev) => sameSessionRecord(prev, current) ? prev : current);
     if (!current) {
       trackedUser.current = null;
       setProfile(null);
@@ -80,16 +84,35 @@ export function SessionProvider({ children }: { children: React.ReactNode }) {
       return;
     }
     if (e !== undefined && hasAccessClient(e)) trackedUser.current = current.id;
-    setProfile(p);
-    setGoals(g);
-    if (e !== undefined) setEntitlement(e);
+    setProfile((prev) => sameSessionRecord(prev, p) ? prev : p);
+    setGoals((prev) => sameSessionRecord(prev, g) ? prev : g);
+    if (e !== undefined) {
+      setEntitlement((prev) => sameSessionRecord(prev, e) ? prev : e);
+    }
     setIsAdmin(a);
   }, []);
+
+  // Focus, polling and initial auth can overlap on mobile. Share one request.
+  const refresh = useCallback((): Promise<void> => {
+    if (refreshInFlight.current) return refreshInFlight.current;
+    const request = loadAccount().finally(() => {
+      if (refreshInFlight.current === request) refreshInFlight.current = null;
+    });
+    refreshInFlight.current = request;
+    return request;
+  }, [loadAccount]);
 
   useEffect(() => {
     let mounted = true;
     const unsubscribe = backend.onAuthChange((u) => {
       if (!mounted) return;
+      const nextId = u?.id ?? null;
+      // INITIAL_SESSION is delivered by both backends. Previously we loaded
+      // here *and* again after subscription, creating duplicate RPCs.
+      if (seenInitialAuth.current && lastAuthUser.current === nextId) return;
+      const previousId = lastAuthUser.current;
+      seenInitialAuth.current = true;
+      lastAuthUser.current = nextId;
       if (!u) {
         trackedUser.current = null;
         setUser(null);
@@ -100,10 +123,11 @@ export function SessionProvider({ children }: { children: React.ReactNode }) {
         setLoading(false);
         return;
       }
-      setLoading(true);
+      // Only a new/different user triggers the app-wide loading gate.
+      // Repeated SIGNED_IN events for the same account keep the shell mounted.
+      if (previousId !== nextId) setLoading(true);
       void refresh().finally(() => mounted && setLoading(false));
     });
-    void refresh().finally(() => mounted && setLoading(false));
     return () => {
       mounted = false;
       unsubscribe();
@@ -112,7 +136,15 @@ export function SessionProvider({ children }: { children: React.ReactNode }) {
 
   // Catch expiry/revocation on tabs that stay open without navigation.
   useEffect(() => {
-    const poll = () => { void refresh().catch(() => undefined); };
+    let lastCheckAt = 0;
+    const poll = () => {
+      if (document.hidden || !lastAuthUser.current) return;
+      const now = Date.now();
+      // focus + visibilitychange frequently arrive together on Android.
+      if (now - lastCheckAt < 5_000) return;
+      lastCheckAt = now;
+      void refresh().catch(() => undefined);
+    };
     const interval = window.setInterval(poll, 45_000);
     window.addEventListener("focus", poll);
     const onVisibility = () => { if (!document.hidden) poll(); };
@@ -126,6 +158,8 @@ export function SessionProvider({ children }: { children: React.ReactNode }) {
 
   const setAuthUser = useCallback(
     (u: SessionUser | null) => {
+      lastAuthUser.current = u?.id ?? null;
+      seenInitialAuth.current = true;
       setUser(u);
       if (!u) {
         setProfile(null);
