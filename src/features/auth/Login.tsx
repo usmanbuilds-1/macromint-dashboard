@@ -77,8 +77,8 @@ export function Login() {
         </label>
         <Button type="submit" disabled={busy}>{busy ? "Signing in…" : "Sign in"}</Button>
         {USERNAME_AUTH_ENABLED && <p className="text-xs leading-5 text-muted-foreground">
-          Username accounts use the one-time recovery codes issued at registration.
-          Keep them safe; no password reset email is sent.
+          Username accounts have no password reset email. If you saved recovery codes
+          before, you can use them; otherwise account recovery isn't available.
         </p>}
         <p className="text-center text-sm text-muted-foreground">
           New here?{" "}
