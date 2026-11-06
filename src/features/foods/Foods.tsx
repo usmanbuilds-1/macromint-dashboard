@@ -120,9 +120,12 @@ export function Foods() {
           {hit && (
             <div className="mm-journey-food-results overflow-hidden border-y">
               {hit.local.length === 0 && hit.remote.length === 0 ? (
-                <p className="px-4 py-8 text-center text-sm text-muted-foreground">
-                  No matches for "{q}". You can create it as a custom food.
-                </p>
+                <JourneyEmpty
+                  title={`No matches for “${q}”`}
+                  description="Try a different name or brand, or add the nutrition values yourself."
+                  actionLabel="Create custom food"
+                  onAction={() => setCustomOpen(true)}
+                />
               ) : (
                 <>
                   {hit.local.map((food) => (
@@ -138,9 +141,9 @@ export function Foods() {
             </div>
           )}
           {!hit && (
-            <p className="rounded-xl border border-dashed px-4 py-8 text-center text-sm text-muted-foreground">
-              Search by food or brand. Choose a result to set the portion and add it to your diary.
-            </p>
+            <div className="mm-journey-food-hint">
+              Search by food or brand above. You'll choose the portion before adding it to your diary.
+            </div>
           )}
         </TabsContent>
 
@@ -160,9 +163,12 @@ export function Foods() {
                 />
               ))
             ) : (
-              <p className="px-4 py-8 text-center text-sm text-muted-foreground">
-                No favourites yet. Tap the star on any food or diary entry to save it here for one-tap logging.
-              </p>
+              <JourneyEmpty
+                title="Your go-to foods, together."
+                description="Save foods from a diary entry and find them here without searching again."
+                actionLabel="Find a food"
+                onAction={() => setActiveTab("search")}
+              />
             )}
           </div>
         </TabsContent>
