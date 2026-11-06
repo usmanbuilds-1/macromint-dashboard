@@ -1,6 +1,7 @@
 import { createContext, useCallback, useContext, useMemo, useState } from "react";
 import type { Food, MealType, NutrientRecord } from "@/types";
 import type { OffFoodHit } from "@/lib/backend/types";
+import { FoodEntryChooser } from "./FoodEntryChooser";
 
 /** A loggable item: a database food, an Open Food Facts product, or a
  *  custom food, normalised to one shape. */
@@ -51,6 +52,7 @@ export interface FoodLogTarget {
 
 interface FoodLogContextValue {
   open: (target: FoodLogTarget) => void;
+  openSearch: (target: FoodLogTarget) => void;
   openScan: (target: { entryDate: string; mealType: MealType }) => void;
 }
 
@@ -70,6 +72,7 @@ interface ProviderProps {
 }
 
 export function FoodLogProvider({ children, renderSearch, renderServing, renderScan }: ProviderProps) {
+  const [chooserOpen, setChooserOpen] = useState(false);
   const [searchOpen, setSearchOpen] = useState(false);
   const [target, setTarget] = useState<FoodLogTarget | null>(null);
   const [picked, setPicked] = useState<LoggableFood | null>(null);
@@ -79,19 +82,35 @@ export function FoodLogProvider({ children, renderSearch, renderServing, renderS
   const open = useCallback((t: FoodLogTarget) => {
     setTarget(t);
     setPicked(t.initialFood ?? null);
-    setSearchOpen(!t.initialFood);
+    // Edits and picked foods already know the item; skip the chooser.
+    setChooserOpen(!t.initialFood && !t.editEntryId);
+    setSearchOpen(false);
+  }, []);
+
+  const openSearch = useCallback((t: FoodLogTarget) => {
+    setTarget(t);
+    setPicked(null);
+    setChooserOpen(false);
+    setSearchOpen(true);
   }, []);
 
   const openScan = useCallback((t: { entryDate: string; mealType: MealType }) => {
+    setChooserOpen(false);
     setScanTarget(t);
     setScanOpen(true);
   }, []);
 
-  const value = useMemo(() => ({ open, openScan }), [open, openScan]);
+  const value = useMemo(() => ({ open, openSearch, openScan }), [open, openSearch, openScan]);
 
   return (
     <FoodLogContext.Provider value={value}>
       {children}
+      <FoodEntryChooser
+        open={chooserOpen}
+        onClose={() => setChooserOpen(false)}
+        onSearch={() => { if (target) openSearch(target); }}
+        onScan={() => { if (target) openScan({ entryDate: target.entryDate, mealType: target.mealType }); }}
+      />
       {renderSearch({
         open: searchOpen,
         onClose: () => setSearchOpen(false),
