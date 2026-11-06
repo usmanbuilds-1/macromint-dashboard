@@ -45,7 +45,8 @@ describe("saved meal portion integrity", () => {
     const item = toSavedMealItem(original);
     const [row] = savedMealEntryRows([item], "person", "2026-11-07", "dinner");
     expect(item.grams).toBeCloseTo(511.7, 6);
-    expect(row?.nutrients.kcal).toBeCloseTo(893.9, 1);
+    // Storage rounds energy to whole kcal, so the exact 893.9 becomes 894.
+    expect(row?.nutrients.kcal).toBe(894);
     expect(row?.nutrients.protein).toBeCloseTo(25.7, 1);
   });
 
