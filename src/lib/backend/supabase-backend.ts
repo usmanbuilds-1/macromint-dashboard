@@ -491,8 +491,8 @@ export const supabaseBackend: Backend = {
   },
 
   async getDiaryRange(startDate, endDate) {
-    if (!/^\\d{4}-\\d{2}-\\d{2}$/.test(startDate) ||
-        !/^\\d{4}-\\d{2}-\\d{2}$/.test(endDate) || startDate > endDate) {
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(startDate) ||
+        !/^\d{4}-\d{2}-\d{2}$/.test(endDate) || startDate > endDate) {
       throw new BackendError("VALIDATION", "Invalid diary date range");
     }
     // PostgREST has a row limit. Page through results rather than silently
