@@ -6,6 +6,7 @@ import { useSession } from "@/context/Session";
 import { backend } from "@/lib/backend";
 import type { ReactivationRequest } from "@/lib/backend/types";
 import { toast } from "sonner";
+import "./upgrade.css";
 
 function downloadJson(value: Record<string, unknown>): void {
   const blob = new Blob([JSON.stringify(value, null, 2)], { type: "application/json" });
@@ -93,24 +94,24 @@ export function Upgrade() {
   const pending = requests.some((request) => request.status === "pending");
 
   return (
-    <main className="min-h-screen bg-background px-5 py-12">
-      <div className="mx-auto max-w-lg">
-        <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">MACRO MINT / ACCOUNT</p>
-        <h1 className="mt-5 text-3xl font-semibold tracking-tight">{hasAccess ? "Your account is active" : heading}</h1>
-        <p className="mt-3 text-sm leading-6 text-muted-foreground">
+    <main className="mm-restricted min-h-screen bg-background px-5 py-12">
+      <div className="mm-restricted-inner mx-auto max-w-lg">
+        <p className="mm-restricted-eyebrow">MACRO MINT / ACCOUNT</p>
+        <h1 className="mm-restricted-title mt-5 text-3xl font-semibold tracking-tight">{hasAccess ? "Your account is active" : heading}</h1>
+        <p className="mm-restricted-description mt-3 text-sm leading-6 text-muted-foreground">
           {hasAccess
             ? "Your access has been restored. You can return to your food diary."
             : "Food logging and AI scans are unavailable. Your account and saved data have not been deleted."}
         </p>
 
         {user ? (
-          <div className="mt-9 space-y-8">
+          <div className="mm-restricted-body mt-9 space-y-8">
             {hasAccess && <Button onClick={() => navigate("/today")} className="w-full">Return to tracking</Button>}
             {isAdmin && <Link to="/admin" className="block text-sm font-medium underline underline-offset-4">Open Owner Admin</Link>}
 
             {!hasAccess && isBetaTester && (
-              <section className="space-y-3 border-t pt-6">
-                <h2 className="text-base font-semibold">Request more beta testing time</h2>
+              <section className="mm-restricted-section space-y-3 border-t pt-6">
+                <h2 className="mm-restricted-section-heading">Request more beta testing time</h2>
                 <p className="text-sm text-muted-foreground">
                   The owner reviews every request. Submitting one does not extend your trial.
                 </p>
@@ -135,8 +136,8 @@ export function Upgrade() {
                 Payment checkout is not yet available. Your saved data remains accessible below.
               </p>
             )}
-            <section className="space-y-3 border-t pt-6">
-              <h2 className="text-base font-semibold">Your data</h2>
+            <section className="mm-restricted-section space-y-3 border-t pt-6">
+              <h2 className="mm-restricted-section-heading">Your data</h2>
               <p className="text-sm text-muted-foreground">
                 Download your own account data only when you choose to. Exporting does not reactivate tracking.
               </p>
@@ -145,8 +146,8 @@ export function Upgrade() {
               </Button>
             </section>
 
-            <section className="space-y-3 border-t pt-6">
-              <h2 className="text-base font-semibold">Account controls</h2>
+            <section className="mm-restricted-section space-y-3 border-t pt-6">
+              <h2 className="mm-restricted-section-heading">Account controls</h2>
               <Button variant="outline" disabled={busy !== null} onClick={() => void signOut()}>
                 Sign out
               </Button>
