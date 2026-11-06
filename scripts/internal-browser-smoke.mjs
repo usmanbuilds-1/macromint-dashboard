@@ -49,6 +49,18 @@ async function screenshotEverySize(name) {
   await page.setViewportSize({ width: 390, height: 844 });
 }
 
+async function screenshotCompact(name) {
+  await page.setViewportSize({ width: 320, height: 740 });
+  await page.screenshot({
+    path: `mobile-audit/screens/${name}-320.png`,
+    fullPage: true,
+    animations: "disabled",
+  });
+  const overflow = await page.evaluate(() => document.documentElement.scrollWidth - innerWidth);
+  assert.ok(overflow <= 2, `320px layout overflow in ${name}: ${overflow}`);
+  await page.setViewportSize({ width: 390, height: 844 });
+}
+
 try {
   // Hard stop before ANY registration if the preview is accidentally connected
   // to production. The footer marker only renders when IS_DEMO=true.
