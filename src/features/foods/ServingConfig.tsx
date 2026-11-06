@@ -36,6 +36,7 @@ import type { FoodLogTarget, LoggableFood } from "./FoodLogProvider";
 import { LIMITS } from "@/lib/validation/limits";
 import { useMobileDialogViewport } from "@/hooks/useMobileDialogViewport";
 import { useAsyncData } from "@/hooks/useData";
+import { matchingFavorite, toggleFavoriteCandidate } from "./favorite-actions";
 
 const PORTION_PRESETS = [25, 50, 75, 100];
 
@@ -109,23 +110,6 @@ export function ServingConfigDialog({
   });
   const quickAdd = Boolean(!editing && food && food.sourceLabel === "Quick add");
   const sheetStyle = useMobileDialogViewport(Boolean(view && target));
-  const favorites = useAsyncData(() => backend.getFavorites(), [], "favorites", Boolean(view?.foodId && target));
-  const isFavorite = Boolean(view?.foodId && favorites.data?.some((favorite) => favorite.foodId === view.foodId));
-  const [favoriteBusy, setFavoriteBusy] = useState(false);
-  const favoriteCurrent = async () => {
-    if (!view?.foodId || favoriteBusy) return;
-    setFavoriteBusy(true);
-    try {
-      const added = await backend.toggleFavorite(view.foodId);
-      bumpData();
-      toast.success(added ? "Added to favorites" : "Removed from favorites");
-    } catch {
-      toast.error("Could not update favorites");
-    } finally {
-      setFavoriteBusy(false);
-    }
-  };
-
   useEffect(() => {
     if (!view || !target) return;
     setUnit("g");
@@ -170,6 +154,24 @@ export function ServingConfigDialog({
     [view, per100g, gramsNum],
   );
   const eaten = useMemo(() => (view ? applyPortionPercent(base, pct) : {}), [view, base, pct]);
+
+  const favorites = useAsyncData(() => backend.getFavorites(), [], "favorites", Boolean(view && target));
+  const candidate = view ? { ...view, per100g } : null;
+  const isFavorite = Boolean(candidate && matchingFavorite(favorites.data ?? [], candidate));
+  const [favoriteBusy, setFavoriteBusy] = useState(false);
+  const favoriteCurrent = async () => {
+    if (!candidate || favoriteBusy || (quickAdd && invalidManual)) return;
+    setFavoriteBusy(true);
+    try {
+      const added = await toggleFavoriteCandidate(candidate, favorites.data ?? undefined);
+      bumpData();
+      toast.success(added ? "Added to favorites" : "Removed from favorites");
+    } catch {
+      toast.error("Could not update favorites");
+    } finally {
+      setFavoriteBusy(false);
+    }
+  };
 
   if (!view || !target) return null;
 
@@ -236,7 +238,7 @@ export function ServingConfigDialog({
         <DialogHeader>
           <div className="flex items-center gap-2 pr-6">
             <DialogTitle className="min-w-0 flex-1">{editing ? "Edit entry" : view.name}</DialogTitle>
-            {view.foodId && (
+            {(!quickAdd || !invalidManual) && (
               <Button type="button" variant="ghost" size="icon"
                 aria-label={isFavorite ? "Remove from favorites" : "Add to favorites"}
                 aria-pressed={isFavorite}
