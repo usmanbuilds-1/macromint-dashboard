@@ -1,7 +1,7 @@
 import { LIMITS } from "@/lib/validation/limits";
 import { useRef, useState } from "react";
 import { toast } from "sonner";
-import { Camera, ImagePlus, Info, Loader2, TriangleAlert } from "lucide-react";
+import { Info, Loader2, TriangleAlert } from "lucide-react";
 import {
   Dialog,
   DialogContent,
@@ -21,7 +21,9 @@ import { checkPlausibility, rescaleScanNutrients } from "@/lib/nutrition/math";
 import { kcalOf } from "@/components/app/bits";
 import { formatNumber } from "@/lib/utils";
 import { cn } from "@/lib/utils";
-import type { ScanItem } from "@/types";
+import type { MealType, ScanItem } from "@/types";
+import { ScanCapture } from "./ScanCapture";
+import { useFoodLog } from "@/features/foods/FoodLogProvider";
 
 type Phase = "capture" | "scanning" | "review";
 
@@ -50,8 +52,8 @@ export function ScanDialog({
   target: { entryDate: string; mealType: string } | null;
   onClose: () => void;
 }) {
-  const cameraRef = useRef<HTMLInputElement>(null);
-  const galleryRef = useRef<HTMLInputElement>(null);
+  const cameraButtonRef = useRef<HTMLButtonElement>(null);
+  const foodLog = useFoodLog();
   const originalItems = useRef<ScanItem[]>([]);
   const saving = useRef(false);
   const [gramDrafts, setGramDrafts] = useState<Record<number, string>>({});
@@ -156,7 +158,13 @@ export function ScanDialog({
 
   return (
     <Dialog open onOpenChange={(o) => (!o ? onClose() : undefined)}>
-      <DialogContent className="sm:max-w-lg">
+      <DialogContent className="max-h-[calc(100dvh-1rem)] overflow-y-auto sm:max-w-lg"
+        onOpenAutoFocus={(event) => {
+          // Radix otherwise focuses the notes input and opens the phone
+          // keyboard on a screen whose main action is selecting a photo.
+          event.preventDefault();
+          cameraButtonRef.current?.focus({ preventScroll: true });
+        }}>
         <DialogHeader>
           <DialogTitle>Add food from a photo</DialogTitle>
           <DialogDescription>
@@ -165,60 +173,19 @@ export function ScanDialog({
         </DialogHeader>
 
         {phase === "capture" && (
-          <div className="flex flex-col gap-4">
-            <div className="grid gap-1.5">
-              <Label htmlFor="scan-hints">Optional notes (e.g. "small plate, no oil")</Label>
-              <Input
-                id="scan-hints"
-                value={hints}
-                onChange={(e) => setHints(e.target.value)}
-                placeholder="Anything the camera cannot see"
-              />
-            </div>
-            <input
-              ref={cameraRef}
-              type="file"
-              accept="image/*"
-              capture="environment"
-              className="sr-only absolute h-px w-px overflow-hidden opacity-0"
-              tabIndex={-1}
-              aria-label="Take a new meal photo"
-              onChange={(e) => {
-                const file = e.target.files?.[0];
-                if (file) void handleFile(file);
-                e.target.value = "";
-              }}
-            />
-            <input
-              ref={galleryRef}
-              type="file"
-              accept="image/*"
-              className="sr-only absolute h-px w-px overflow-hidden opacity-0"
-              tabIndex={-1}
-              aria-label="Choose an existing meal photo"
-              onChange={(e) => {
-                const file = e.target.files?.[0];
-                if (file) void handleFile(file);
-                e.target.value = "";
-              }}
-            />
-            <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
-              <Button type="button" className="min-h-12 justify-center gap-2"
-                onClick={() => cameraRef.current?.click()}>
-                <Camera className="h-4 w-4" aria-hidden="true" /> Take photo
-              </Button>
-              <Button type="button" variant="outline" className="min-h-12 justify-center gap-2"
-                onClick={() => galleryRef.current?.click()}>
-                <ImagePlus className="h-4 w-4" aria-hidden="true" /> Choose from gallery
-              </Button>
-            </div>
-            <p className="text-xs leading-5 text-muted-foreground">
-              Use a clear photo from your phone or computer. Check the foods and portions before adding them.
-            </p>
-            {error && (
-              <p className="rounded-md border border-destructive/30 bg-destructive/10 px-3 py-2 text-sm text-destructive">{error}</p>
-            )}
-          </div>
+          <ScanCapture
+            cameraButtonRef={cameraButtonRef}
+            hints={hints}
+            setHints={setHints}
+            onFile={(file) => { void handleFile(file); }}
+            onSearchText={() => {
+              if (!target) return;
+              onClose();
+              reset();
+              foodLog.openSearch({ entryDate: target.entryDate, mealType: target.mealType as MealType });
+            }}
+            error={error}
+          />
         )}
 
         {phase === "scanning" && (
@@ -324,9 +291,11 @@ export function ScanDialog({
         )}
 
         <DialogFooter className="mt-1 gap-2 sm:justify-between">
-          <Button variant="ghost" onClick={reset} disabled={phase === "scanning"}>
-            {phase === "review" ? "Scan another" : "Back"}
-          </Button>
+          {phase !== "scanning" && (
+            <Button variant="ghost" onClick={phase === "review" ? reset : onClose}>
+              {phase === "review" ? "Try another photo" : "Close"}
+            </Button>
+          )}
           {phase === "review" && items.length > 0 && (
             <Button onClick={addAll} disabled={invalidGramDraft}>Add {items.length} item{items.length === 1 ? "" : "s"} to diary</Button>
           )}
