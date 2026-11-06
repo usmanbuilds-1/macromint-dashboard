@@ -18,11 +18,39 @@ export function Register() {
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [inviteCode, setInviteCode] = useState("");
+  // First collect the single-use invitation, then create permanent credentials.
+  // Public signup uses the same account screen but needs no invitation.
+  const [signupStep, setSignupStep] = useState<"invitation" | "account">(
+    INVITE_REGISTRATION_ENABLED && !IS_DEMO ? "invitation" : "account",
+  );
+  const [isBetaTester, setIsBetaTester] = useState(false);
   const [busy, setBusy] = useState(false);
   const [recoveryCodes, setRecoveryCodes] = useState<string[] | null>(null);
   const [acknowledged, setAcknowledged] = useState(false);
   const navigate = useNavigate();
   const { setAuthUser } = useSession();
+
+  const continueWithInvitation = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!isValidInviteCode(inviteCode)) {
+      toast.error("Enter a valid beta invitation code");
+      return;
+    }
+    // Format check only. The server validates and atomically redeems the
+    // invitation when the account is created, never on this first screen.
+    setIsBetaTester(true);
+    setSignupStep("account");
+  };
+
+  const continueWithoutInvitation = () => {
+    setIsBetaTester(false);
+    setInviteCode("");
+    setSignupStep("account");
+  };
+
+  const returnToInvitation = () => {
+    setSignupStep("invitation");
+  };
 
   const submit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -34,10 +62,14 @@ export function Register() {
       toast.error("Enter your name");
       return;
     }
-    if (!IS_DEMO && (!PUBLIC_REGISTRATION_ENABLED || inviteCode.trim()) && !isValidInviteCode(inviteCode)) {
-      toast.error(PUBLIC_REGISTRATION_ENABLED
-        ? "Enter a valid beta invitation code or leave it blank"
-        : "Enter your beta invitation code");
+    if (!IS_DEMO && isBetaTester && !isValidInviteCode(inviteCode)) {
+      toast.error("Enter your beta invitation code");
+      setSignupStep("invitation");
+      return;
+    }
+    if (!IS_DEMO && !isBetaTester && !PUBLIC_REGISTRATION_ENABLED) {
+      toast.error("An invitation is required");
+      setSignupStep("invitation");
       return;
     }
     if (USERNAME_AUTH_ENABLED && !isValidUsername(username)) {
@@ -52,7 +84,7 @@ export function Register() {
     try {
       const { needsVerification, recoveryCodes: issuedCodes } = await backend.signUp(
         USERNAME_AUTH_ENABLED ? username.trim() : email.trim(),
-        password, name.trim(), inviteCode.trim(),
+        password, name.trim(), isBetaTester ? inviteCode.trim() : "",
       );
       if (USERNAME_AUTH_ENABLED && !IS_DEMO) {
         if (!issuedCodes?.length) {
@@ -136,27 +168,61 @@ export function Register() {
     );
   }
 
-  return (
-    <AuthShell title={PUBLIC_REGISTRATION_ENABLED ? "Create your account" : "Join the private beta"}
-      subtitle={USERNAME_AUTH_ENABLED
-        ? "Choose a username and a strong password. Every new account gets the standard free trial."
-        : "Enter your name, invitation and a secure email account."}>
-      <form onSubmit={submit} className="flex flex-col gap-4">
-        {INVITE_REGISTRATION_ENABLED && (
+  if (signupStep === "invitation" && INVITE_REGISTRATION_ENABLED && !IS_DEMO) {
+    return (
+      <AuthShell title="Enter your beta invitation"
+        subtitle="Have a beta code? Enter it here to begin. You'll set up your account on the next screen.">
+        <form onSubmit={continueWithInvitation} className="flex flex-col gap-4">
           <div className="grid gap-1.5">
-            <Label htmlFor="invite">{PUBLIC_REGISTRATION_ENABLED ? "Beta tester invitation (optional)" : "Invitation code"}</Label>
-            <Input id="invite" required={!PUBLIC_REGISTRATION_ENABLED && !IS_DEMO}
-              autoComplete="off" spellCheck={false}
-              value={inviteCode} onChange={(e) => setInviteCode(e.target.value.toUpperCase().replace(/[^A-Z0-9-]/g, ""))}
+            <Label htmlFor="invite">Beta invitation code</Label>
+            <Input id="invite" required autoFocus autoComplete="off" spellCheck={false}
+              value={inviteCode}
+              onChange={(e) => setInviteCode(e.target.value.toUpperCase().replace(/[^A-Z0-9-]/g, ""))}
               placeholder="MM-..." className="font-mono text-sm tracking-wide" maxLength={43} />
-            <p className="text-xs text-muted-foreground">{PUBLIC_REGISTRATION_ENABLED
-              ? "Only invited beta testers need a code. Everyone else can leave this blank."
-              : "Invitations are single-use. Contact the beta owner for a code."}</p>
+            <p className="text-xs leading-5 text-muted-foreground">
+              One code per tester. Your invitation is checked securely when you create your account.
+            </p>
+          </div>
+          <Button type="submit">Continue</Button>
+          {PUBLIC_REGISTRATION_ENABLED && (
+            <button type="button" className="min-h-11 text-sm font-medium underline underline-offset-4"
+              onClick={continueWithoutInvitation}>
+              Don't have a code? Create a regular account
+            </button>
+          )}
+          <p className="text-center text-sm text-muted-foreground">
+            Already registered?{" "}
+            <Link to="/login" className="font-medium text-foreground underline underline-offset-2">
+              Sign in
+            </Link>
+          </p>
+        </form>
+      </AuthShell>
+    );
+  }
+
+  return (
+    <AuthShell title={isBetaTester ? "Set up your beta account" : "Create your account"}
+      subtitle={isBetaTester
+        ? "Your beta code will be verified when you create your account. Choose a username and password to sign in later."
+        : "Choose a username and a strong password to start your regular free trial."}>
+      <form onSubmit={submit} className="flex flex-col gap-4">
+        {INVITE_REGISTRATION_ENABLED && !IS_DEMO && (
+          <div className="border-b pb-4">
+            <p className="text-xs font-medium text-muted-foreground">
+              {isBetaTester ? "Beta tester invitation selected" : "Regular account · No invitation needed"}
+            </p>
+            <button type="button" disabled={busy}
+              className="mt-2 min-h-9 text-sm font-medium underline underline-offset-4"
+              onClick={returnToInvitation}>
+              {isBetaTester ? "Change invitation code" : "Use a beta invitation instead"}
+            </button>
           </div>
         )}
         <div className="grid gap-1.5">
           <Label htmlFor="name">Name</Label>
-          <Input id="name" required maxLength={100} autoComplete="name" value={name} onChange={(e) => setName(e.target.value)} placeholder="Your name" />
+          <Input id="name" required maxLength={100} autoComplete="name"
+            value={name} onChange={(e) => setName(e.target.value)} placeholder="Your name" />
         </div>
         {USERNAME_AUTH_ENABLED ? (
           <div className="grid gap-1.5">
@@ -178,10 +244,12 @@ export function Register() {
         )}
         <div className="grid gap-1.5">
           <Label htmlFor="password">Password</Label>
-          <Input id="password" type="password" required minLength={USERNAME_AUTH_ENABLED ? USERNAME_MIN_PASSWORD_LENGTH : 8} autoComplete="new-password" value={password} onChange={(e) => setPassword(e.target.value)} />
+          <Input id="password" type="password" required
+            minLength={USERNAME_AUTH_ENABLED ? USERNAME_MIN_PASSWORD_LENGTH : 8}
+            autoComplete="new-password" value={password} onChange={(e) => setPassword(e.target.value)} />
           <p className="text-xs text-muted-foreground">
             At least {USERNAME_AUTH_ENABLED ? USERNAME_MIN_PASSWORD_LENGTH : 8} characters.
-            {USERNAME_AUTH_ENABLED && " Email-based password recovery is unavailable for username accounts."}
+            {USERNAME_AUTH_ENABLED && " No email-based password recovery is available."}
           </p>
         </div>
         <Button type="submit" disabled={busy}>{busy ? "Creating account…" : "Create account"}</Button>
