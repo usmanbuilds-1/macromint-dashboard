@@ -26,7 +26,7 @@ try {
   await page.getByText("Weight (kg)").waitFor();
   assert.equal(await page.getByText("Measurement system").count(), 0);
   await page.locator("#ob-name").fill("QA Tester");
-  await page.getByRole("radio", { name: /male/i }).click();
+  await page.getByRole("radio", { name: /^male$/i }).click();
   await page.locator("#ob-age").fill("26");
   await page.locator("#ob-height-feet").fill("5");
   await page.locator("#ob-height-inches").fill("11");
