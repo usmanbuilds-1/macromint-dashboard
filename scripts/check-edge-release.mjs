@@ -9,7 +9,7 @@ const read = (path) => readFileSync(new URL("../" + path, import.meta.url), "utf
 const endpoints = [
   "username-register", "username-recovery", "beta-invites",
   "admin-query", "admin-action", "ai-scan",
-  "food-search", "delete-account",
+  "food-search", "delete-account", "account-data", "beta-appeals",
 ];
 for (const name of endpoints) {
   const path = `supabase/functions/${name}/index.ts`;
@@ -57,7 +57,8 @@ assert.doesNotMatch(ai, /String\(\(e as Error\)\.message/,
 const safeJson = read("supabase/functions/_shared/http.ts");
 assert.match(safeJson, /export async function readJsonObject/, "Bounded JSON helper missing");
 for (const name of ["username-register", "username-recovery", "admin-query",
-                    "admin-action", "beta-invites", "ai-scan", "food-search"]) {
+                    "admin-action", "beta-invites", "ai-scan", "food-search",
+                    "account-data", "beta-appeals"]) {
   assert.match(read(`supabase/functions/${name}/index.ts`), /readJsonObject\(/,
     `${name}: must reject malformed JSON object bodies`);
 }
@@ -102,6 +103,24 @@ assert.doesNotMatch(upgrade, /\$6|\$54/, "Invented subscription pricing must not
 assert.doesNotMatch(upgrade, /Continue free with an ad/,
   "Unconfigured rewarded-ad checkout must not be advertised");
 
+const ownExport = read("supabase/functions/account-data/index.ts");
+assert.match(ownExport, /auth\.getUser\(token\)/,
+  "Account export must verify a bearer token");
+assert.match(ownExport, /userId = auth\.user\.id/,
+  "Account export must derive ownership from verified auth");
+assert.doesNotMatch(ownExport, /raw\.userId|raw\.targetUserId/,
+  "Account export must not accept a user-supplied target");
+const appeals = read("supabase/functions/beta-appeals/index.ts");
+assert.match(appeals, /role !== "owner"/,
+  "Appeal review must be owner-only");
+assert.match(appeals, /beta_review_reactivation/,
+  "Appeal decisions must be transactional and audited");
+const lifecycleSql = read("drizzle/migrations/0015_beta_account_lifecycle.sql");
+assert.match(lifecycleSql, /status='pending'/,
+  "A user cannot create simultaneous pending appeals");
+assert.match(lifecycleSql, /public\.has_access/,
+  "Lifecycle SQL must include entitlement-aware request eligibility");
+
 const legal = read("src/features/landing/Legal.tsx");
 assert.match(legal, /Subscription checkout is not enabled/,
   "Legal page must accurately state unavailable payments");
@@ -126,4 +145,4 @@ assert.doesNotMatch(settingsUi, /Delete everything/,
 assert.match(settingsUi, /Limited trial-abuse records may be retained/,
   "Deletion confirmation must disclose retained anti-abuse records");
 
-console.log("PASS: all eight Edge handlers, shared modules, audited SQL interfaces and beta feature gates");
+console.log("PASS: all ten Edge handlers, shared modules, audited SQL interfaces and beta feature gates");
