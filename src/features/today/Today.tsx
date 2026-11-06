@@ -1,6 +1,6 @@
 import { useMemo, useState } from "react";
 import { Link } from "react-router-dom";
-import { Camera, ChevronDown, ChevronRight, Copy, Droplets, Plus, Search } from "lucide-react";
+import { Camera, ChevronDown, ChevronRight, Copy, Droplets, Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useSession } from "@/context/Session";
@@ -24,7 +24,6 @@ export function Today() {
   const version = useDataVersion();
   const foodLog = useFoodLog();
   const today = todayStr();
-  const [openLog, setOpenLog] = useState(false);
   const [expandedMeal, setExpandedMeal] = useState<MealType | null>(null);
 
   const diary = useAsyncData(() => backend.getDiary(today), [today, version]);
@@ -70,12 +69,10 @@ export function Today() {
   };
 
   const openSearch = (mealType = mealForCurrentHour()) => {
-    setOpenLog(false);
     foodLog.open({ entryDate: today, mealType });
   };
 
   const openScan = () => {
-    setOpenLog(false);
     foodLog.openScan({ entryDate: today, mealType: mealForCurrentHour() });
   };
 
@@ -136,26 +133,15 @@ export function Today() {
         </div>
       </section>
 
-      <section aria-label="Log food" className="mm-live-enter mm6-today-log ref-live-log relative" style={{ animationDelay: "155ms" }}>
-        <Button
-          size="lg"
-          className="h-12 w-full justify-center gap-2 text-sm font-semibold shadow-none"
-          onClick={() => setOpenLog((current) => !current)}
-          aria-expanded={openLog}
-          aria-controls="log-actions"
-        >
-          <Plus className="h-5 w-5" aria-hidden="true" /> Log food
+      <section aria-label="Add food" className="mm-live-enter mm6-today-log ref-live-log grid grid-cols-[minmax(0,1fr)_auto] gap-2" style={{ animationDelay: "155ms" }}>
+        <Button size="lg" className="h-12 min-w-0 justify-center gap-2 text-sm font-semibold shadow-none"
+          onClick={() => openSearch()}>
+          <Plus className="h-5 w-5" aria-hidden="true" /> Add food
         </Button>
-        {openLog && (
-          <div id="log-actions" className="mt-2 overflow-hidden rounded-lg border bg-card">
-            <button type="button" className="flex min-h-12 w-full items-center gap-3 px-4 text-left text-sm font-medium hover:bg-accent focus-visible:outline-2 focus-visible:outline-offset-[-2px] focus-visible:outline-primary" onClick={() => openSearch()}>
-              <Search className="h-4 w-4 text-muted-foreground" aria-hidden="true" /> Search or enter a food
-            </button>
-            <button type="button" className="flex min-h-12 w-full items-center gap-3 border-t px-4 text-left text-sm font-medium hover:bg-accent focus-visible:outline-2 focus-visible:outline-offset-[-2px] focus-visible:outline-primary" onClick={openScan}>
-              <Camera className="h-4 w-4 text-muted-foreground" aria-hidden="true" /> Scan a meal photo
-            </button>
-          </div>
-        )}
+        <Button type="button" variant="outline" className="h-12 justify-center gap-2 px-4"
+          onClick={openScan}>
+          <Camera className="h-4 w-4" aria-hidden="true" /> Scan photo
+        </Button>
       </section>
 
       <section aria-labelledby="meals-heading" className="mm-live-enter mm6-today-diary ref-live-diary" style={{ animationDelay: "230ms" }}>
@@ -174,6 +160,10 @@ export function Today() {
         {diary.loading && !diary.data ? (
           <div className="flex flex-col gap-2 py-4">
             <Skeleton className="h-14 w-full" /><Skeleton className="h-14 w-full" /><Skeleton className="h-14 w-full" />
+          </div>
+        ) : diary.error ? null : entries.length === 0 ? (
+          <div className="mt-2 border-y py-6 text-sm text-muted-foreground">
+            No food logged today. Use <strong className="font-medium text-foreground">Add food</strong> to search, or scan a photo you already have.
           </div>
         ) : (
           <div className="mt-1 border-y">

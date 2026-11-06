@@ -95,8 +95,8 @@ export function Foods() {
     <div className="mm6-subpage mm6-page-foods ref-live-foods flex flex-col gap-6">
       <header className="flex flex-wrap items-center justify-between gap-3">
         <div>
-          <h1 className="text-2xl font-semibold tracking-tight">Log food</h1>
-          <p className="mt-0.5 text-sm text-muted-foreground">Find what you ate. Review the portion before logging.</p>
+          <h1 className="text-2xl font-semibold tracking-tight">Foods</h1>
+          <p className="mt-0.5 text-sm text-muted-foreground">Search for a food, scan a photo, or create your own entry.</p>
         </div>
 
       </header>
@@ -104,7 +104,7 @@ export function Foods() {
       <Tabs value={activeTab} onValueChange={setActiveTab}>
         <TabsList className="w-full justify-start">
           <TabsTrigger value="search">Search</TabsTrigger>
-          <TabsTrigger value="favorites">Saved foods</TabsTrigger>
+          <TabsTrigger value="favorites">Favorites</TabsTrigger>
         </TabsList>
 
         <TabsContent value="search" className="mt-4 flex flex-col gap-4">
@@ -120,7 +120,6 @@ export function Foods() {
               <Input
                 value={q}
                 onChange={(e) => setQ(e.target.value)}
-                onKeyDown={(e) => e.key === "Enter" && void runSearch(q)}
                 placeholder="Search for a food or meal"
                 className="pl-9"
                 aria-label="Search foods"
@@ -130,10 +129,7 @@ export function Foods() {
           </form>
           <div className="ref-food-shortcuts" aria-label="Food logging options">
             <button type="button" onClick={() => foodLog.openScan({ entryDate: today, mealType: "snacks" })}>
-              <span>Scan photo</span><small>Review a meal image</small>
-            </button>
-            <button type="button" onClick={() => setActiveTab("favorites")}>
-              <span>Saved foods</span><small>Log a favourite</small>
+              <span>Scan a photo</span><small>Take or upload a meal photo</small>
             </button>
             <button type="button" onClick={() => setCustomOpen(true)}>
               <span>Custom food</span><small>Add your own entry</small>
@@ -162,7 +158,7 @@ export function Foods() {
           )}
           {!hit && (
             <p className="rounded-xl border border-dashed px-4 py-8 text-center text-sm text-muted-foreground">
-              Results appear here. The verified database is searched first, then Open Food Facts for branded products.
+              Search by food or brand. Choose a result to set the portion and add it to your diary.
             </p>
           )}
         </TabsContent>

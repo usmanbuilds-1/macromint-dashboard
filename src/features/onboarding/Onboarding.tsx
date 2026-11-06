@@ -14,9 +14,9 @@ import { computeGoals } from "@/lib/nutrition/targets";
 import { LIMITS, withinLimit } from "@/lib/validation/limits";
 import { estimateWeightTimeline, weightTimelineLabel } from "@/lib/weight/timeline";
 import { ACTIVITY_DESCRIPTIONS, ACTIVITY_FACTORS } from "@/lib/nutrition/constants";
-import type { ActivityLevel, Objective, Sex, Units } from "@/types";
+import type { ActivityLevel, Objective, Sex } from "@/types";
 import { cn } from "@/lib/utils";
-import { cmToFeetInches, feetInchesToCm, kgToLb, lbToKg } from "@/lib/units/body";
+import { cmToFeetInches, feetInchesToCm } from "@/lib/units/body";
 
 const OBJECTIVES: Array<{ value: Objective; label: string; note: string }> = [
   { value: "lose", label: "Lose weight", note: "A moderate daily deficit" },
@@ -38,7 +38,6 @@ export function Onboarding() {
   const [name, setName] = useState(
     profile?.username && profile.name === profile.username ? "" : profile?.name ?? "",
   );
-  const [units, setUnits] = useState<Units>(profile?.units ?? "metric");
   const [sex, setSex] = useState<Sex | null>(profile?.sex ?? null);
   const [age, setAge] = useState<string>(profile?.birthYear ? String(new Date().getFullYear() - profile.birthYear) : "");
   const [heightCm, setHeightCm] = useState<string>(profile?.heightCm ? String(profile.heightCm) : "");
@@ -50,62 +49,28 @@ export function Onboarding() {
   const [heightInches, setHeightInches] = useState<string>(
     profile?.heightCm ? cmToFeetInches(profile.heightCm).inches : "",
   );
-  const [weightLb, setWeightLb] = useState<string>(profile?.weightKg ? kgToLb(profile.weightKg) : "");
-  const [targetWeightLb, setTargetWeightLb] = useState<string>(
-    profile?.targetWeightKg ? kgToLb(profile.targetWeightKg) : "",
-  );
   const [objective, setObjective] = useState<Objective | null>(profile?.objective ?? null);
   const [activityLevel, setActivityLevel] = useState<ActivityLevel | null>(profile?.activityLevel ?? null);
 
-  const changeUnits = (next: Units) => {
-    if (next === units) return;
-    if (next === "imperial") {
-      // Recalculate display values from canonical metric input every time
-      // so switching formats never carries stale numbers.
-      const ftIn = cmToFeetInches(Number(heightCm));
-      setHeightFeet(ftIn.feet);
-      setHeightInches(ftIn.inches);
-      setWeightLb(kgToLb(Number(weightKg)));
-      setTargetWeightLb(kgToLb(Number(targetWeightKg)));
-    }
-    // The canonical metric fields are synchronized as imperial input changes.
-    setUnits(next);
-  };
-
-  const changeImperialHeight = (feet: string, inches: string) => {
+  // Feet/inches are for entry only. Keep centimetres and kilograms in
+  // storage and calorie calculations.
+  const changeHeight = (feet: string, inches: string) => {
     setHeightFeet(feet);
     setHeightInches(inches);
     const cm = feetInchesToCm(feet, inches);
     setHeightCm(cm === null ? "" : String(cm));
   };
 
-  const changeImperialWeight = (pounds: string, target = false) => {
-    const kg = lbToKg(pounds);
-    if (target) {
-      setTargetWeightLb(pounds);
-      setTargetWeightKg(kg === null ? "" : String(kg));
-    } else {
-      setWeightLb(pounds);
-      setWeightKg(kg === null ? "" : String(kg));
-    }
-  };
-
-  const weightUnit = units === "imperial" ? "lb" : "kg";
-  const targetInput = units === "imperial" ? targetWeightLb : targetWeightKg;
-
   const ageNum = Number(age);
   const heightNum = Number(heightCm);
   const weightNum = Number(weightKg);
   const personalValid =
     sex !== null && withinLimit(age, "ageYears") && Number.isInteger(ageNum) &&
+    feetInchesToCm(heightFeet, heightInches) !== null &&
     withinLimit(heightCm, "heightCm") && withinLimit(weightKg, "weightKg") &&
-    (units === "metric" || (feetInchesToCm(heightFeet, heightInches) !== null &&
-      withinLimit(weightLb, "weightLb"))) &&
     name.trim().length <= 100;
-  const targetRequested = targetInput.trim().length > 0;
-  const targetValueValid = units === "metric"
-    ? withinLimit(targetWeightKg, "weightKg")
-    : withinLimit(targetWeightLb, "weightLb") && withinLimit(targetWeightKg, "weightKg");
+  const targetRequested = targetWeightKg.trim().length > 0;
+  const targetValueValid = withinLimit(targetWeightKg, "weightKg");
   const timeline = useMemo(() => {
     if (!objective || !personalValid || !targetRequested || !targetValueValid) return null;
     return estimateWeightTimeline({
@@ -132,7 +97,7 @@ export function Onboarding() {
     try {
       await backend.updateProfile({
         name: name.trim() || profile?.name || "You",
-        units,
+        units: "metric",
         sex,
         birthYear: new Date().getFullYear() - ageNum,
         heightCm: heightNum,
@@ -158,7 +123,7 @@ export function Onboarding() {
     try {
       // Mark onboarding complete with placeholder goals; the user can adjust
       // everything later in Goals. Skipping never blocks the app.
-      await backend.updateProfile({ name: name.trim() || profile?.name || "You", units, onboardedAt: new Date().toISOString() });
+      await backend.updateProfile({ name: name.trim() || profile?.name || "You", units: "metric", onboardedAt: new Date().toISOString() });
       await refresh();
       navigate("/today", { replace: true });
     } catch {
@@ -197,16 +162,6 @@ export function Onboarding() {
                 <Input id="ob-name" value={name} maxLength={100} onChange={(e) => setName(e.target.value)} placeholder="Your name" />
               </div>
               <div className="grid gap-1.5">
-                <Label>Measurement system</Label>
-                <RadioGroup value={units} onValueChange={(v) => changeUnits(v as Units)} className="flex gap-3">
-                  {(["metric", "imperial"] as Units[]).map((u) => (
-                    <Label key={u} className="flex flex-1 cursor-pointer items-center gap-2 rounded-md border px-3 py-2.5 text-sm font-normal capitalize has-[button[data-state=checked]]:border-primary">
-                      <RadioGroupItem value={u} /> {u}
-                    </Label>
-                  ))}
-                </RadioGroup>
-              </div>
-              <div className="grid gap-1.5">
                 <Label>Sex (used by the energy equation)</Label>
                 <RadioGroup value={sex ?? ""} onValueChange={(v) => setSex(v as Sex)} className="flex gap-3">
                   {(["male", "female"] as Sex[]).map((sx) => (
@@ -222,39 +177,24 @@ export function Onboarding() {
                   <Input id="ob-age" type="number" min={LIMITS.ageYears.min} max={LIMITS.ageYears.max} step={1} inputMode="numeric" value={age} onChange={(e) => setAge(e.target.value)} placeholder="30" />
                 </div>
                 <div className="grid gap-1.5">
-                  {units === "imperial" ? (
-                    <>
-                      <Label htmlFor="ob-height-feet">Height (ft / in)</Label>
-                      <div className="grid grid-cols-2 gap-2">
-                        <Input id="ob-height-feet" type="number" min={0} max={8} step={1}
-                          inputMode="numeric" value={heightFeet}
-                          onChange={(e) => changeImperialHeight(e.target.value, heightInches)}
-                          placeholder="5" aria-label="Height feet" />
-                        <Input id="ob-height-inches" type="number" min={0} max={11.9} step="any"
-                          inputMode="decimal" value={heightInches}
-                          onChange={(e) => changeImperialHeight(heightFeet, e.target.value)}
-                          placeholder="9" aria-label="Height inches" />
-                      </div>
-                    </>
-                  ) : (
-                    <>
-                      <Label htmlFor="ob-height">Height (cm)</Label>
-                      <Input id="ob-height" type="number" min={LIMITS.heightCm.min} max={LIMITS.heightCm.max}
-                        step="any" inputMode="decimal" value={heightCm} onChange={(e) => setHeightCm(e.target.value)}
-                        placeholder="176" />
-                    </>
-                  )}
+                  <Label htmlFor="ob-height-feet">Height (ft and in)</Label>
+                  <div className="grid grid-cols-2 gap-2">
+                    <Input id="ob-height-feet" type="number" min={0} max={8} step={1}
+                      inputMode="numeric" value={heightFeet}
+                      onChange={(e) => changeHeight(e.target.value, heightInches)}
+                      placeholder="5" aria-label="Height in feet" />
+                    <Input id="ob-height-inches" type="number" min={0} max={11.9} step="any"
+                      inputMode="decimal" value={heightInches}
+                      onChange={(e) => changeHeight(heightFeet, e.target.value)}
+                      placeholder="9" aria-label="Additional inches" />
+                  </div>
                 </div>
                 <div className="col-span-2 grid gap-1.5 sm:col-span-1">
-                  <Label htmlFor="ob-weight">Weight ({weightUnit})</Label>
-                  <Input id="ob-weight" type="number"
-                    min={units === "imperial" ? LIMITS.weightLb.min : LIMITS.weightKg.min}
-                    max={units === "imperial" ? LIMITS.weightLb.max : LIMITS.weightKg.max}
-                    step="any" inputMode="decimal"
-                    value={units === "imperial" ? weightLb : weightKg}
-                    onChange={(e) => units === "imperial"
-                      ? changeImperialWeight(e.target.value) : setWeightKg(e.target.value)}
-                    placeholder={units === "imperial" ? "172" : "78"} />
+                  <Label htmlFor="ob-weight">Weight (kg)</Label>
+                  <Input id="ob-weight" type="number" min={LIMITS.weightKg.min}
+                    max={LIMITS.weightKg.max} step="any" inputMode="decimal"
+                    value={weightKg} onChange={(e) => setWeightKg(e.target.value)}
+                    placeholder="70" />
                 </div>
               </div>
             </div>
@@ -279,24 +219,18 @@ export function Onboarding() {
               ))}
             </RadioGroup>
             <div className="grid gap-2">
-              <Label htmlFor="ob-target-weight">Target weight ({weightUnit}, optional)</Label>
+              <Label htmlFor="ob-target-weight">Target weight (kg, optional)</Label>
               <Input id="ob-target-weight" type="number"
-                min={units === "imperial" ? LIMITS.weightLb.min : LIMITS.weightKg.min}
-                max={units === "imperial" ? LIMITS.weightLb.max : LIMITS.weightKg.max}
-                step="any" inputMode="decimal"
-                value={units === "imperial" ? targetWeightLb : targetWeightKg}
-                onChange={(e) => units === "imperial"
-                  ? changeImperialWeight(e.target.value, true) : setTargetWeightKg(e.target.value)}
-                placeholder={units === "imperial" ? "e.g. 163" : "e.g. 74"}
-                aria-describedby="ob-target-help" />
+                min={LIMITS.weightKg.min} max={LIMITS.weightKg.max}
+                step="any" inputMode="decimal" value={targetWeightKg}
+                onChange={(e) => setTargetWeightKg(e.target.value)}
+                placeholder="e.g. 74" aria-describedby="ob-target-help" />
               <p id="ob-target-help" className="text-xs text-muted-foreground">
                 Set a destination to see an illustrative timeline. You can change it anytime.
               </p>
               {targetRequested && !goalTargetValid && (
                 <p role="alert" className="text-xs text-destructive">
-                  {timeline?.note ?? (units === "imperial"
-                    ? `Target weight must be between ${Math.ceil(LIMITS.weightLb.min)} and ${Math.floor(LIMITS.weightLb.max)} lb.`
-                    : `Target weight must be between ${LIMITS.weightKg.min} and ${LIMITS.weightKg.max} kg.`)}
+                  {timeline?.note ?? `Target weight must be between ${LIMITS.weightKg.min} and ${LIMITS.weightKg.max} kg.`}
                 </p>
               )}
               {timeline && goalTargetValid && (
@@ -313,14 +247,14 @@ export function Onboarding() {
           <div className="flex flex-col gap-6">
             <header>
               <h1 className="text-2xl font-semibold tracking-tight">How active are you?</h1>
-              <p className="mt-1.5 text-sm text-muted-foreground">Outside of logging food, most of your energy spend is daily movement.</p>
+              <p className="mt-1.5 text-sm text-muted-foreground">Choose the option closest to a typical day, including work, walking and exercise.</p>
             </header>
             <RadioGroup value={activityLevel ?? ""} onValueChange={(v) => setActivityLevel(v as ActivityLevel)} className="flex flex-col gap-3">
               {ACTIVITY_LEVELS.map((a) => (
                 <Label key={a} className="flex cursor-pointer items-start gap-3 rounded-md border px-4 py-3.5 font-normal has-[button[data-state=checked]]:border-primary">
                   <RadioGroupItem value={a} className="mt-0.5" />
                   <span>
-                    <span className="block text-sm font-medium">{ACTIVITY_FACTORS[a].label} (× {ACTIVITY_FACTORS[a].factor})</span>
+                    <span className="block text-sm font-medium">{ACTIVITY_FACTORS[a].label}</span>
                     <span className="block text-xs text-muted-foreground">{ACTIVITY_DESCRIPTIONS[a]}</span>
                   </span>
                 </Label>

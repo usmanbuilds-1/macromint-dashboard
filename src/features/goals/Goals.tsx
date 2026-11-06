@@ -89,6 +89,9 @@ export function Goals() {
 
       <section className="rounded-xl border bg-card p-5" aria-label="Daily targets">
         <h2 className="text-sm font-semibold">Daily targets</h2>
+        <p className="mt-1 text-sm text-muted-foreground">
+          Edit the amounts you want to aim for each day, then save. These numbers are not your food log.
+        </p>
         <div className="mt-4 grid grid-cols-2 gap-4 sm:grid-cols-3">
           <Field label="Calories (kcal)" id="g-kcal" limitKey="calorieTarget" value={num(form.calorieTarget)} onChange={(v) => set("calorieTarget", v)} />
           <Field label="Protein (g)" id="g-protein" limitKey="proteinG" value={num(form.proteinG)} onChange={(v) => set("proteinG", v)} />
@@ -104,7 +107,10 @@ export function Goals() {
       </section>
 
       <section className="rounded-xl border bg-card p-5" aria-label="Recalculate">
-        <h2 className="text-sm font-semibold">Recalculate from your profile</h2>
+        <h2 className="text-sm font-semibold">Start again with an estimate</h2>
+        <p className="mt-1 text-sm text-muted-foreground">
+          Choose a goal below to replace your current targets with fresh estimates. This won't delete your diary.
+        </p>
         <p className="mt-1 text-xs text-muted-foreground">
           Uses the Mifflin-St Jeor equation with your sex, age, height, weight and activity level
           {profile?.activityLevel ? ` (${ACTIVITY_FACTORS[profile.activityLevel].label}: ${ACTIVITY_DESCRIPTIONS[profile.activityLevel]})` : ""}.

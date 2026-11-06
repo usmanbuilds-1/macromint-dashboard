@@ -1,7 +1,7 @@
 import { LIMITS } from "@/lib/validation/limits";
 import { useRef, useState } from "react";
 import { toast } from "sonner";
-import { Camera, Info, Loader2, TriangleAlert } from "lucide-react";
+import { Camera, ImagePlus, Info, Loader2, TriangleAlert } from "lucide-react";
 import {
   Dialog,
   DialogContent,
@@ -50,7 +50,8 @@ export function ScanDialog({
   target: { entryDate: string; mealType: string } | null;
   onClose: () => void;
 }) {
-  const fileRef = useRef<HTMLInputElement>(null);
+  const cameraRef = useRef<HTMLInputElement>(null);
+  const galleryRef = useRef<HTMLInputElement>(null);
   const originalItems = useRef<ScanItem[]>([]);
   const saving = useRef(false);
   const [gramDrafts, setGramDrafts] = useState<Record<number, string>>({});
@@ -157,9 +158,9 @@ export function ScanDialog({
     <Dialog open onOpenChange={(o) => (!o ? onClose() : undefined)}>
       <DialogContent className="sm:max-w-lg">
         <DialogHeader>
-          <DialogTitle>Scan a meal</DialogTitle>
+          <DialogTitle>Add food from a photo</DialogTitle>
           <DialogDescription>
-            Photo scanning estimates foods and portions. Review each item and adjust its grams before logging. Database matches are references, not guarantees of accuracy.
+            Take a photo or upload one you already have. Estimates aren't exact; review the foods and portions before logging.
           </DialogDescription>
         </DialogHeader>
 
@@ -175,26 +176,45 @@ export function ScanDialog({
               />
             </div>
             <input
-              ref={fileRef}
+              ref={cameraRef}
               type="file"
               accept="image/*"
               capture="environment"
-              className="hidden"
+              className="sr-only absolute h-px w-px overflow-hidden opacity-0"
+              tabIndex={-1}
+              aria-label="Take a new meal photo"
               onChange={(e) => {
                 const file = e.target.files?.[0];
                 if (file) void handleFile(file);
                 e.target.value = "";
               }}
             />
-            <button
-              type="button"
-              onClick={() => fileRef.current?.click()}
-              className="flex min-h-44 flex-col items-center justify-center gap-3 rounded-lg border border-dashed px-6 py-8 text-center transition-colors hover:border-primary/60 hover:bg-accent/40"
-            >
-              <Camera className="h-8 w-8 text-muted-foreground" />
-              <span className="text-sm font-medium">Take a photo or choose an image</span>
-              <span className="text-xs text-muted-foreground">JPEG or PNG. Fill the frame, include everything on the plate.</span>
-            </button>
+            <input
+              ref={galleryRef}
+              type="file"
+              accept="image/*"
+              className="sr-only absolute h-px w-px overflow-hidden opacity-0"
+              tabIndex={-1}
+              aria-label="Choose an existing meal photo"
+              onChange={(e) => {
+                const file = e.target.files?.[0];
+                if (file) void handleFile(file);
+                e.target.value = "";
+              }}
+            />
+            <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
+              <Button type="button" className="min-h-12 justify-center gap-2"
+                onClick={() => cameraRef.current?.click()}>
+                <Camera className="h-4 w-4" aria-hidden="true" /> Take photo
+              </Button>
+              <Button type="button" variant="outline" className="min-h-12 justify-center gap-2"
+                onClick={() => galleryRef.current?.click()}>
+                <ImagePlus className="h-4 w-4" aria-hidden="true" /> Choose from gallery
+              </Button>
+            </div>
+            <p className="text-xs leading-5 text-muted-foreground">
+              Use a clear photo from your phone or computer. Check the foods and portions before adding them.
+            </p>
             {error && (
               <p className="rounded-md border border-destructive/30 bg-destructive/10 px-3 py-2 text-sm text-destructive">{error}</p>
             )}

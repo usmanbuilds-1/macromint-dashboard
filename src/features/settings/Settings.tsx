@@ -20,7 +20,7 @@ import {
 } from "@/components/ui/alert-dialog";
 import { useSession } from "@/context/Session";
 import { backend, bumpData, IS_DEMO } from "@/lib/backend";
-import type { Units } from "@/types";
+import { cmToFeetInches, feetInchesToCm } from "@/lib/units/body";
 import { LIMITS, validateNumeric } from "@/lib/validation/limits";
 import { estimateWeightTimeline } from "@/lib/weight/timeline";
 import { diaryExportCsv, weightExportCsv } from "@/lib/export/csv";
@@ -31,6 +31,8 @@ export function Settings() {
   const navigate = useNavigate();
   const [name, setName] = useState("");
   const [heightCm, setHeightCm] = useState("");
+  const [heightFeet, setHeightFeet] = useState("");
+  const [heightInches, setHeightInches] = useState("");
   const [weightKg, setWeightKg] = useState("");
   const [targetWeightKg, setTargetWeightKg] = useState("");
   const [busy, setBusy] = useState(false);
@@ -41,6 +43,9 @@ export function Settings() {
     if (profile) {
       setName(profile.name);
       setHeightCm(profile.heightCm ? String(profile.heightCm) : "");
+      const displayHeight = profile.heightCm ? cmToFeetInches(profile.heightCm) : { feet: "", inches: "" };
+      setHeightFeet(displayHeight.feet);
+      setHeightInches(displayHeight.inches);
       setWeightKg(profile.weightKg ? String(profile.weightKg) : "");
       setTargetWeightKg(profile.targetWeightKg ? String(profile.targetWeightKg) : "");
     }
@@ -49,10 +54,21 @@ export function Settings() {
     }).catch(() => undefined);
   }, [profile]);
 
+  const changeHeight = (feet: string, inches: string) => {
+    setHeightFeet(feet);
+    setHeightInches(inches);
+    const cm = feetInchesToCm(feet, inches);
+    setHeightCm(cm === null ? "" : String(cm));
+  };
+
   const saveProfile = async () => {
     setBusy(true);
     try {
-      const patch: Record<string, unknown> = { name: name.trim().slice(0, 100) };
+      if ((heightFeet.trim() || heightInches.trim()) && feetInchesToCm(heightFeet, heightInches) === null) {
+        toast.error("Enter height in feet and inches, with inches below 12.");
+        return;
+      }
+      const patch: Record<string, unknown> = { name: name.trim().slice(0, 100), units: "metric" };
       for (const [raw, key, label] of [
         [heightCm, "heightCm", "Height"],
         [weightKg, "weightKg", "Current weight"],
@@ -86,14 +102,6 @@ export function Settings() {
     } finally {
       setBusy(false);
     }
-  };
-
-  const setUnits = async (units: Units) => {
-    if (!profile || profile.units === units) return;
-    await backend.updateProfile({ units });
-    await refresh();
-    bumpData();
-    toast.success(`Switched to ${units} units. Values are converted, records stay intact.`);
   };
 
   const exportData = async () => {
@@ -155,12 +163,12 @@ export function Settings() {
   return (
     <div className="mm6-subpage mm6-page-settings ref-live-settings flex flex-col gap-6">
       <header>
-        <h1 className="text-2xl font-semibold tracking-tight">More</h1>
+        <h1 className="text-2xl font-semibold tracking-tight">Settings</h1>
         <p className="mt-0.5 text-sm text-muted-foreground">{publicAccountLabel(profile ?? {})}</p>
       </header>
 
       <nav aria-label="Settings sections" className="ref-settings-links">
-        <a href="#ref-profile">My account <span>Manage your profile</span></a>
+        <a href="#ref-profile">Profile <span>Height, weight and personal details</span></a>
         <button type="button" onClick={() => navigate("/goals")}>Goals <span>Calorie and macro targets</span></button>
         <a href="#ref-export">Exports <span>Download your data</span></a>
         <a href="#ref-privacy">Privacy <span>Your preferences and consent</span></a>
@@ -199,8 +207,15 @@ export function Settings() {
             <Input id="s-name" maxLength={100} value={name} onChange={(e) => setName(e.target.value)} />
           </div>
           <div className="grid gap-1.5">
-            <Label htmlFor="s-height">Height (cm)</Label>
-            <Input id="s-height" type="number" min={LIMITS.heightCm.min} max={LIMITS.heightCm.max} step="any" inputMode="decimal" value={heightCm} onChange={(e) => setHeightCm(e.target.value)} />
+            <Label htmlFor="s-height-feet">Height (ft and in)</Label>
+            <div className="grid grid-cols-2 gap-2">
+              <Input id="s-height-feet" type="number" min={0} max={8} step={1} inputMode="numeric"
+                aria-label="Height in feet" value={heightFeet}
+                onChange={(e) => changeHeight(e.target.value, heightInches)} placeholder="5" />
+              <Input id="s-height-inches" type="number" min={0} max={11.9} step="any"
+                inputMode="decimal" aria-label="Additional inches" value={heightInches}
+                onChange={(e) => changeHeight(heightFeet, e.target.value)} placeholder="9" />
+            </div>
           </div>
           <div className="grid gap-1.5">
             <Label htmlFor="s-weight">Current weight (kg)</Label>
@@ -215,18 +230,6 @@ export function Settings() {
         </div>
         <div className="mt-4">
           <Button onClick={saveProfile} disabled={busy}>{busy ? "Saving…" : "Save profile"}</Button>
-        </div>
-      </section>
-
-      <section className="border-b pb-6" aria-label="Units">
-        <h2 className="text-sm font-semibold">Measurement system</h2>
-        <p className="mt-1 text-xs text-muted-foreground">Changing units converts your profile values; history stays accurate.</p>
-        <div className="mt-4 flex gap-2">
-          {(["metric", "imperial"] as Units[]).map((u) => (
-            <Button key={u} variant={profile?.units === u ? "default" : "outline"} onClick={() => void setUnits(u)} className="capitalize">
-              {u}
-            </Button>
-          ))}
         </div>
       </section>
 
