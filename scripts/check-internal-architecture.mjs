@@ -37,12 +37,12 @@ assert.match(progress, /backend\.getDiaryRange\(/);
 assert.doesNotMatch(progress, /Promise\.all\(rangeDates\.map/);
 const weekly = readFileSync("src/features/trends/WeeklyArchive.tsx", "utf8");
 const backend = readFileSync("src/lib/backend/supabase-backend.ts", "utf8");
-assert.doesNotMatch(progress, /backend\\.getDiary\\(/,
+assert.doesNotMatch(progress, /backend\.getDiary\(/,
   "Progress must never fetch calendar days one by one");
-assert.doesNotMatch(weekly, /backend\\.|useAsyncData/,
+assert.doesNotMatch(weekly, /backend\.|useAsyncData/,
   "Weekly archive must derive from the shared progress range");
-assert.match(backend, /logSavedMealBatch\\(/,
+assert.match(backend, /logSavedMealBatch\(/,
   "Saved meal logging must use one atomic batch instead of N inserts");
 assert.doesNotMatch(backend.slice(backend.indexOf("async logSavedMeal("), backend.indexOf("async getDiary(")),
-  /for\\s*\\(/, "Do not reintroduce per-food insertion loops");
+  /for\s*\(/, "Do not reintroduce per-food insertion loops");
 console.log("PASS: tab data caching, no weekly N+1 reads, and atomic saved-meal batch");
