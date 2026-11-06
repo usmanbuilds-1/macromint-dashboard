@@ -61,13 +61,13 @@ export function Upgrade() {
     }
   };
   const removeAccount = async () => {
-    if (!window.confirm("Permanently delete your Macro Mint account and tracked data? This cannot be undone.")) return;
+    if (!window.confirm("Permanently delete your Macro Mint account and tracked data? This cannot be undone. Limited trial-abuse records may be retained as described in the Privacy Policy.")) return;
     setBusy("delete");
     try {
       await backend.deleteAccount();
       await backend.signOut().catch(() => undefined);
       navigate("/login", { replace: true });
-      toast.success("Your account was deleted.");
+      toast.success("Account deleted. Limited trial-abuse records may be retained.");
     } catch {
       toast.error("Could not delete the account. Contact support.");
     } finally {
