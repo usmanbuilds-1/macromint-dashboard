@@ -159,7 +159,7 @@ export function FoodSearchDialog({
 
   return (
     <CommandDialog open={open} onOpenChange={(o) => (!o ? onClose() : undefined)}
-      preventInputAutoFocus contentStyle={sheetStyle}
+      preventInputAutoFocus contentStyle={sheetStyle ? { ...sheetStyle, height: sheetStyle.maxHeight } : undefined}
       className="!translate-y-0 bottom-0 max-h-[88dvh] w-full !max-w-none overflow-hidden rounded-t-xl rounded-b-none sm:!top-1/2 sm:!bottom-auto sm:!-translate-y-1/2 sm:!max-w-lg sm:rounded-lg">
       <CommandInput autoFocus={false} placeholder="Tap to search foods, brands, or barcodes…" value={q} onValueChange={setQ} />
       <CommandList className="min-h-0 flex-1 !max-h-none">
