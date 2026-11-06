@@ -355,9 +355,21 @@ BEGIN
   INSERT INTO public.beta_invites(id,code_hash,expires_at,max_uses)
   VALUES ('aaaa1111-aaaa-4111-8111-aaaaaaaa1111',
     invite_digest,now()+interval '7 days',1);
+  -- An invite alone must not bypass the rate-limited Edge signup path.
+  denied:=false;
+  BEGIN
+    INSERT INTO auth.users(id,email,raw_user_meta_data)
+    VALUES ('bbbb1111-bbbb-4111-8111-bbbbbbbb1111','rawinvite@example.invalid',
+      jsonb_build_object('name','Direct invite attempt','beta_invite_code',invite_code));
+  EXCEPTION WHEN OTHERS THEN denied:=true; END;
+  IF NOT denied THEN RAISE EXCEPTION 'Native Auth signup accepted invite without server ticket'; END IF;
+
+  PERFORM public.issue_public_signup_ticket(encode(pg_catalog.sha256(
+    convert_to(repeat('c',64),'UTF8')),'hex'));
   INSERT INTO auth.users(id,email,raw_user_meta_data)
   VALUES (fake_beta,'tester2@example.invalid',
-    jsonb_build_object('name','Invited Tester','beta_invite_code',invite_code));
+    jsonb_build_object('name','Invited Tester','beta_invite_code',invite_code,
+      'public_signup_ticket',repeat('c',64)));
   SELECT raw_user_meta_data INTO metadata FROM auth.users WHERE id=fake_beta;
   IF metadata ? 'beta_invite_code' OR NOT metadata ? 'beta_invite_id' THEN
     RAISE EXCEPTION 'Beta invitation not securely consumed';
@@ -366,9 +378,12 @@ BEGIN
   IF count_rows<>1 THEN RAISE EXCEPTION 'Invited tester was not marked invited'; END IF;
   denied:=false;
   BEGIN
+    PERFORM public.issue_public_signup_ticket(encode(pg_catalog.sha256(
+      convert_to(repeat('d',64),'UTF8')),'hex'));
     INSERT INTO auth.users(id,email,raw_user_meta_data)
     VALUES ('99999999-9999-4999-8999-999999999999','reuseinvite@example.invalid',
-      jsonb_build_object('name','Invitation reuse','beta_invite_code',invite_code));
+      jsonb_build_object('name','Invitation reuse','beta_invite_code',invite_code,
+        'public_signup_ticket',repeat('d',64)));
   EXCEPTION WHEN OTHERS THEN denied:=true; END;
   IF NOT denied THEN RAISE EXCEPTION 'Single-use beta invitation reused'; END IF;
 
