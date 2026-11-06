@@ -52,8 +52,8 @@ export function FoodSearchDialog({
   const [searching, setSearching] = useState(false);
   const reqId = useRef(0);
 
-  const recents = useAsyncData(() => backend.getRecentEntries(8), []);
-  const favorites = useAsyncData(() => backend.getFavorites(), []);
+  const recents = useAsyncData(() => backend.getRecentEntries(8), [], "recent:8");
+  const favorites = useAsyncData(() => backend.getFavorites(), [], "favorites");
 
   useEffect(() => {
     if (!open) {
