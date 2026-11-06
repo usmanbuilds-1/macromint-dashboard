@@ -579,6 +579,15 @@ export const demoBackend: Backend & DemoExtras = {
     return st.diary.filter((d) => d.userId === userId && d.entryDate === entryDate).sort((a, b) => a.loggedAt.localeCompare(b.loggedAt));
   },
 
+  async getDiaryRange(startDate, endDate) {
+    if (startDate > endDate) throw new BackendError("VALIDATION", "Invalid diary date range");
+    const st = s();
+    const userId = requireUser();
+    return st.diary.filter((entry) => entry.userId === userId &&
+      entry.entryDate >= startDate && entry.entryDate <= endDate)
+      .sort((a, b) => a.entryDate.localeCompare(b.entryDate) || a.loggedAt.localeCompare(b.loggedAt));
+  },
+
   async addEntry(input: AddEntryInput) {
     const st = s();
     const userId = requireUser();

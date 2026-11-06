@@ -1,24 +1,63 @@
 import assert from "node:assert/strict";
-import { mkdir } from "node:fs/promises";
+import { mkdir, writeFile } from "node:fs/promises";
 import { chromium } from "playwright";
 
 // This preview is built with intentionally empty Supabase environment variables.
 // Never execute this test against the public production API.
 const url = process.env.MACROMINT_DEMO_PREVIEW_URL || "http://127.0.0.1:4174";
-await mkdir("mobile-audit", { recursive: true });
+await mkdir("mobile-audit/screens", { recursive: true });
 const browser = await chromium.launch({ headless: true });
 const context = await browser.newContext({ viewport: { width: 390, height: 844 } });
 const page = await context.newPage();
 const errors = [];
+const visualMetrics = [];
 page.on("pageerror", error => errors.push(error.message));
+
+async function screenshotEverySize(name) {
+  for (const [width, height] of [[390, 844], [768, 1024], [1440, 900]]) {
+    await page.setViewportSize({ width, height });
+    await page.screenshot({
+      path: `mobile-audit/screens/${name}-${width}.png`,
+      fullPage: true, animations: "disabled",
+    });
+    const metrics = await page.evaluate(() => {
+      const resources = performance.getEntriesByType("resource");
+      return {
+        pathname: location.pathname,
+        title: document.title,
+        domNodes: document.querySelectorAll("*").length,
+        jsResources: resources.filter((resource) => /\\.m?js(?:\\?|$)/.test(resource.name)).length,
+        transferredKb: Math.round(resources.reduce((sum, resource) => sum + (resource.transferSize || 0), 0) / 1024),
+        heading: document.querySelector("h1")?.textContent?.trim() || null,
+      };
+    });
+    visualMetrics.push({ name, width, ...metrics });
+    const overflow = await page.evaluate(() => document.documentElement.scrollWidth - innerWidth);
+    if (overflow > 2) {
+      const offenders = await page.evaluate(() => [...document.querySelectorAll("body *")]
+        .map((element) => ({ tag: element.tagName, className: String(element.getAttribute("class") || "").slice(0,120),
+          text: element.textContent?.trim().slice(0,55),
+          left: Math.round(element.getBoundingClientRect().left),
+          right: Math.round(element.getBoundingClientRect().right),
+          width: Math.round(element.getBoundingClientRect().width) }))
+        .filter((element) => element.right > innerWidth + 2 || element.left < -2)
+        .sort((a,b) => b.right - a.right).slice(0,12));
+      console.error("LAYOUT OFFENDERS", name, width, JSON.stringify(offenders));
+    }
+    assert.ok(overflow <= 2, `Horizontal overflow on ${name} at ${width}px: ${overflow}`);
+  }
+  await page.setViewportSize({ width: 390, height: 844 });
+}
 
 try {
   // Hard stop before ANY registration if the preview is accidentally connected
   // to production. The footer marker only renders when IS_DEMO=true.
   await page.goto(url + "/login", { waitUntil: "domcontentloaded", timeout: 30000 });
   await page.getByText(/Demo mode: any email signs in to a local sample account/).waitFor({ timeout: 15000 });
+  await screenshotEverySize("login");
   await page.goto(url + "/register", { waitUntil: "domcontentloaded", timeout: 30000 });
   await page.getByRole("heading", { name: "Create your account" }).waitFor({ timeout: 20000 });
+  await screenshotEverySize("signup");
   assert.equal(await page.locator("#name").count(), 0, "Registration shouldn't ask for a name");
   await page.locator("#username").fill("internal_qa");
   await page.locator("#password").fill("internal-preview-only-not-a-secret");
@@ -36,21 +75,25 @@ try {
   await page.locator("#ob-height-inches").fill("11");
   await page.locator("#ob-weight").fill("73.5");
   assert.equal(await page.getByRole("button", { name: /Continue/ }).isDisabled(), false);
-  await page.screenshot({ path: "mobile-audit/internal-onboarding-390.png", fullPage: true });
+  await screenshotEverySize("onboarding-basics");
   await page.getByRole("button", { name: /Continue/ }).click();
   await page.getByRole("heading", { name: "What are you working towards?" }).waitFor();
   await page.getByText("Target weight (kg, optional)").waitFor();
   await page.getByRole("radio", { name: /Gain weight/i }).click();
   await page.locator("#ob-target-weight").fill("77");
+  await screenshotEverySize("onboarding-goal");
   await page.getByRole("button", { name: /Continue/ }).click();
   await page.getByRole("heading", { name: "How active are you?" }).waitFor();
   assert.equal((await page.locator("body").innerText()).includes("× "), false,
     "Activity choices should not show numeric multipliers");
   await page.getByRole("radio").first().click();
+  await screenshotEverySize("onboarding-activity");
   await page.getByRole("button", { name: /Continue/ }).click();
   await page.getByRole("heading", { name: "Your starting targets" }).waitFor();
+  await screenshotEverySize("onboarding-targets");
   await page.getByRole("button", { name: /Start tracking/ }).click();
   await page.getByRole("heading", { name: "Today", exact: true }).waitFor({ timeout: 20000 });
+  await screenshotEverySize("today");
 
   // Daily navigation never buries diary, the task users perform most often.
   const nav = page.locator(".ref-mobile-tabs");
@@ -73,17 +116,33 @@ try {
   await page.getByRole("heading", { name: "Add food from a photo" }).waitFor();
   await page.getByRole("button", { name: "Take photo" }).waitFor();
   await page.getByRole("button", { name: "Choose from gallery" }).waitFor();
+  await page.getByRole("button", { name: "Search or enter a meal instead" }).waitFor();
+  assert.equal(await page.locator("#scan-hints").count(), 0,
+    "Notes should remain collapsed until the user asks to type");
+  assert.equal(await page.evaluate(() => document.activeElement?.tagName), "BUTTON",
+    "Photo dialog must not auto-focus a text field and summon the mobile keyboard");
   const images = page.getByRole("dialog").locator('input[type="file"]');
   assert.equal(await images.count(), 2);
   assert.equal(await images.nth(0).getAttribute("capture"), "environment");
   assert.equal(await images.nth(1).getAttribute("capture"), null,
     "Existing-image input must not force camera capture");
-  await page.screenshot({ path: "mobile-audit/internal-gallery-390.png", fullPage: true });
-  await page.keyboard.press("Escape");
-  await page.getByRole("button", { name: "Add food", exact: true }).click();
+  await screenshotEverySize("photo-choices");
+  // A photo user must be able to switch to text without closing everything
+  // and losing the selected meal/date.
+  await page.getByRole("button", { name: "Search or enter a meal instead" }).click();
   await page.getByPlaceholder(/Search foods, brands/i).waitFor();
   await page.keyboard.press("Escape");
-  await page.screenshot({ path: "mobile-audit/internal-today-390.png", fullPage: true });
+  await page.getByRole("button", { name: "Add food", exact: true }).click();
+  await page.getByRole("heading", { name: "Add food", exact: true }).waitFor();
+  await page.getByRole("button", { name: /Search or type a food/ }).waitFor();
+  await page.getByRole("button", { name: /Use a meal photo/ }).waitFor();
+  assert.notEqual(await page.evaluate(() => document.activeElement?.tagName), "INPUT",
+    "The Add food chooser must not open the keyboard");
+  await screenshotEverySize("food-entry-choices");
+  await page.getByRole("button", { name: /Search or type a food/ }).click();
+  await page.getByPlaceholder(/Search foods, brands/i).waitFor();
+  await page.keyboard.press("Escape");
+  await screenshotEverySize("food-search");
 
   await nav.getByRole("link", { name: "Diary" }).click();
   await page.getByRole("heading", { name: "Diary", exact: true }).waitFor();
@@ -91,17 +150,17 @@ try {
     "Selected tab indicator should follow navigation");
   await page.getByRole("button", { name: "Add food", exact: true }).waitFor();
   await page.getByRole("button", { name: "Scan photo", exact: true }).waitFor();
-  await page.screenshot({ path: "mobile-audit/internal-diary-390.png", fullPage: true });
+  await screenshotEverySize("diary");
 
   await nav.getByRole("link", { name: "Foods" }).click();
   await page.getByRole("heading", { name: "Foods", exact: true }).waitFor();
   await page.getByRole("tab", { name: "Favorites" }).waitFor();
   await page.getByText("Scan a photo", { exact: true }).waitFor();
-  await page.screenshot({ path: "mobile-audit/internal-foods-390.png", fullPage: true });
+  await screenshotEverySize("foods");
 
   await nav.getByRole("link", { name: "Progress" }).click();
   await page.getByRole("heading", { name: "Progress", exact: true }).waitFor();
-  await page.screenshot({ path: "mobile-audit/internal-progress-390.png", fullPage: true });
+  await screenshotEverySize("progress");
 
   await page.goto(url + "/settings", { waitUntil: "domcontentloaded" });
   await page.getByRole("heading", { name: "Settings", exact: true }).waitFor();
@@ -110,7 +169,51 @@ try {
   assert.equal(await page.locator("#s-height-feet").inputValue(), "5");
   assert.equal(await page.locator("#s-height-inches").inputValue(), "11");
   assert.equal(await page.locator("#s-weight").inputValue(), "73.5");
-  await page.screenshot({ path: "mobile-audit/internal-settings-390.png", fullPage: true });
+  await screenshotEverySize("settings");
+  await page.goto(url + "/goals", { waitUntil: "domcontentloaded" });
+  await page.getByRole("heading", { name: "Goals", exact: true }).waitFor();
+  await screenshotEverySize("goals");
+  await page.goto(url + "/weight", { waitUntil: "domcontentloaded" });
+  await screenshotEverySize("weight");
+
+  // Keep all captures on the disposable localStorage demo fixture. Switch to
+  // the seeded owner only after the explicit demo-mode safety check above.
+  await page.evaluate(() => {
+    const key = "macromint.demo.v2";
+    const store = JSON.parse(localStorage.getItem(key) || "null");
+    const owner = store?.users.find((user) => user.email === "demo@macromint.app");
+    if (!owner || !store.adminUserIds.includes(owner.id))
+      throw new Error("Disposable demo owner fixture missing");
+    store.sessionUserId = owner.id;
+    localStorage.setItem(key, JSON.stringify(store));
+  });
+  await page.goto(url + "/admin", { waitUntil: "domcontentloaded" });
+  await page.getByRole("heading", { name: "Users", exact: true }).waitFor();
+  await screenshotEverySize("admin-users");
+  await page.goto(url + "/admin/audit", { waitUntil: "domcontentloaded" });
+  await page.getByRole("heading", { name: "Audit log", exact: true }).waitFor();
+  await screenshotEverySize("admin-audit");
+  await page.goto(url + "/admin/settings", { waitUntil: "domcontentloaded" });
+  await page.getByRole("heading", { name: "Platform settings", exact: true }).waitFor();
+  await screenshotEverySize("admin-settings");
+
+  // Restricted account view is part of the product, not a broken dashboard.
+  await page.evaluate(() => {
+    const key = "macromint.demo.v2";
+    const store = JSON.parse(localStorage.getItem(key) || "null");
+    const expired = store?.users.find((user) => user.email === "expired.user@example.com");
+    if (!expired) throw new Error("Disposable expired fixture missing");
+    store.sessionUserId = expired.id;
+    localStorage.setItem(key, JSON.stringify(store));
+  });
+  await page.goto(url + "/upgrade", { waitUntil: "domcontentloaded" });
+  await page.getByRole("heading", { name: /free trial has ended|Account access is paused/ }).waitFor();
+  await screenshotEverySize("restricted-account");
+
+  for (const path of ["/terms", "/privacy"]) {
+    await page.goto(url + path, { waitUntil: "domcontentloaded" });
+    await screenshotEverySize(path.slice(1));
+  }
   for (const width of [390, 768, 1440]) {
     await page.setViewportSize({ width, height: 900 });
     const overflow = await page.evaluate(() =>
@@ -119,6 +222,8 @@ try {
     console.log("PASS internal pages width", width);
   }
   assert.deepEqual(errors, [], "Browser runtime errors");
+  await writeFile("mobile-audit/screens/metrics.json", JSON.stringify(visualMetrics, null, 2));
+  console.log("CAPTURED", visualMetrics.length, "responsive app screenshots with DOM and transfer metrics");
   console.log("PASS isolated onboarding, daily logging, photo gallery, navigation, diary, foods, progress, settings");
 } finally {
   await context.close();

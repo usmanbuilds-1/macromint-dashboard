@@ -1,3 +1,7 @@
+import { lazy, Suspense } from "react";
+import "@/styles/internal-polish.css";
+import { Logo } from "./BrandMark";
+export { Logo } from "./BrandMark";
 import { publicAccountLabel } from "@/lib/auth/username";
 import { NavLink, Outlet, useNavigate } from "react-router-dom";
 import {
@@ -17,11 +21,19 @@ import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
 import { useSession } from "@/context/Session";
 import { backend, IS_DEMO } from "@/lib/backend";
-import { useDataVersion } from "@/hooks/useData";
 import { FoodLogProvider } from "@/features/foods/FoodLogProvider";
-import { FoodSearchDialog } from "@/features/foods/FoodSearchDialog";
-import { ServingConfigHost } from "@/features/foods/ServingConfigHost";
-import { ScanDialog } from "@/features/scan/ScanDialog";
+
+// Food dialogs are expensive relative to the shell. Load only when the
+// user opens them; keep the four routes usable without vision code.
+const FoodSearchDialog = lazy(() =>
+  import("@/features/foods/FoodSearchDialog").then((m) => ({ default: m.FoodSearchDialog }))
+);
+const ServingConfigHost = lazy(() =>
+  import("@/features/foods/ServingConfigHost").then((m) => ({ default: m.ServingConfigHost }))
+);
+const ScanDialog = lazy(() =>
+  import("@/features/scan/ScanDialog").then((m) => ({ default: m.ScanDialog }))
+);
 import { cn } from "@/lib/utils";
 
 const NAV = [
@@ -39,18 +51,6 @@ const SECONDARY = [
   { to: "/goals", label: "Goals", icon: Target },
   { to: "/settings", label: "Settings", icon: SettingsIcon },
 ];
-
-export function Logo({ compact = false }: { compact?: boolean }) {
-  return (
-    <span className="mm-logo inline-flex items-center gap-2.5">
-      <span className="mm-logo-leaves" aria-hidden="true">
-        <span className="mm-logo-leaf mm-logo-leaf--left" />
-        <span className="mm-logo-leaf mm-logo-leaf--right" />
-      </span>
-      {!compact && <span className="mm-logo-name">Macro Mint</span>}
-    </span>
-  );
-}
 
 function NavItem({ to, label, icon: Icon, onClick }: { to: string; label: string; icon: typeof Home; onClick?: () => void }) {
   return (
@@ -73,7 +73,6 @@ function NavItem({ to, label, icon: Icon, onClick }: { to: string; label: string
 export function AppLayout() {
   const { profile, isAdmin, setAuthUser } = useSession();
   const navigate = useNavigate();
-  useDataVersion();
 
   const signOut = async () => {
     await backend.signOut();
@@ -83,16 +82,22 @@ export function AppLayout() {
 
   return (
     <FoodLogProvider
-      renderSearch={(p) => (
-        <FoodSearchDialog
-          open={p.open}
-          onClose={p.onClose}
-          target={p.target}
-          onPicked={(food) => p.onPicked(food)}
-        />
-      )}
-      renderServing={(p) => <ServingConfigHost food={p.food} target={p.target} onClose={p.onClose} />}
-      renderScan={(p) => <ScanDialog open={p.open} target={p.target} onClose={p.onClose} />}
+      renderSearch={(p) => p.open ? (
+        <Suspense fallback={null}>
+          <FoodSearchDialog open={p.open} onClose={p.onClose} target={p.target}
+            onPicked={(food) => p.onPicked(food)} />
+        </Suspense>
+      ) : null}
+      renderServing={(p) => (p.food || p.target?.editEntryId) ? (
+        <Suspense fallback={null}>
+          <ServingConfigHost food={p.food} target={p.target} onClose={p.onClose} />
+        </Suspense>
+      ) : null}
+      renderScan={(p) => p.open ? (
+        <Suspense fallback={null}>
+          <ScanDialog open={p.open} target={p.target} onClose={p.onClose} />
+        </Suspense>
+      ) : null}
     >
     <div className="mm-app-shell flex min-h-screen bg-background">
       {/* Desktop sidebar */}

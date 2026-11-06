@@ -79,7 +79,7 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
   head: () => ({
     meta: [
       { charSet: "utf-8" },
-      { name: "viewport", content: "width=device-width, initial-scale=1" },
+      { name: "viewport", content: "width=device-width, initial-scale=1, viewport-fit=cover" },
       { title: "Macromint — Precision macro & nutrition tracking" },
       { name: "description", content: "Macromint tracks macros, calories, micronutrients and weight with AI food scanning, a fast diary and weekly trends." },
       { property: "og:title", content: "Macromint — Precision macro & nutrition tracking" },

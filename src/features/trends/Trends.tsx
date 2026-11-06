@@ -45,11 +45,12 @@ export function Trends() {
   );
 
   const diaryData = useAsyncData(async () => {
-    // Diary across the range: fetch day by day (bounded by the range length).
-    const days = await Promise.all(rangeDates.map((d) => backend.getDiary(d)));
-    const all = days.flat();
+    const start = rangeDates[0];
+    const end = rangeDates[rangeDates.length - 1];
+    if (!start || !end) return { all: [], dates: rangeDates };
+    const all = await backend.getDiaryRange(start, end);
     return { all, dates: rangeDates };
-  }, [version, range]);
+  }, [version, range, today]);
 
   const kcalByDay = useMemo(() => {
     if (!diaryData.data) return [];

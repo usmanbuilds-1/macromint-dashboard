@@ -118,9 +118,14 @@ export function Goals() {
         </p>
         <div className="mt-4 grid gap-2 sm:grid-cols-2">
           {(["lose", "maintain", "gain", "recomp"] as Objective[]).map((o) => (
-            <Button key={o} variant="outline" className="justify-between" onClick={() => void recalculate(o)}>
-              <span className="capitalize">{o === "recomp" ? "Recomposition" : o === "lose" ? "Lose weight" : o === "gain" ? "Gain weight" : "Maintain"}</span>
-              <span className="text-xs text-muted-foreground">{OBJECTIVE_NOTES[o].split(",")[0]}</span>
+            <Button key={o} variant="outline" onClick={() => void recalculate(o)}
+              className="h-auto min-h-16 min-w-0 flex-col items-start justify-center gap-1 overflow-hidden px-4 py-3 text-left whitespace-normal">
+              <span className="block max-w-full text-sm font-semibold">
+                {o === "recomp" ? "Recomposition" : o === "lose" ? "Lose weight" : o === "gain" ? "Gain weight" : "Maintain"}
+              </span>
+              <span className="block max-w-full text-xs leading-5 text-muted-foreground">
+                {OBJECTIVE_NOTES[o].split(",")[0]}
+              </span>
             </Button>
           ))}
         </div>
@@ -135,9 +140,9 @@ function Field({ label, id, value, limitKey, onChange }: {
 }) {
   const limit = LIMITS[limitKey];
   return (
-    <div className="grid gap-1.5">
+    <div className="grid min-w-0 gap-1.5">
       <Label htmlFor={id}>{label}</Label>
-      <Input id={id} type="number" min={limit.min} max={limit.max} step={1}
+      <Input id={id} className="min-w-0 w-full" type="number" min={limit.min} max={limit.max} step={1}
         inputMode="numeric" value={value} onChange={(e) => onChange(e.target.value)} />
       <p className="text-[11px] text-muted-foreground">Range: {limit.min}–{limit.max}</p>
     </div>

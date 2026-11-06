@@ -1,0 +1,196 @@
+/* Macro Mint app-only polish.
+ * Apple HIG: task-first hierarchy, legibility, predictable controls.
+ * TasteSkill app mode: one quiet panel system, aligned data, restrained accent.
+ * Imported by AppLayout only; marketing/landing styles remain untouched. */
+.mm-app-shell {
+  --mm-divider: color-mix(in oklab, var(--color-border) 86%, transparent);
+  --mm-hover: color-mix(in oklab, var(--color-accent) 74%, var(--color-background));
+}
+
+.mm-app-shell .mm-app-main {
+  padding-bottom: calc(7rem + env(safe-area-inset-bottom));
+}
+.mm-app-shell .mm6-subpage {
+  width: 100%;
+}
+.mm-app-shell .mm6-subpage > header {
+  padding-bottom: 20px;
+  border-color: var(--mm-divider);
+}
+.mm-app-shell .mm6-subpage > header h1 {
+  font-family: "Instrument Sans", Arial, sans-serif;
+  font-size: clamp(28px, 3.2vw, 39px);
+  line-height: 1.13;
+  font-weight: 720;
+  letter-spacing: -.046em;
+}
+.mm-app-shell .mm6-subpage > header p {
+  font-size: 14px;
+  line-height: 1.6;
+  max-width: 58ch;
+}
+.mm-app-shell :is(button, a, [role="tab"], input, select, textarea):focus-visible {
+  outline: 2px solid var(--color-primary);
+  outline-offset: 3px;
+}
+.mm-app-shell .mm6-subpage :is(input, select, textarea) {
+  min-height: 44px;
+}
+.mm-app-shell .mm6-subpage :is(button, [role="tab"]) {
+  touch-action: manipulation;
+}
+
+/* One clear entry point, not a wall of starter shortcuts. */
+.mm-app-shell .ref-food-shortcuts {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+.mm-app-shell .ref-food-shortcuts button {
+  min-height: 92px;
+  gap: 6px;
+  padding: 16px;
+  background: color-mix(in oklab, var(--color-accent) 36%, white);
+  border: 1px solid var(--mm-divider);
+  border-radius: 12px;
+}
+.mm-app-shell .ref-food-shortcuts button:hover,
+.mm-app-shell .ref-food-shortcuts button:focus-visible {
+  background: var(--mm-hover);
+}
+.mm-app-shell .ref-food-shortcuts span {
+  color: var(--color-foreground);
+  font-size: 14px;
+}
+.mm-app-shell .ref-food-shortcuts small {
+  font-size: 12px;
+  line-height: 1.4;
+}
+
+/* All screens share the same comfortable row rhythm, not an extra card layer. */
+.mm-app-shell .mm6-page-diary [aria-label="Diary totals"] {
+  border-radius: 12px;
+}
+.mm-app-shell .mm6-page-diary [aria-label="Diary totals"] p {
+  line-height: 1.4;
+}
+.mm-app-shell .mm6-page-diary details > summary {
+  border-radius: 8px;
+}
+.mm-app-shell .mm6-page-diary details > summary:hover {
+  background: var(--mm-hover);
+}
+.mm-app-shell .mm6-page-settings .ref-settings-links > :is(a,button) {
+  min-height: 64px;
+  text-align: left;
+  border-color: var(--mm-divider);
+}
+.mm-app-shell .mm6-page-settings .ref-settings-links > :is(a,button):focus-visible {
+  border-radius: 6px;
+}
+.mm-app-shell .mm6-page-goals .border-t,
+.mm-app-shell .mm6-page-settings section,
+.mm-app-shell .mm6-page-trends section {
+  border-color: var(--mm-divider);
+}
+.mm-app-shell .mm6-page-goals [aria-label="Daily targets"] > p {
+  max-width: 56ch;
+}
+.mm-app-shell .mm6-page-trends .recharts-responsive-container {
+  min-width: 0;
+}
+
+/* The photo and manual entry dialogs are clear, keyboard-safe task sheets. */
+.mm-food-entry-chooser,
+.mm-scan-dialog {
+  background: var(--color-background);
+  border-color: var(--color-border);
+  border-radius: 16px;
+  padding: 22px;
+}
+.mm-food-entry-chooser button,
+.mm-scan-dialog button {
+  touch-action: manipulation;
+}
+.mm-food-entry-chooser button:hover,
+.mm-scan-dialog button:hover {
+  transition: background-color 140ms ease, border-color 140ms ease;
+}
+.mm-scan-dialog [aria-label="Review estimated foods"] {
+  overscroll-behavior: contain;
+  scrollbar-gutter: stable;
+}
+
+/* Keep active status legible by both colour and weight. */
+.mm-app-shell .ref-mobile-tab--active {
+  font-weight: 750;
+}
+.mm-app-shell .ref-mobile-tab-icon {
+  width: 22px;
+  height: 22px;
+}
+
+@media (max-width: 640px) {
+  .mm-app-shell .mm-app-main {
+    padding-inline: 20px;
+    padding-top: 22px;
+    padding-bottom: calc(7.25rem + env(safe-area-inset-bottom));
+  }
+  .mm-app-shell .mm6-subpage {
+    gap: 22px;
+  }
+  .mm-app-shell .mm6-subpage > header {
+    padding-bottom: 16px;
+  }
+  .mm-app-shell .mm6-page-goals .grid-cols-2 {
+    gap: 12px;
+  }
+  .mm-food-entry-chooser,
+  .mm-scan-dialog {
+    max-height: calc(100dvh - 20px);
+    padding: 18px;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .mm-app-shell *,
+  .mm-food-entry-chooser *,
+  .mm-scan-dialog * {
+    scroll-behavior: auto !important;
+    animation-duration: 0.01ms !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
+/* At tablet widths the desktop sidebar leaves a narrow content lane. */
+.mm-app-shell .mm6-page-goals [aria-label="Daily targets"] .grid > div {
+  min-width: 0;
+}
+.mm-app-shell .mm6-page-goals [aria-label="Daily targets"] input {
+  min-width: 0;
+  width: 100%;
+}
+@media (min-width: 768px) and (max-width: 1023px) {
+  .mm-app-shell .mm6-page-goals [aria-label="Daily targets"] > .grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+/* Administrative actions are operational, not another dashboard grid. */
+.mm-app-shell .mm-admin-screen > header {
+  border-bottom: 1px solid var(--mm-divider);
+  padding-bottom: 20px;
+}
+.mm-app-shell .mm-admin-screen > header h1 {
+  font-size: clamp(28px, 3vw, 38px);
+  font-weight: 720;
+  letter-spacing: -.045em;
+}
+.mm-app-shell .mm-admin-screen [role="tablist"] {
+  max-width: 100%;
+}
+.mm-app-shell .mm-admin-screen [role="tab"] {
+  min-height: 44px;
+}
+@media (max-width: 640px) {
+  .mm-app-shell .mm-admin-screen > header {
+    align-items: flex-start;
+  }
+}

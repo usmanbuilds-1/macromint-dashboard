@@ -4,6 +4,7 @@ import type { TablesUpdate, Json } from "@/integrations/supabase/types";
 // Ownership and access are re-checked by the database on every call.
 
 import { BackendError } from "./types";
+import { selectDiaryRange } from "./supabase/diary-range";
 import { USERNAME_AUTH_ENABLED } from "@/lib/auth/username-config";
 import { isValidInviteCode } from "@/lib/beta/invite-code";
 import {
@@ -488,6 +489,10 @@ export const supabaseBackend: Backend = {
       .order("logged_at", { ascending: true });
     if (error) throw new BackendError("DB", error.message);
     return (data ?? []).map(mapEntry);
+  },
+
+  async getDiaryRange(startDate, endDate) {
+    return selectDiaryRange(await currentUserId(), startDate, endDate, mapEntry);
   },
 
   async addEntry(input: AddEntryInput) {
