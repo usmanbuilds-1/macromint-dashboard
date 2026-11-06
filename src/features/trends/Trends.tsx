@@ -20,6 +20,7 @@ import { useSession } from "@/context/Session";
 import { backend } from "@/lib/backend";
 import { useAsyncData } from "@/hooks/useData";
 import { WeeklyArchive } from "./WeeklyArchive";
+import { EmptyChart } from "./EmptyChart";
 import { adherenceStats, daysToKcal } from "@/lib/nutrition/math";
 import { summarizeNutrientCoverage } from "@/lib/nutrition/coverage";
 import { lastNWeeks, weekDates, formatDateShort, todayStr } from "@/lib/nutrition/datetime";
@@ -318,15 +319,5 @@ export function Trends() {
     </div>
   );
 }
-
-function EmptyChart({ message }: { message: string }) {
-  return (
-    <div className="mm-journey-chart-empty">
-      {message}
-    </div>
-  );
-}
-
-
 
 export { weekDates };
