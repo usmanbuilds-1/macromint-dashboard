@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -6,6 +6,7 @@ import { Label } from "@/components/ui/label";
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { LIMITS, validateNumeric } from "@/lib/validation/limits";
 import { backend, bumpData } from "@/lib/backend";
+import { useMobileDialogViewport } from "@/hooks/useMobileDialogViewport";
 
 const MACRO_INPUTS = [
   { key: "kcal", label: "Calories (kcal)" },
@@ -19,6 +20,8 @@ const MACRO_INPUTS = [
 
 
 export function CustomFoodDialog({ open, onClose, onCreated }: { open: boolean; onClose: () => void; onCreated: (food: Awaited<ReturnType<typeof backend.createCustomFood>>) => void }) {
+  const sheetRef = useRef<HTMLDivElement>(null);
+  const sheetStyle = useMobileDialogViewport(open);
   const [name, setName] = useState("");
   const [brand, setBrand] = useState("");
   const [values, setValues] = useState<Record<string, string>>({});
@@ -74,7 +77,14 @@ export function CustomFoodDialog({ open, onClose, onCreated }: { open: boolean; 
 
   return (
     <Dialog open={open} onOpenChange={(o) => (!o ? onClose() : undefined)}>
-      <DialogContent className="mm-journey-custom-dialog max-h-[calc(100dvh-1rem)] overflow-y-auto sm:max-w-md">
+      <DialogContent ref={sheetRef}
+        className="mm-journey-custom-dialog max-h-[calc(100dvh-1rem)] overflow-y-auto sm:max-w-md"
+        style={sheetStyle}
+        onOpenAutoFocus={(event) => {
+          event.preventDefault();
+          sheetRef.current?.focus({ preventScroll: true });
+        }}
+        onCloseAutoFocus={(event) => event.preventDefault()}>
         <DialogHeader>
           <DialogTitle>New custom food</DialogTitle>
         </DialogHeader>
