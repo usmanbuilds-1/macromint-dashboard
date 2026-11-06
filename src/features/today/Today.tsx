@@ -11,7 +11,7 @@ import { formatDateLong, todayStr, addDaysStr } from "@/lib/nutrition/datetime";
 import { MEAL_LABELS, MEAL_TYPES, type DiaryEntry, type MealType } from "@/types";
 import { useFoodLog } from "@/features/foods/FoodLogProvider";
 import { formatNumber } from "@/lib/utils";
-import { useAnimatedNumber, useEntered } from "@/lib/motion";
+
 import { toast } from "sonner";
 
 function mealForCurrentHour(): MealType {
@@ -30,8 +30,6 @@ export function Today() {
   const entries = diary.data ?? [];
   const totals = useMemo(() => dailyTotals(entries), [entries]);
   const consumed = totals.kcal ?? 0;
-  const displayedConsumed = useAnimatedNumber(consumed);
-  const entered = useEntered();
   const target = goals?.calorieTarget ?? null;
   const remaining = target === null ? null : target - consumed;
   const protein = totals.protein ?? 0;
@@ -100,10 +98,10 @@ export function Today() {
             <circle cx="93" cy="93" r="77" pathLength="100" stroke="var(--color-secondary)" strokeWidth="12" fill="none" />
             <circle cx="93" cy="93" r="77" pathLength="100" stroke="var(--color-primary)" strokeWidth="12" strokeLinecap="round" fill="none"
               transform="rotate(-90 93 93)"
-              strokeDasharray={String(entered && target !== null && target > 0 ? Math.min(100, (consumed / target) * 100) : 0) + " 100"} />
+              strokeDasharray={String(target !== null && target > 0 ? Math.min(100, (consumed / target) * 100) : 0) + " 100"} />
           </svg>
           <div className="mm-today-arc-label">
-            <strong className="tabular-nums">{diary.loading && !diary.data ? "—" : formatNumber(Math.round(displayedConsumed))}</strong>
+            <strong className="tabular-nums">{diary.loading && !diary.data ? "—" : formatNumber(Math.round(consumed))}</strong>
             <span className="tabular-nums">{target === null ? "kcal logged" : `of ${formatNumber(target)} kcal`}</span>
           </div>
         </div>
