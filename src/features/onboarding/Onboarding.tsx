@@ -33,7 +33,11 @@ export function Onboarding() {
   const [step, setStep] = useState(0);
   const [busy, setBusy] = useState(false);
 
-  const [name, setName] = useState(profile?.name ?? "");
+  // New username accounts use the username as a temporary server-side label.
+  // Ask for the preferred name here, not on the signup form.
+  const [name, setName] = useState(
+    profile?.username && profile.name === profile.username ? "" : profile?.name ?? "",
+  );
   const [units, setUnits] = useState<Units>(profile?.units ?? "metric");
   const [sex, setSex] = useState<Sex | null>(profile?.sex ?? null);
   const [age, setAge] = useState<string>(profile?.birthYear ? String(new Date().getFullYear() - profile.birthYear) : "");
@@ -127,7 +131,7 @@ export function Onboarding() {
     setBusy(true);
     try {
       await backend.updateProfile({
-        name: name.trim(),
+        name: name.trim() || profile?.name || "You",
         units,
         sex,
         birthYear: new Date().getFullYear() - ageNum,
@@ -154,7 +158,7 @@ export function Onboarding() {
     try {
       // Mark onboarding complete with placeholder goals; the user can adjust
       // everything later in Goals. Skipping never blocks the app.
-      await backend.updateProfile({ name: name.trim() || "You", units, onboardedAt: new Date().toISOString() });
+      await backend.updateProfile({ name: name.trim() || profile?.name || "You", units, onboardedAt: new Date().toISOString() });
       await refresh();
       navigate("/today", { replace: true });
     } catch {
