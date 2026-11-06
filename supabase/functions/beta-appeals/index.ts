@@ -25,7 +25,17 @@ Deno.serve(async (req) => {
       .select("id,status,created_at,reviewed_at,approved_days")
       .eq("user_id",userId).order("created_at",{ascending:false}).limit(10);
     if (error) return errorResponse("DB", "Could not load your requests", 500);
-    return json({ requests: data ?? [] });
+    // Only invited, non-admin accounts can request beta extensions.
+    const [redemption, owner] = await Promise.all([
+      sb.from("beta_invite_redemptions").select("id")
+        .eq("user_id", userId).limit(1),
+      sb.from("admin_users").select("role")
+        .eq("user_id", userId).maybeSingle(),
+    ]);
+    if (redemption.error || owner.error)
+      return errorResponse("DB", "Could not verify account category", 500);
+    const isBetaTester = (redemption.data ?? []).length > 0 && !owner.data;
+    return json({ requests: data ?? [], isBetaTester });
   }
   if (raw.action === "submit") {
     if (raw.message !== undefined && typeof raw.message !== "string")
