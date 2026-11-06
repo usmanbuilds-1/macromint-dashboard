@@ -17,6 +17,19 @@ const budgets = {
   "src/hooks/useTodayWarmup.ts": 100,
   "src/hooks/app-data-key.ts": 30,
   "src/features/today/Today.tsx": 250,
+  "src/components/app/JourneyIntro.tsx": 45,
+  "src/components/app/JourneyEmpty.tsx": 55,
+  "src/features/diary/DiarySummary.tsx": 100,
+  "src/features/diary/Diary.tsx": 310,
+  "src/features/foods/Foods.tsx": 210,
+  "src/features/foods/CustomFoodDialog.tsx": 145,
+  "src/features/goals/Goals.tsx": 190,
+  "src/features/weight/WeightProgressModule.tsx": 290,
+  "src/features/settings/Settings.tsx": 365,
+  "src/features/trends/EmptyChart.tsx": 25,
+  "src/styles/journey-foundations.css": 200,
+  "src/styles/journey-tracking.css": 275,
+  "src/styles/journey-account.css": 230,
   "src/features/trends/WeeklyArchive.tsx": 135,
   "src/features/trends/Trends.tsx": 330,
   "src/lib/backend/supabase/saved-meal-log.ts": 100,
@@ -54,5 +67,17 @@ assert.doesNotMatch(todayScreen, /useAnimatedNumber|useEntered|mm-live-enter|ani
   "Today must display cached values directly without entrance/count-up animations");
 assert.match(todayWarmup, /warmTodayQueries/,
   "Today data must be warmed while the authenticated shell is mounted");
+const diaryPage = readFileSync("src/features/diary/Diary.tsx", "utf8");
+const foodsPage = readFileSync("src/features/foods/Foods.tsx", "utf8");
+const settingsPage = readFileSync("src/features/settings/Settings.tsx", "utf8");
+assert.match(diaryPage, /<DiarySummary/);
+assert.match(diaryPage, /<JourneyEmpty/);
+assert.match(foodsPage, /<CustomFoodDialog/);
+assert.match(foodsPage, /<JourneyEmpty/);
+assert.match(settingsPage, /<JourneyIntro/);
+assert.match(shell, /journey-foundations\.css/);
+assert.match(shell, /journey-tracking\.css/);
+assert.match(shell, /journey-account\.css/);
+console.log("PASS: modular editorial journeys stay scoped and actionable");
 console.log("PASS: Today instant content, no animation delay, account-scoped prefetch");
 console.log("PASS: tab data caching, no weekly N+1 reads, and atomic saved-meal batch");
