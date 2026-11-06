@@ -133,7 +133,7 @@ export function Trends() {
         eyebrow="THE LONGER VIEW"
         title="Progress"
         description="Patterns emerge with consistent entries. Your history stays yours to review."
-        action={(
+        action={diaryData.data?.all.length ? (
           <Tabs value={String(range)} onValueChange={(value) => setRange(Number(value))}>
             <TabsList aria-label="Progress period">
               {RANGE_OPTIONS.map((option) => (
