@@ -7,6 +7,7 @@ import { useSession } from "@/context/Session";
 import { backend, bumpData } from "@/lib/backend";
 import { useAsyncData } from "@/hooks/useData";
 import { dailyTotals } from "@/lib/nutrition/math";
+import { hasCompleteNutrientData } from "@/lib/nutrition/coverage";
 import { addDaysStr, formatDateLong, formatDateShort, todayStr } from "@/lib/nutrition/datetime";
 import { MEAL_LABELS, MEAL_TYPES, type DiaryEntry, type MealType } from "@/types";
 import { useFoodLog } from "@/features/foods/FoodLogProvider";
@@ -140,6 +141,12 @@ export function Diary() {
         calorieTarget={goals?.calorieTarget ?? null}
         proteinTarget={goals?.proteinG ?? null}
         hasEntries={entries.length > 0}
+        complete={{
+          kcal: entries.length === 0 || hasCompleteNutrientData(entries, "kcal"),
+          protein: entries.length === 0 || hasCompleteNutrientData(entries, "protein"),
+          carbs: entries.length === 0 || hasCompleteNutrientData(entries, "carbs"),
+          fat: entries.length === 0 || hasCompleteNutrientData(entries, "fat"),
+        }}
         loading={diary.loading && !diary.data}
       />}
 
