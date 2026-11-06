@@ -13,6 +13,10 @@ const errors = [];
 page.on("pageerror", error => errors.push(error.message));
 
 try {
+  // Hard stop before ANY registration if the preview is accidentally connected
+  // to production. The footer marker only renders when IS_DEMO=true.
+  await page.goto(url + "/login", { waitUntil: "domcontentloaded", timeout: 30000 });
+  await page.getByText(/Demo mode: any email signs in to a local sample account/).waitFor({ timeout: 15000 });
   await page.goto(url + "/register", { waitUntil: "domcontentloaded", timeout: 30000 });
   await page.getByRole("heading", { name: "Create your account" }).waitFor({ timeout: 20000 });
   assert.equal(await page.locator("#name").count(), 0, "Registration shouldn't ask for a name");
