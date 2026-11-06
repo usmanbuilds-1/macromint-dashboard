@@ -46,6 +46,7 @@ function CommandDialog({
   contentStyle?: React.CSSProperties
   preventInputAutoFocus?: boolean
 }) {
+  const contentRef = React.useRef<HTMLDivElement>(null)
   return (
     <Dialog {...props}>
       <DialogHeader className="sr-only">
@@ -53,12 +54,13 @@ function CommandDialog({
         <DialogDescription>{description}</DialogDescription>
       </DialogHeader>
       <DialogContent
+        ref={contentRef}
         className={cn("overflow-hidden p-0", className)}
         showCloseButton={showCloseButton}
         style={contentStyle}
         onOpenAutoFocus={preventInputAutoFocus ? (event) => {
           event.preventDefault()
-          event.currentTarget.focus({ preventScroll: true })
+          contentRef.current?.focus({ preventScroll: true })
         } : undefined}
         onCloseAutoFocus={(event) => event.preventDefault()}
       >
