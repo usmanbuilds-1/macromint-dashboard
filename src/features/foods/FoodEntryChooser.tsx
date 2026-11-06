@@ -1,3 +1,4 @@
+import { useRef } from "react";
 import { Camera, Search, ArrowUpRight } from "lucide-react";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 
@@ -11,11 +12,15 @@ export function FoodEntryChooser({
   onSearch: () => void;
   onScan: () => void;
 }) {
+  const firstChoiceRef = useRef<HTMLButtonElement>(null);
   return (
     <Dialog open={open} onOpenChange={(next) => { if (!next) onClose(); }}>
       <DialogContent
-        className="max-h-[calc(100dvh-2rem)] overflow-y-auto sm:max-w-md"
-        onOpenAutoFocus={(event) => event.preventDefault()}
+        className="mm-food-entry-chooser max-h-[calc(100dvh-2rem)] overflow-y-auto sm:max-w-md"
+        onOpenAutoFocus={(event) => {
+          event.preventDefault();
+          firstChoiceRef.current?.focus({ preventScroll: true });
+        }}
       >
         <DialogHeader className="text-left">
           <DialogTitle className="text-xl tracking-tight">Add food</DialogTitle>
@@ -24,7 +29,7 @@ export function FoodEntryChooser({
           </DialogDescription>
         </DialogHeader>
         <div className="grid gap-2" aria-label="Ways to add food">
-          <button type="button" onClick={onSearch}
+          <button ref={firstChoiceRef} type="button" onClick={onSearch}
             className="group flex min-h-20 items-center gap-4 rounded-xl border bg-background px-4 py-3 text-left transition-colors hover:border-primary/30 hover:bg-accent/35 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary">
             <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-lg bg-secondary text-foreground">
               <Search className="h-5 w-5" aria-hidden="true" />
