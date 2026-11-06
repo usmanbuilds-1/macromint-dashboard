@@ -1,11 +1,12 @@
 import { fireEvent, render, screen } from "@testing-library/react";
+import type { ReactNode } from "react";
 import { describe, expect, it, vi } from "vitest";
 import { TodayOverview } from "./TodayOverview";
 import { TodayMeals } from "./TodayMeals";
 import type { DiaryEntry } from "@/types";
 
 vi.mock("@tanstack/react-router", () => ({
-  Link: ({ to, children, ...rest }: { to: string; children: React.ReactNode }) =>
+  Link: ({ to, children, ...rest }: { to: string; children: ReactNode }) =>
     <a href={to} {...rest}>{children}</a>,
 }));
 
@@ -31,12 +32,12 @@ describe("Today: clear hierarchy and contextual entry", () => {
   });
 
   it("shows that nutrition is unknown rather than inventing zero calories", () => {
-    render(
+    const { container } = render(
       <TodayOverview totals={{ protein: null }} target={1800} proteinTarget={100}
         carbsTarget={200} fatTarget={60} hasEntries loading={false} />,
     );
     expect(screen.getByText("Calories aren't available for the foods entered yet.")).toBeInTheDocument();
-    expect(screen.getByText("—", { selector: "strong" })).toBeInTheDocument();
+    expect(container.querySelector(".mm-home-calories")?.textContent).toBe("—");
   });
 
   it("suggests a relevant first meal instead of rendering four empty sections", () => {
