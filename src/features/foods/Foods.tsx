@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { toast } from "sonner";
 import { Search, Star } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -33,7 +34,7 @@ function FoodRow({ food, onLog, favActive, onFav }: { food: LoggableFood; onLog:
           {food.sourceLabel}
         </Badge>
         {onFav && (
-          <Button variant="ghost" size="icon" aria-label="Toggle favourite" onClick={onFav}>
+          <Button variant="ghost" size="icon" aria-label={favActive ? `Remove ${food.name} from favorites` : `Add ${food.name} to favorites`} aria-pressed={Boolean(favActive)} onClick={onFav}>
             <Star className={cn("h-4 w-4", favActive && "fill-primary text-primary")} />
           </Button>
         )}
@@ -53,6 +54,17 @@ export function Foods() {
   const today = todayStr();
 
   const favorites = useAsyncData(() => backend.getFavorites(), [], "favorites");
+  const favoriteIds = new Set((favorites.data ?? []).map((favorite) => favorite.foodId));
+
+  const toggleFavorite = async (foodId: string) => {
+    try {
+      const added = await backend.toggleFavorite(foodId);
+      bumpData();
+      toast.success(added ? "Added to favorites" : "Removed from favorites");
+    } catch {
+      toast.error("Couldn't change favorites. Try again.");
+    }
+  };
 
   const runSearch = async (term: string) => {
     if (term.trim().length < 2) {
@@ -128,7 +140,8 @@ export function Foods() {
               ) : (
                 <>
                   {hit.local.map((food) => (
-                    <FoodRow key={food.id} food={foodToLoggable(food)} onLog={log} />
+                    <FoodRow key={food.id} food={foodToLoggable(food)} onLog={log}
+                      favActive={favoriteIds.has(food.id)} onFav={() => { void toggleFavorite(food.id); }} />
                   ))}
                   {hit.remote.map((product, i) => (
                     <FoodRow key={`off-${i}`} food={offToLoggable(product)} onLog={log} />
@@ -155,16 +168,13 @@ export function Foods() {
                   food={foodToLoggable(fav.food)}
                   onLog={log}
                   favActive
-                  onFav={async () => {
-                    await backend.toggleFavorite(fav.foodId);
-                    bumpData();
-                  }}
+                  onFav={() => { void toggleFavorite(fav.foodId); }}
                 />
               ))
             ) : (
               <JourneyEmpty
                 title="Your go-to foods, together."
-                description="Save foods from a diary entry and find them here without searching again."
+                description="Tap the star beside any database food to save it here. You can log favorites again in one tap."
                 actionLabel="Find a food"
                 onAction={() => setActiveTab("search")}
               />
