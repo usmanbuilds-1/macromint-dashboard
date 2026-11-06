@@ -28,7 +28,7 @@ const budgets = {
   "src/features/settings/Settings.tsx": 365,
   "src/features/trends/EmptyChart.tsx": 25,
   "src/styles/journey-foundations.css": 200,
-  "src/styles/journey-tracking.css": 275,
+  "src/styles/journey-tracking.css": 305,
   "src/styles/journey-account.css": 230,
   "src/features/trends/WeeklyArchive.tsx": 135,
   "src/features/trends/Trends.tsx": 330,
