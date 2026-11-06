@@ -1,0 +1,71 @@
+/* Restricted-access pages are a real user journey, not an upsell wall.
+ * Keep account rights and limitations visible without premium theatre. */
+.mm-restricted {
+  --restricted-ink: #173b2a;
+  --restricted-muted: #5a705f;
+  --restricted-rule: #c8d4c7;
+  background: #faf9f4;
+  color: var(--restricted-ink);
+}
+.mm-restricted-inner { max-width: 640px; }
+.mm-restricted-eyebrow {
+  color: var(--restricted-muted);
+  font-family: "Instrument Sans",Arial,sans-serif;
+  font-size: 11px;
+  font-weight: 730;
+  letter-spacing: .14em;
+}
+.mm-restricted .mm-restricted-title {
+  max-width: 14ch;
+  font-family: "Fraunces",Georgia,serif;
+  font-size: clamp(42px, 6.4vw, 67px);
+  font-weight: 430;
+  letter-spacing: -.061em;
+  line-height: 1.08;
+}
+.mm-restricted-description {
+  max-width: 54ch;
+  color: var(--restricted-muted);
+  font-size: 14px;
+  line-height: 1.7;
+}
+.mm-restricted-body { border-top: 1px solid var(--restricted-rule); padding-top: 24px; }
+.mm-restricted-section {
+  border-top: 1px solid var(--restricted-rule);
+  padding-top: 24px;
+}
+.mm-restricted .mm-restricted-section-heading {
+  font-family: "Fraunces",Georgia,serif;
+  font-size: clamp(23px, 3vw, 30px);
+  font-weight: 450;
+  letter-spacing: -.045em;
+  line-height: 1.22;
+}
+.mm-restricted-section > p {
+  max-width: 58ch;
+  color: var(--restricted-muted);
+  line-height: 1.6;
+}
+.mm-restricted-section input {
+  min-height: 48px;
+  border-color: var(--restricted-rule);
+  background: #fffefa;
+}
+.mm-restricted button { min-height: 44px; touch-action: manipulation; }
+.mm-restricted button:not(.bg-destructive):hover { transition: background-color 140ms ease; }
+.mm-restricted button:focus-visible,
+.mm-restricted a:focus-visible { outline: 2px solid #1b6342; outline-offset: 3px; }
+.dark .mm-restricted {
+  --restricted-ink: #e2efe5;
+  --restricted-muted: #b6cfbd;
+  --restricted-rule: #425d49;
+  background: #17261e;
+}
+.dark .mm-restricted-section input { background: #20362a; }
+@media (max-width: 390px) {
+  .mm-restricted { padding: 25px 20px; }
+  .mm-restricted .mm-restricted-title { font-size: 45px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .mm-restricted * { animation: none !important; transition: none !important; }
+}

@@ -1,0 +1,278 @@
+/* Food journal, library and progress: task first, evidence second. */
+.mm-app-shell .mm6-page-diary .mm-journey-ledger {
+  min-width: 0;
+  border-top: 0;
+  border-bottom: 1px solid var(--journey-rule);
+  border-radius: 0;
+  background: var(--journey-paper);
+  padding: clamp(17px, 3.4vw, 30px);
+}
+.mm-app-shell .mm-journey-ledger-main {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(95px, .4fr);
+  align-items: end;
+  gap: 12px 25px;
+}
+.mm-app-shell .mm-journey-ledger-main > div { min-width: 0; }
+.mm-app-shell .mm-journey-ledger-number,
+.mm-app-shell .mm-journey-ledger-secondary {
+  display: flex;
+  align-items: baseline;
+  gap: 7px;
+  margin-top: 8px;
+  color: var(--journey-ink);
+  font-family: "Instrument Sans",Arial,sans-serif;
+  letter-spacing: -.064em;
+  font-weight: 650;
+  line-height: 1.05;
+}
+.mm-app-shell .mm-journey-ledger-number { font-size: clamp(44px, 6.4vw, 66px); }
+.mm-app-shell .mm-journey-ledger-secondary { font-size: clamp(25px, 3.8vw, 36px); }
+.mm-app-shell .mm-journey-ledger-number span,
+.mm-app-shell .mm-journey-ledger-secondary span {
+  color: var(--journey-muted);
+  font-size: 13px;
+  font-weight: 450;
+  letter-spacing: normal;
+}
+.mm-app-shell .mm-journey-ledger-side {
+  border-left: 1px solid var(--journey-rule);
+  padding-left: clamp(13px, 2vw, 23px);
+}
+.mm-app-shell .mm-journey-ledger-note,
+.mm-app-shell .mm-journey-ledger-foot {
+  margin-top: 9px;
+  color: var(--journey-muted);
+  font-size: 12px;
+  line-height: 1.5;
+}
+.mm-app-shell .mm-journey-ledger-track {
+  height: 5px;
+  margin-top: 17px;
+  overflow: hidden;
+  border-radius: 99px;
+  background: #cedbcf;
+}
+.mm-app-shell .mm-journey-ledger-track span {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+  background: var(--journey-green);
+}
+.mm-app-shell .mm-journey-actions {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+.mm-app-shell .mm-journey-actions > button {
+  min-height: 49px;
+  border-radius: 5px;
+  padding-inline: 19px;
+}
+.mm-app-shell .mm-journey-primary {
+  min-width: 170px;
+  gap: 10px;
+  background: #1b5136;
+  color: #fff;
+  font-weight: 680;
+}
+.mm-app-shell .mm-journey-primary:hover { background: #123a28; }
+.mm-app-shell .mm-journey-secondary {
+  gap: 9px;
+  color: var(--journey-ink);
+  border-color: var(--journey-rule);
+  background: transparent;
+}
+.mm-app-shell .mm-journey-secondary:hover { background: var(--journey-paper); }
+.mm-app-shell .mm-journey-date-switch {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  border: 1px solid var(--journey-rule);
+  border-radius: 5px;
+  padding: 2px 6px;
+}
+.mm-app-shell .mm-journey-date-switch button { width: 40px; height: 40px; }
+.mm-app-shell .mm-journey-meal-section {
+  border-color: var(--journey-rule);
+}
+.mm-app-shell .mm-journey-meal-section h2 {
+  font-family: "Instrument Sans",Arial,sans-serif;
+  font-size: 15px;
+  font-weight: 720;
+  letter-spacing: -.025em;
+}
+.mm-app-shell .mm-journey-meal-empty {
+  margin: 0 0 10px;
+  color: var(--journey-muted);
+  font-size: 12px;
+  line-height: 1.5;
+}
+.mm-app-shell .mm-journey-meal-section li {
+  padding-left: 0;
+  padding-right: 0;
+  border-color: var(--journey-rule);
+}
+.mm-app-shell .mm-journey-meal-section li:hover { background: transparent; }
+.mm-app-shell .mm-journey-meal-section li button { text-align: left; }
+.mm-app-shell .mm-journey-meal-section .rounded-lg { border-radius: 5px; }
+
+/* Foods: search first, two visible alternatives, then ordinary list rows. */
+.mm-app-shell .mm-journey-foods [role="tablist"] {
+  width: fit-content;
+  max-width: 100%;
+  gap: 19px;
+}
+/* Tabs are editorial underlines, not filled/outlined segmented cards. */
+.mm-app-shell .mm-journey-foods [role="tab"] {
+  min-height: 47px;
+  padding: 0 4px;
+  border: 0 !important;
+  border-bottom: 2px solid transparent !important;
+  border-radius: 0 !important;
+  background: transparent !important;
+  box-shadow: none !important;
+  color: var(--journey-muted);
+  font-size: 14px;
+  font-weight: 600;
+}
+.mm-app-shell .mm-journey-foods [role="tab"][data-state="active"] {
+  color: var(--journey-ink);
+  border-bottom-color: var(--journey-green) !important;
+  font-weight: 750;
+}
+.mm-app-shell .mm-journey-food-search {
+  margin-top: 19px;
+}
+.mm-app-shell .mm-journey-search-form {
+  align-items: stretch;
+  max-width: 100%;
+}
+.mm-app-shell .mm-journey-search-form input {
+  min-height: 53px;
+  background: var(--color-card);
+  border: 1px solid var(--journey-rule);
+  border-radius: 5px;
+}
+.mm-app-shell .mm-journey-search-form button {
+  min-height: 53px;
+  padding-inline: 19px;
+  border-radius: 5px;
+  font-weight: 680;
+}
+.mm-app-shell .mm-journey-food-options {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  border-block: 1px solid var(--journey-rule);
+}
+.mm-app-shell .mm-journey-food-options button {
+  display: flex;
+  align-items: flex-start;
+  flex-direction: column;
+  justify-content: center;
+  min-width: 0;
+  min-height: 75px;
+  gap: 4px;
+  padding: 14px 15px;
+  text-align: left;
+  background: transparent;
+  border-radius: 0;
+  border-right: 1px solid var(--journey-rule);
+}
+.mm-app-shell .mm-journey-food-options button:first-child { padding-left: 0; }
+.mm-app-shell .mm-journey-food-options button:last-child { border-right: 0; }
+.mm-app-shell .mm-journey-food-options button:hover { background: var(--journey-paper); }
+.mm-app-shell .mm-journey-food-options span {
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--journey-ink);
+}
+.mm-app-shell .mm-journey-food-options small {
+  font-size: 11px;
+  line-height: 1.4;
+  color: var(--journey-muted);
+}
+.mm-app-shell .mm-journey-food-results {
+  border-color: var(--journey-rule);
+  border-radius: 0;
+  background: transparent;
+}
+.mm-app-shell .mm-journey-food-results > div { border-color: var(--journey-rule); }
+.mm-app-shell .mm-journey-food-hint {
+  margin-top: 2px;
+  color: var(--journey-muted);
+  font-size: 13px;
+  line-height: 1.6;
+}
+.mm-app-shell .mm-journey-custom-dialog {
+  max-height: calc(100dvh - 20px);
+  overflow-y: auto;
+}
+
+/* Progress: vertical reading order, not a three-chart bento. */
+.mm-app-shell .mm6-page-trends .mm-journey-intro-action [role="tablist"] {
+  display: flex;
+  min-height: 45px;
+  border-bottom: 1px solid var(--journey-rule);
+}
+.mm-app-shell .mm6-page-trends .mm-journey-intro-action [role="tab"] {
+  min-height: 43px;
+  padding: 0 4px;
+  border: 0 !important;
+  border-bottom: 2px solid transparent !important;
+  border-radius: 0 !important;
+  background: transparent !important;
+  box-shadow: none !important;
+  color: var(--journey-muted);
+}
+.mm-app-shell .mm6-page-trends .mm-journey-intro-action [role="tab"][data-state="active"] {
+  border-bottom-color: var(--journey-green) !important;
+  color: var(--journey-ink);
+  font-weight: 750;
+}
+.mm-app-shell .mm6-page-trends section[aria-label] {
+  padding-block: 15px 30px;
+  border-color: var(--journey-rule);
+}
+.mm-app-shell .mm-journey-progress-secondary {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 25px;
+}
+.mm-app-shell .mm-journey-chart-empty {
+  display: flex;
+  min-height: 110px;
+  align-items: center;
+  padding: 18px 0;
+  border-top: 1px solid var(--journey-rule);
+  color: var(--journey-muted);
+  font-size: 13px;
+  line-height: 1.6;
+}
+.mm-app-shell .mm-journey-weekly > div {
+  padding-left: 0;
+  padding-right: 0;
+  border-color: var(--journey-rule);
+}
+.mm-app-shell .mm-journey-weekly > div h2 {
+  font-family: "Fraunces",Georgia,serif;
+  font-size: 25px;
+  font-weight: 430;
+  letter-spacing: -.045em;
+}
+.mm-app-shell .mm-journey-weekly > div p { line-height: 1.5; }
+@media (max-width: 640px) {
+  .mm-app-shell .mm-journey-ledger-main { grid-template-columns: minmax(0, 1fr) minmax(83px,.45fr); gap: 9px; }
+  .mm-app-shell .mm-journey-ledger-number { font-size: clamp(41px, 12vw, 56px); }
+  .mm-app-shell .mm-journey-ledger-side { padding-left: 10px; }
+  .mm-app-shell .mm-journey-ledger-secondary { font-size: 25px; }
+  .mm-app-shell .mm-journey-actions { display: grid; grid-template-columns: 1fr 1fr; }
+  .mm-app-shell .mm-journey-actions > button { width: 100%; min-width: 0; font-size: 13px; }
+  .mm-app-shell .mm-journey-actions details { grid-column: 1 / -1; }
+  .mm-app-shell .mm-journey-search-form button { padding-inline: 12px; }
+  .mm-app-shell .mm-journey-food-options button { padding-inline: 10px; }
+  .mm-app-shell .mm-journey-food-options button:last-child { padding-right: 0; }
+}
+.dark .mm-app-shell .mm-journey-ledger-track { background: #46604b; }
+.dark .mm-app-shell .mm-journey-primary { background: #33704e; color: #fff; }

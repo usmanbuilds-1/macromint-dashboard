@@ -14,6 +14,9 @@ const visualMetrics = [];
 page.on("pageerror", error => errors.push(error.message));
 
 async function screenshotEverySize(name) {
+  // Full-page captures should start at the page origin, even after opening
+  // and closing an offscreen disclosure that scrolled the browser.
+  await page.evaluate(() => window.scrollTo(0, 0));
   for (const [width, height] of [[390, 844], [768, 1024], [1440, 900]]) {
     await page.setViewportSize({ width, height });
     await page.screenshot({
@@ -46,6 +49,19 @@ async function screenshotEverySize(name) {
     }
     assert.ok(overflow <= 2, `Horizontal overflow on ${name} at ${width}px: ${overflow}`);
   }
+  await page.setViewportSize({ width: 390, height: 844 });
+}
+
+async function screenshotCompact(name) {
+  await page.evaluate(() => window.scrollTo(0, 0));
+  await page.setViewportSize({ width: 320, height: 740 });
+  await page.screenshot({
+    path: `mobile-audit/screens/${name}-320.png`,
+    fullPage: true,
+    animations: "disabled",
+  });
+  const overflow = await page.evaluate(() => document.documentElement.scrollWidth - innerWidth);
+  assert.ok(overflow <= 2, `320px layout overflow in ${name}: ${overflow}`);
   await page.setViewportSize({ width: 390, height: 844 });
 }
 
@@ -211,17 +227,23 @@ try {
     "Selected tab indicator should follow navigation");
   await page.getByRole("button", { name: "Add food", exact: true }).waitFor();
   await page.getByRole("button", { name: "Scan photo", exact: true }).waitFor();
+  await page.locator(".mm-journey-ledger").waitFor();
   await screenshotEverySize("diary");
+  await screenshotCompact("diary");
 
   await nav.getByRole("link", { name: "Foods" }).click();
   await page.getByRole("heading", { name: "Foods", exact: true }).waitFor();
   await page.getByRole("tab", { name: "Favorites" }).waitFor();
   await page.getByText("Scan a photo", { exact: true }).waitFor();
+  await page.locator(".mm-journey-food-options").waitFor();
   await screenshotEverySize("foods");
+  await screenshotCompact("foods");
 
   await nav.getByRole("link", { name: "Progress" }).click();
   await page.getByRole("heading", { name: "Progress", exact: true }).waitFor();
+  await page.locator(".mm-journey-intro").waitFor();
   await screenshotEverySize("progress");
+  await screenshotCompact("progress");
 
   await page.goto(url + "/settings", { waitUntil: "domcontentloaded" });
   await page.getByRole("heading", { name: "Settings", exact: true }).waitFor();
@@ -230,12 +252,23 @@ try {
   assert.equal(await page.locator("#s-height-feet").inputValue(), "5");
   assert.equal(await page.locator("#s-height-inches").inputValue(), "11");
   assert.equal(await page.locator("#s-weight").inputValue(), "73.5");
+  await page.locator(".mm-journey-settings-links").waitFor();
   await screenshotEverySize("settings");
+  await screenshotCompact("settings");
   await page.goto(url + "/goals", { waitUntil: "domcontentloaded" });
   await page.getByRole("heading", { name: "Goals", exact: true }).waitFor();
+  const recalcToggle = page.getByText("Choose a goal to recalculate");
+  await recalcToggle.waitFor();
+  await recalcToggle.click();
+  await page.getByText("How these estimates are calculated").waitFor();
+  await page.getByRole("button", { name: /Maintain/ }).waitFor();
+  await recalcToggle.click();
   await screenshotEverySize("goals");
+  await screenshotCompact("goals");
   await page.goto(url + "/weight", { waitUntil: "domcontentloaded" });
+  await page.locator(".mm-journey-weight-current").waitFor();
   await screenshotEverySize("weight");
+  await screenshotCompact("weight");
 
   // Keep all captures on the disposable localStorage demo fixture. Switch to
   // the seeded owner only after the explicit demo-mode safety check above.
@@ -251,12 +284,15 @@ try {
   await page.goto(url + "/admin", { waitUntil: "domcontentloaded" });
   await page.getByRole("heading", { name: "Users", exact: true }).waitFor();
   await screenshotEverySize("admin-users");
+  await screenshotCompact("admin-users");
   await page.goto(url + "/admin/audit", { waitUntil: "domcontentloaded" });
   await page.getByRole("heading", { name: "Audit log", exact: true }).waitFor();
   await screenshotEverySize("admin-audit");
+  await screenshotCompact("admin-audit");
   await page.goto(url + "/admin/settings", { waitUntil: "domcontentloaded" });
   await page.getByRole("heading", { name: "Platform settings", exact: true }).waitFor();
   await screenshotEverySize("admin-settings");
+  await screenshotCompact("admin-settings");
 
   // Restricted account view is part of the product, not a broken dashboard.
   await page.evaluate(() => {

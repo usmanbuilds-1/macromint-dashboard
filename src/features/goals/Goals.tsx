@@ -3,7 +3,7 @@ import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Separator } from "@/components/ui/separator";
+import { JourneyIntro } from "@/components/app/JourneyIntro";
 import { useSession } from "@/context/Session";
 import { backend, bumpData } from "@/lib/backend";
 import { computeGoals, sanitizeGoalEdit } from "@/lib/nutrition/targets";
@@ -78,21 +78,20 @@ export function Goals() {
 
   return (
     <div className="mm6-subpage mm6-page-goals flex flex-col gap-6">
-      <header>
-        <h1 className="text-2xl font-semibold tracking-tight">Goals</h1>
-        <p className="mt-0.5 text-sm text-muted-foreground">
-          {goals?.method === "placeholder"
-            ? "These are placeholder values. Complete onboarding or recalculate below."
-            : "Targets are estimates, not medical prescriptions. Adjust them to match your plan."}
-        </p>
-      </header>
+      <JourneyIntro
+        eyebrow="YOUR DAILY PLAN"
+        title="Goals"
+        description={goals?.method === "placeholder"
+          ? "Start with an estimate, then choose targets that work for your routine."
+          : "A clear set of daily targets. Edit them any time as your routine changes."}
+      />
 
-      <section className="rounded-xl border bg-card p-5" aria-label="Daily targets">
-        <h2 className="text-sm font-semibold">Daily targets</h2>
+      <section className="mm-journey-edit-section" aria-label="Daily targets">
+        <h2 className="mm-journey-section-title">Daily targets</h2>
         <p className="mt-1 text-sm text-muted-foreground">
-          Edit the amounts you want to aim for each day, then save. These numbers are not your food log.
+          These numbers guide your food log. Updating a target never changes what you've eaten.
         </p>
-        <div className="mt-4 grid grid-cols-2 gap-4 sm:grid-cols-3">
+        <div className="mm-journey-goal-grid mt-5 grid grid-cols-2 gap-4 sm:grid-cols-3">
           <Field label="Calories (kcal)" id="g-kcal" limitKey="calorieTarget" value={num(form.calorieTarget)} onChange={(v) => set("calorieTarget", v)} />
           <Field label="Protein (g)" id="g-protein" limitKey="proteinG" value={num(form.proteinG)} onChange={(v) => set("proteinG", v)} />
           <Field label="Carbohydrates (g)" id="g-carbs" limitKey="carbsG" value={num(form.carbsG)} onChange={(v) => set("carbsG", v)} />
@@ -100,23 +99,28 @@ export function Goals() {
           <Field label="Fiber (g)" id="g-fiber" limitKey="fiberG" value={num(form.fiberG)} onChange={(v) => set("fiberG", v)} />
           <Field label="Water (ml)" id="g-water" limitKey="waterMl" value={num(form.waterMl)} onChange={(v) => set("waterMl", v)} />
         </div>
-        <div className="mt-4 flex items-center gap-3">
+        <div className="mm-journey-save-actions mt-5 flex items-center gap-3">
           <Button onClick={save} disabled={busy || !dirty}>{busy ? "Saving…" : "Save targets"}</Button>
           {dirty && <span className="text-xs text-warning">Unsaved changes</span>}
         </div>
       </section>
 
-      <section className="rounded-xl border bg-card p-5" aria-label="Recalculate">
-        <h2 className="text-sm font-semibold">Start again with an estimate</h2>
+      <section className="mm-journey-edit-section mm-journey-recalculation" aria-label="Recalculate">
+        <h2 className="mm-journey-section-title">Need a different starting point?</h2>
         <p className="mt-1 text-sm text-muted-foreground">
-          Choose a goal below to replace your current targets with fresh estimates. This won't delete your diary.
+          You can recalculate your targets from your profile. Your existing diary remains untouched.
         </p>
-        <p className="mt-1 text-xs text-muted-foreground">
+        <details className="mm-journey-recalc-toggle">
+          <summary>Choose a goal to recalculate</summary>
+          <details className="mm-journey-calculation-details">
+          <summary>How these estimates are calculated</summary>
+          <p className="mt-1 text-xs text-muted-foreground">
           Uses the Mifflin-St Jeor equation with your sex, age, height, weight and activity level
           {profile?.activityLevel ? ` (${ACTIVITY_FACTORS[profile.activityLevel].label}: ${ACTIVITY_DESCRIPTIONS[profile.activityLevel]})` : ""}.
           {profile?.sex ? ` Objective adjustment: ${GOAL_DELTA_KCAL[profile.objective ?? "maintain"] > 0 ? "+" : ""}${GOAL_DELTA_KCAL[profile.objective ?? "maintain"]} kcal.` : ""}
-        </p>
-        <div className="mt-4 grid gap-2 sm:grid-cols-2">
+          </p>
+          </details>
+          <div className="mm-journey-goal-choices mt-4 grid gap-2">
           {(["lose", "maintain", "gain", "recomp"] as Objective[]).map((o) => (
             <Button key={o} variant="outline" onClick={() => void recalculate(o)}
               className="h-auto min-h-16 min-w-0 flex-col items-start justify-center gap-1 overflow-hidden px-4 py-3 text-left whitespace-normal">
@@ -128,7 +132,8 @@ export function Goals() {
               </span>
             </Button>
           ))}
-        </div>
+          </div>
+        </details>
       </section>
     </div>
   );
@@ -143,8 +148,8 @@ function Field({ label, id, value, limitKey, onChange }: {
     <div className="grid min-w-0 gap-1.5">
       <Label htmlFor={id}>{label}</Label>
       <Input id={id} className="min-w-0 w-full" type="number" min={limit.min} max={limit.max} step={1}
-        inputMode="numeric" value={value} onChange={(e) => onChange(e.target.value)} />
-      <p className="text-[11px] text-muted-foreground">Range: {limit.min}–{limit.max}</p>
+        aria-describedby={`${id}-limit`} inputMode="numeric" value={value} onChange={(e) => onChange(e.target.value)} />
+      <p id={`${id}-limit`} className="sr-only">Accepts values from {limit.min} to {limit.max}.</p>
     </div>
   );
 }

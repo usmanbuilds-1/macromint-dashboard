@@ -12,6 +12,7 @@ import { evaluateWeightTrend, type WeightTrendAnalysis } from "@/lib/weight/tren
 import { estimateWeightTimeline, weightTimelineLabel } from "@/lib/weight/timeline";
 import { LIMITS, validateNumeric } from "@/lib/validation/limits";
 import type { WeightEntry } from "@/types";
+import { JourneyIntro } from "@/components/app/JourneyIntro";
 
 /** Full weight log and estimates, accessible from the Trends page. */
 const POUNDS_PER_KG = 2.2046226218487757;
@@ -131,18 +132,23 @@ export function WeightProgressModule({ onSaved }: WeightProgressModuleProps) {
   }
 
   return (
-    <section className="ref-live-weight flex w-full max-w-2xl flex-col gap-6" aria-labelledby="weight-module-heading">
-      <header>
-        <h2 id="weight-module-heading" className="text-xl font-semibold tracking-tight">Weight</h2>
-        <p className="mt-1 text-sm text-muted-foreground">Daily readings and long-term trends, saved in your private weight history.</p>
-      </header>
+    <section className="mm-journey-weight flex w-full max-w-2xl flex-col gap-6" aria-label="Weight journal">
+      <JourneyIntro
+        eyebrow="THE LONGER VIEW"
+        title="Weight"
+        description="A record of real weigh-ins and your progress over time. One reading never tells the full story."
+      />
 
-      <div className="ref-weight-current" aria-label="Latest recorded weight">
+      <div className="mm-journey-weight-current" aria-label="Latest recorded weight">
         <span>CURRENT WEIGHT</span>
         <div><strong>{latestKg === null ? "—" : (latestKg * (isImperial ? POUNDS_PER_KG : 1)).toFixed(1)}</strong><small>{units}</small></div>
-        <p>{latestKg === null ? "Add your first weigh-in to start the trend." : "From your most recent saved weigh-in."}</p>
+        <p>{weights.length > 0
+          ? "From your most recent saved weigh-in."
+          : latestKg === null
+            ? "Add your first weigh-in to start the trend."
+            : "From your profile. Record a weigh-in to build your trend."}</p>
       </div>
-      <form className="grid gap-4 border-b pb-6" onSubmit={(event) => { event.preventDefault(); void save(); }}>
+      <form className="mm-journey-weight-form grid gap-4 border-b pb-6" onSubmit={(event) => { event.preventDefault(); void save(); }}>
         <div className="grid grid-cols-2 gap-3">
           <div className="grid gap-1.5">
             <Label htmlFor="weight-module-value">Weight ({units})</Label>
@@ -162,7 +168,7 @@ export function WeightProgressModule({ onSaved }: WeightProgressModuleProps) {
             onChange={e => setNote(e.target.value)} placeholder="Morning, before breakfast" />
         </div>
         <div className="flex flex-wrap items-center justify-between gap-3">
-          <p className="text-xs text-muted-foreground">One entry per day. Saving the same date updates it.</p>
+          <p className="text-xs text-muted-foreground">One entry per day. Saving the same date replaces that day's reading.</p>
           <Button type="submit" className="min-h-11" disabled={busy || !weightText.trim()}>
             {busy ? "Saving…" : "Save weight"}
           </Button>
@@ -178,7 +184,7 @@ export function WeightProgressModule({ onSaved }: WeightProgressModuleProps) {
       )}
 
       <section className="border-b pb-6" aria-labelledby="goal-weight-heading">
-        <h3 id="goal-weight-heading" className="text-base font-semibold">Target weight</h3>
+        <h3 id="goal-weight-heading" className="mm-journey-section-title">Target weight</h3>
         <p className="mt-1 text-xs text-muted-foreground">Set a destination for a realistic planning range. You can revise it anytime.</p>
         <div className="mt-3 flex flex-wrap items-end gap-3">
           <div className="grid max-w-[190px] gap-1.5">
@@ -206,7 +212,7 @@ export function WeightProgressModule({ onSaved }: WeightProgressModuleProps) {
 
       {trend && (
         <section aria-labelledby="weight-trend-heading" className="border-b pb-5">
-          <h3 id="weight-trend-heading" className="text-base font-semibold">Weight trend</h3>
+          <h3 id="weight-trend-heading" className="mm-journey-section-title">Weight trend</h3>
           <div className="mt-2">
             <p className="text-sm font-medium">{trend.status === "possible_plateau"
               ? "Possible plateau"
@@ -230,7 +236,7 @@ export function WeightProgressModule({ onSaved }: WeightProgressModuleProps) {
 
       {energy && (
         <section aria-labelledby="weight-energy-heading" className="border-b pb-5">
-          <h3 id="weight-energy-heading" className="text-base font-semibold">Estimated energy needs</h3>
+          <h3 id="weight-energy-heading" className="mm-journey-section-title">Estimated energy needs</h3>
           <dl className="mt-3 grid grid-cols-2 gap-x-5 gap-y-4">
             {[
               ["BMI (adult screening)", energy.bmi.value.toFixed(1)],
