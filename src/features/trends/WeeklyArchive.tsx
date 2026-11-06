@@ -28,18 +28,18 @@ export function WeeklyArchive({
 }: {
   weeks: string[][];
   entries: DiaryEntry[] | null;
-  target: number;
+  target: number | null;
   loading: boolean;
   error: string | null;
   reload: () => void;
 }) {
   const summaries = useMemo(
-    () => entries ? buildWeeklyHistory(weeks, entries, target) : null,
+    () => entries ? buildWeeklyHistory(weeks, entries, target ?? 1) : null,
     [weeks, entries, target],
   );
 
   return (
-    <section aria-label="Weekly history" className="overflow-hidden border-y">
+    <section aria-label="Weekly history" className="mm-journey-weekly overflow-hidden border-y">
       <div className="border-b px-2 py-3">
         <h2 className="text-sm font-semibold">Week by week</h2>
       </div>
@@ -62,7 +62,7 @@ export function WeeklyArchive({
                 : `${stats.loggedDays}/7 days logged · avg ${formatNumber(stats.averageKcalLogged ?? 0)} kcal`}
             </p>
           </div>
-          {stats.adherencePct !== null && (
+          {target !== null && target > 0 && stats.adherencePct !== null && (
             <Badge variant="outline" className={cn("shrink-0",
               stats.label === "consistent" && "border-primary/40 text-primary",
               stats.label === "over" && "border-macro-fat/40 text-macro-fat",
