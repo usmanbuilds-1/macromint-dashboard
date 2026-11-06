@@ -1,5 +1,8 @@
 import { lazy, Suspense } from "react";
 import "@/styles/internal-polish.css";
+import "@/styles/journey-foundations.css";
+import "@/styles/journey-tracking.css";
+import "@/styles/journey-account.css";
 import { Logo } from "./BrandMark";
 export { Logo } from "./BrandMark";
 import { publicAccountLabel } from "@/lib/auth/username";
