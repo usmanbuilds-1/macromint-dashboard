@@ -194,3 +194,18 @@
     align-items: flex-start;
   }
 }
+
+/* Performance: internal tracking screens are tools, not marketing reveals.
+ * Legacy global .mm-live-enter / .mm-app-main>div animations concealed
+ * already-loaded content for 370–480ms on EVERY tab visit. Do not replay
+ * them; keep any landing-page motion unchanged. */
+.mm-app-shell .mm-live-enter,
+.mm-app-shell .mm-app-main > div:not(.mm-live-page) {
+  animation: none !important;
+  opacity: 1 !important;
+  transform: none !important;
+}
+.mm-app-shell .mm-today-arc svg path:last-child,
+.mm-app-shell .mm-today-macro-track i {
+  transition-duration: 120ms;
+}
