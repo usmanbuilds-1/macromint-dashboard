@@ -74,12 +74,12 @@ export function CustomFoodDialog({ open, onClose, onCreated }: { open: boolean; 
 
   return (
     <Dialog open={open} onOpenChange={(o) => (!o ? onClose() : undefined)}>
-      <DialogContent className="sm:max-w-md">
+      <DialogContent className="mm-journey-custom-dialog max-h-[calc(100dvh-1rem)] overflow-y-auto sm:max-w-md">
         <DialogHeader>
           <DialogTitle>New custom food</DialogTitle>
         </DialogHeader>
         <div className="grid gap-3">
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
             <div className="grid gap-1.5">
               <Label htmlFor="cf-name">Name</Label>
               <Input id="cf-name" maxLength={120} value={name} onChange={(e) => setName(e.target.value)} placeholder="Mum's biryani" />
