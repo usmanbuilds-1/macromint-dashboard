@@ -1,7 +1,7 @@
 /* Food journal, library and progress: task first, evidence second. */
 .mm-app-shell .mm6-page-diary .mm-journey-ledger {
   min-width: 0;
-  border-top: 1px solid var(--journey-rule);
+  border-top: 0;
   border-bottom: 1px solid var(--journey-rule);
   border-radius: 0;
   background: var(--journey-paper);
