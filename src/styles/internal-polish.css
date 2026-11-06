@@ -158,3 +158,17 @@
     transition-duration: 0.01ms !important;
   }
 }
+
+/* At tablet widths the desktop sidebar leaves a narrow content lane. */
+.mm-app-shell .mm6-page-goals [aria-label="Daily targets"] .grid > div {
+  min-width: 0;
+}
+.mm-app-shell .mm6-page-goals [aria-label="Daily targets"] input {
+  min-width: 0;
+  width: 100%;
+}
+@media (min-width: 768px) and (max-width: 1023px) {
+  .mm-app-shell .mm6-page-goals [aria-label="Daily targets"] > .grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
