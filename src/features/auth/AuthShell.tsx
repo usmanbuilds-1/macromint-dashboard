@@ -1,5 +1,5 @@
 import { Link } from "react-router-dom";
-import { Logo } from "@/components/app/AppLayout";
+import { Logo } from "@/components/app/BrandMark";
 import { IS_DEMO } from "@/lib/backend";
 import { FlaskConical } from "lucide-react";
 
