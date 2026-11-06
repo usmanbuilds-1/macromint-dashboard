@@ -42,7 +42,12 @@ assert.match(registration, /public_signup_ticket: signupTicket/);
 assert.match(registration, /checkUsernameAuthBudget\(request, "register", normalizedUsername/,
   "Rate limit both public and beta registration using the account identifier");
 const signupUi = read("src/features/auth/Register.tsx");
-assert.match(signupUi, /Beta tester invitation \(optional\)/);
+assert.match(signupUi, /Enter your beta invitation/,
+  "The beta code must be the first signup screen");
+assert.match(signupUi, /Don't have a code\? Create a regular account/,
+  "Regular users must be able to register without an invite");
+assert.match(signupUi, /setSignupStep\("account"\)/,
+  "Beta users must proceed to one-time credential creation");
 assert.match(signupUi, /PUBLIC_REGISTRATION_ENABLED/);
 
 for (const handler of ["username-register", "username-recovery", "beta-invites"]) {
