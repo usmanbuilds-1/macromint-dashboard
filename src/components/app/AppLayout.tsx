@@ -1,5 +1,7 @@
 import { lazy, Suspense } from "react";
 import "@/styles/internal-polish.css";
+import { Logo } from "./BrandMark";
+export { Logo } from "./BrandMark";
 import { publicAccountLabel } from "@/lib/auth/username";
 import { NavLink, Outlet, useNavigate } from "react-router-dom";
 import {
@@ -49,18 +51,6 @@ const SECONDARY = [
   { to: "/goals", label: "Goals", icon: Target },
   { to: "/settings", label: "Settings", icon: SettingsIcon },
 ];
-
-export function Logo({ compact = false }: { compact?: boolean }) {
-  return (
-    <span className="mm-logo inline-flex items-center gap-2.5">
-      <span className="mm-logo-leaves" aria-hidden="true">
-        <span className="mm-logo-leaf mm-logo-leaf--left" />
-        <span className="mm-logo-leaf mm-logo-leaf--right" />
-      </span>
-      {!compact && <span className="mm-logo-name">Macro Mint</span>}
-    </span>
-  );
-}
 
 function NavItem({ to, label, icon: Icon, onClick }: { to: string; label: string; icon: typeof Home; onClick?: () => void }) {
   return (
