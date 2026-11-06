@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
-import { Loader2, Trash2 } from "lucide-react";
+import { Loader2, Trash2, Star } from "lucide-react";
 import {
   Dialog,
   DialogContent,
@@ -35,6 +35,7 @@ import { cn } from "@/lib/utils";
 import type { FoodLogTarget, LoggableFood } from "./FoodLogProvider";
 import { LIMITS } from "@/lib/validation/limits";
 import { useMobileDialogViewport } from "@/hooks/useMobileDialogViewport";
+import { useAsyncData } from "@/hooks/useData";
 
 const PORTION_PRESETS = [25, 50, 75, 100];
 
@@ -108,6 +109,22 @@ export function ServingConfigDialog({
   });
   const quickAdd = Boolean(!editing && food && food.sourceLabel === "Quick add");
   const sheetStyle = useMobileDialogViewport(Boolean(view && target));
+  const favorites = useAsyncData(() => backend.getFavorites(), [], "favorites", Boolean(view?.foodId && target));
+  const isFavorite = Boolean(view?.foodId && favorites.data?.some((favorite) => favorite.foodId === view.foodId));
+  const [favoriteBusy, setFavoriteBusy] = useState(false);
+  const favoriteCurrent = async () => {
+    if (!view?.foodId || favoriteBusy) return;
+    setFavoriteBusy(true);
+    try {
+      const added = await backend.toggleFavorite(view.foodId);
+      bumpData();
+      toast.success(added ? "Added to favorites" : "Removed from favorites");
+    } catch {
+      toast.error("Could not update favorites");
+    } finally {
+      setFavoriteBusy(false);
+    }
+  };
 
   useEffect(() => {
     if (!view || !target) return;
@@ -217,7 +234,18 @@ export function ServingConfigDialog({
         }}
         onCloseAutoFocus={(event) => event.preventDefault()}>
         <DialogHeader>
-          <DialogTitle className="pr-6">{editing ? "Edit entry" : view.name}</DialogTitle>
+          <div className="flex items-center gap-2 pr-6">
+            <DialogTitle className="min-w-0 flex-1">{editing ? "Edit entry" : view.name}</DialogTitle>
+            {view.foodId && (
+              <Button type="button" variant="ghost" size="icon"
+                aria-label={isFavorite ? "Remove from favorites" : "Add to favorites"}
+                aria-pressed={isFavorite}
+                disabled={favoriteBusy}
+                onClick={() => { void favoriteCurrent(); }}>
+                <Star aria-hidden="true" className={cn("h-5 w-5", isFavorite && "fill-primary text-primary")} />
+              </Button>
+            )}
+          </div>
           <DialogDescription className="flex flex-wrap items-center gap-x-3 gap-y-1">
             <span>{view.brand ?? view.sourceLabel}</span>
             {!view.verified && <span className="text-warning">Unverified values</span>}
