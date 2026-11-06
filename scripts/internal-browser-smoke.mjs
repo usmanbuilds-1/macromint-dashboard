@@ -218,10 +218,12 @@ try {
   await page.getByRole("heading", { name: "Foods", exact: true }).waitFor();
   await page.getByRole("tab", { name: "Favorites" }).waitFor();
   await page.getByText("Scan a photo", { exact: true }).waitFor();
+  await page.locator(".mm-journey-food-options").waitFor();
   await screenshotEverySize("foods");
 
   await nav.getByRole("link", { name: "Progress" }).click();
   await page.getByRole("heading", { name: "Progress", exact: true }).waitFor();
+  await page.locator(".mm-journey-intro").waitFor();
   await screenshotEverySize("progress");
 
   await page.goto(url + "/settings", { waitUntil: "domcontentloaded" });
@@ -231,11 +233,14 @@ try {
   assert.equal(await page.locator("#s-height-feet").inputValue(), "5");
   assert.equal(await page.locator("#s-height-inches").inputValue(), "11");
   assert.equal(await page.locator("#s-weight").inputValue(), "73.5");
+  await page.locator(".mm-journey-settings-links").waitFor();
   await screenshotEverySize("settings");
   await page.goto(url + "/goals", { waitUntil: "domcontentloaded" });
   await page.getByRole("heading", { name: "Goals", exact: true }).waitFor();
+  await page.getByText("How these estimates are calculated").waitFor();
   await screenshotEverySize("goals");
   await page.goto(url + "/weight", { waitUntil: "domcontentloaded" });
+  await page.locator(".mm-journey-weight-current").waitFor();
   await screenshotEverySize("weight");
 
   // Keep all captures on the disposable localStorage demo fixture. Switch to
