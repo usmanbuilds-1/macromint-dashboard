@@ -857,13 +857,14 @@ export const supabaseBackend: Backend = {
       body: { action: "status" },
     });
     if (error || data?.error) throw new BackendError("SERVER", "Could not load request status");
-    return ((data?.requests ?? []) as Record<string, unknown>[]).map((r): ReactivationRequest => ({
+    const requests = ((data?.requests ?? []) as Record<string, unknown>[]).map((r): ReactivationRequest => ({
       id: String(r["id"]),
       status: r["status"] as ReactivationRequest["status"],
       createdAt: String(r["created_at"]),
       reviewedAt: (r["reviewed_at"] as string | null) ?? null,
       approvedDays: (r["approved_days"] as number | null) ?? null,
     }));
+    return { requests, isBetaTester: data?.isBetaTester === true };
   },
 
   async submitReactivationRequest(message) {
