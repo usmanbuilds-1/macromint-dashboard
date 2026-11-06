@@ -99,6 +99,10 @@ try {
   await page.screenshot({ path: "mobile-audit/screens/today-320.png", fullPage: true });
   const smallPhoneOverflow = await page.evaluate(() => document.documentElement.scrollWidth - innerWidth);
   assert.ok(smallPhoneOverflow <= 2, "Today must not horizontally overflow a 320px phone");
+  const primaryAction = await page.getByRole("button", { name: "Add food", exact: true }).boundingBox();
+  const bottomNav = await page.locator(".ref-mobile-tabs").boundingBox();
+  assert.ok(primaryAction && bottomNav && primaryAction.y + primaryAction.height <= bottomNav.y,
+    "Add food must remain visible above the fixed navigation on a compact 320px phone");
   await page.setViewportSize({ width: 390, height: 844 });
 
   // Daily navigation never buries diary, the task users perform most often.
