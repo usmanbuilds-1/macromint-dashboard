@@ -110,15 +110,17 @@ export function Goals() {
         <p className="mt-1 text-sm text-muted-foreground">
           You can recalculate your targets from your profile. Your existing diary remains untouched.
         </p>
-        <details className="mm-journey-calculation-details">
+        <details className="mm-journey-recalc-toggle">
+          <summary>Choose a goal to recalculate</summary>
+          <details className="mm-journey-calculation-details">
           <summary>How these estimates are calculated</summary>
           <p className="mt-1 text-xs text-muted-foreground">
           Uses the Mifflin-St Jeor equation with your sex, age, height, weight and activity level
           {profile?.activityLevel ? ` (${ACTIVITY_FACTORS[profile.activityLevel].label}: ${ACTIVITY_DESCRIPTIONS[profile.activityLevel]})` : ""}.
           {profile?.sex ? ` Objective adjustment: ${GOAL_DELTA_KCAL[profile.objective ?? "maintain"] > 0 ? "+" : ""}${GOAL_DELTA_KCAL[profile.objective ?? "maintain"]} kcal.` : ""}
           </p>
-        </details>
-        <div className="mm-journey-goal-choices mt-4 grid gap-2 sm:grid-cols-2">
+          </details>
+          <div className="mm-journey-goal-choices mt-4 grid gap-2">
           {(["lose", "maintain", "gain", "recomp"] as Objective[]).map((o) => (
             <Button key={o} variant="outline" onClick={() => void recalculate(o)}
               className="h-auto min-h-16 min-w-0 flex-col items-start justify-center gap-1 overflow-hidden px-4 py-3 text-left whitespace-normal">
@@ -130,7 +132,8 @@ export function Goals() {
               </span>
             </Button>
           ))}
-        </div>
+          </div>
+        </details>
       </section>
     </div>
   );
@@ -145,8 +148,8 @@ function Field({ label, id, value, limitKey, onChange }: {
     <div className="grid min-w-0 gap-1.5">
       <Label htmlFor={id}>{label}</Label>
       <Input id={id} className="min-w-0 w-full" type="number" min={limit.min} max={limit.max} step={1}
-        inputMode="numeric" value={value} onChange={(e) => onChange(e.target.value)} />
-      <p className="text-[11px] text-muted-foreground">Range: {limit.min}–{limit.max}</p>
+        aria-describedby={`${id}-limit`} inputMode="numeric" value={value} onChange={(e) => onChange(e.target.value)} />
+      <p id={`${id}-limit`} className="sr-only">Accepts values from {limit.min} to {limit.max}.</p>
     </div>
   );
 }
