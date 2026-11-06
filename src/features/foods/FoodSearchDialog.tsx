@@ -71,9 +71,9 @@ export function FoodSearchDialog({
   const [savingMeal, setSavingMeal] = useState(false);
   const [favoriteBusy, setFavoriteBusy] = useState<string | null>(null);
 
-  const recents = useAsyncData(() => backend.getRecentEntries(8), [], "recent:8");
-  const favorites = useAsyncData(() => backend.getFavorites(), [], "favorites");
-  const savedMeals = useAsyncData(() => backend.getSavedMeals(), [], "saved-meals");
+  const recents = useAsyncData(() => backend.getRecentEntries(8), [], "recent:8", open);
+  const favorites = useAsyncData(() => backend.getFavorites(), [], "favorites", open);
+  const savedMeals = useAsyncData(() => backend.getSavedMeals(), [], "saved-meals", open);
   const favoriteIds = useMemo(() => new Set((favorites.data ?? []).map((fav) => fav.foodId)), [favorites.data]);
 
   const toggleFavorite = async (foodId: string) => {
