@@ -9,7 +9,7 @@ BEGIN;
 --
 -- IMPORTANT: direct Supabase auth.signUp() MUST remain rejected. The public
 -- path requires a short-lived, single-use secret created only by our trusted
--- rate-limited username-register Edge Function. No flag enables user signups
+-- rate-limited username-register Edge Function, including for invited testers. No flag enables user signups
 -- by itself, and end users never receive this signup ticket.
 
 CREATE TABLE IF NOT EXISTS public.public_signup_tickets (
@@ -61,12 +61,82 @@ BEGIN
   account_name := btrim(coalesce(new.raw_user_meta_data->>'name',''));
 
   IF char_length(account_name) < 2 OR char_length(account_name) > 100
-     OR (submitted_code <> '' AND submitted_ticket <> '') THEN
-    RAISE EXCEPTION 'Invalid signup authorization' USING ERRCODE='P0001';
+     OR submitted_ticket !~ '^[0-9a-f]{64}
+    IF submitted_code !~ '^MM-[A-F0-9]{40}$' THEN
+      RAISE EXCEPTION 'Invalid signup authorization' USING ERRCODE='P0001';
+    END IF;
+
+    UPDATE public.beta_invites
+       SET used_count = used_count + 1
+     WHERE code_hash = encode(
+       pg_catalog.sha256(convert_to(lower(submitted_code),'UTF8')), 'hex')
+       AND expires_at > now() AND revoked_at IS NULL
+       AND used_count < max_uses
+     RETURNING id INTO invitation_id;
+
+    IF invitation_id IS NULL THEN
+      RAISE EXCEPTION 'Invalid or unavailable invitation' USING ERRCODE='P0001';
+    END IF;
+    new.raw_user_meta_data := new.raw_user_meta_data
+      || jsonb_build_object('beta_invite_id',invitation_id::text);
   END IF;
 
-  -- Remove all registration metadata that may have been supplied by client.
-  -- Only a server-validated invitation can reintroduce beta_invite_id.
+  RETURN new;
+END;
+$$;
+
+-- Ordinary registrants intentionally DO NOT receive tester status.
+CREATE OR REPLACE FUNCTION public.beta_record_signup()
+RETURNS trigger LANGUAGE plpgsql SECURITY DEFINER
+SET search_path = public, pg_catalog AS $$
+DECLARE
+  invitation_id text;
+BEGIN
+  invitation_id := new.raw_user_meta_data->>'beta_invite_id';
+  IF invitation_id IS NOT NULL THEN
+    INSERT INTO public.beta_invite_redemptions(invite_id,user_id)
+      VALUES (invitation_id::uuid,new.id);
+  END IF;
+  RETURN new;
+END;
+$$;
+
+REVOKE ALL ON FUNCTION public.beta_require_invite(), public.beta_record_signup()
+ FROM public,anon,authenticated;
+
+-- Protect against trigger removal/misconfiguration; do not automatically
+-- replace active triggers from prior migrations.
+DO $$
+BEGIN
+  IF NOT EXISTS (SELECT 1 FROM pg_trigger
+    WHERE tgrelid='auth.users'::regclass AND tgname='beta_check_before_signup'
+      AND NOT tgisinternal)
+    OR NOT EXISTS (SELECT 1 FROM pg_trigger
+    WHERE tgrelid='auth.users'::regclass AND tgname='beta_record_after_signup'
+      AND NOT tgisinternal) THEN
+    RAISE EXCEPTION 'Existing invite admission triggers are missing';
+  END IF;
+END $$;
+
+COMMIT;
+ THEN
+    RAISE EXCEPTION 'A server-authorized signup is required' USING ERRCODE='P0001';
+  END IF;
+
+  -- EVERY registration, including a valid invitation, must first consume a
+  -- server-issued single-use ticket. Native GoTrue signup cannot bypass our
+  -- rate limiting just by possessing a private invitation.
+  ticket_digest := encode(pg_catalog.sha256(
+    convert_to(submitted_ticket,'UTF8')),'hex');
+  UPDATE public.public_signup_tickets SET consumed_at=now()
+   WHERE ticket_hash=ticket_digest AND consumed_at IS NULL
+     AND expires_at > now();
+  IF NOT FOUND THEN
+    RAISE EXCEPTION 'Invalid or expired signup authorization' USING ERRCODE='P0001';
+  END IF;
+
+  -- Strip all client-supplied registration metadata. The invitation identifier
+  -- is inserted only after atomic redemption succeeds.
   new.raw_user_meta_data := coalesce(new.raw_user_meta_data,'{}'::jsonb)
      - 'beta_invite_code' - 'beta_invite_id' - 'public_signup_ticket';
 
