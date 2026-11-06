@@ -88,7 +88,7 @@ export function Today() {
         hasEntries={entries.length > 0}
       />
 
-      <section aria-label="Add food" className="mm-home-actions ref-live-log">
+      <section aria-label="Add food" className="mm-home-actions">
         <Button type="button" onClick={() => openFood()}
           className="mm-home-action-primary">
           <Plus className="h-5 w-5" aria-hidden="true" />
