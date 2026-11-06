@@ -778,9 +778,9 @@ export const supabaseBackend: Backend = {
         throw new BackendError("DB", "Application settings are unavailable");
       }
       return {
-        trialDays: n(config.trial_days),
-        rewardAccessHours: n(config.reward_access_hours),
-        maxDailyRewardedAds: n(config.max_daily_rewarded_ads),
+        trialDays: n(config["trial_days"]),
+        rewardAccessHours: n(config["reward_access_hours"]),
+        maxDailyRewardedAds: n(config["max_daily_rewarded_ads"]),
       };
     }
 
