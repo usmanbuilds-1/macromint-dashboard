@@ -138,7 +138,7 @@ try {
         await page.waitForFunction(() => {
           const today = document.querySelector(".ref-live-today");
           const calories = today?.querySelector(".mm-home-calories");
-          const summary = today?.querySelector(".ref-live-today-summary");
+          const summary = today?.querySelector(".mm-home-overview");
           return Boolean(today && summary && calories &&
             calories.textContent?.trim() !== "—");
         }, null, { timeout: 5000 });
