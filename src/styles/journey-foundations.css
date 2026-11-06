@@ -123,7 +123,21 @@
   font-size: 12px;
   font-weight: 600;
 }
-.mm-app-shell .mm-journey-calculation-details { margin-top: 16px; }
+
+/* Recalculation is an occasional, consequential action — disclose on demand. */
+.mm-app-shell .mm-journey-recalc-toggle { margin-top: 17px; }
+.mm-app-shell .mm-journey-recalc-toggle > summary {
+  display: inline-flex;
+  min-height: 44px;
+  align-items: center;
+  color: var(--journey-ink);
+  cursor: pointer;
+  font-size: 14px;
+  font-weight: 750;
+  text-decoration: underline;
+  text-underline-offset: 5px;
+}
+.mm-app-shell .mm-journey-calculation-details { margin-top: 12px; }
 .mm-app-shell .mm-journey-calculation-details > summary {
   display: inline-flex;
   min-height: 42px;
@@ -140,11 +154,19 @@
   font-size: 12px;
   line-height: 1.6;
 }
+.mm-app-shell .mm-journey-goal-choices {
+  grid-template-columns: minmax(0, 1fr);
+  gap: 0;
+  border-top: 1px solid var(--journey-rule);
+}
 .mm-app-shell .mm-journey-goal-choices button {
-  min-height: 66px;
-  border-radius: 4px;
-  border-color: var(--journey-rule);
+  align-items: flex-start;
+  min-height: 69px;
+  border: 0;
+  border-bottom: 1px solid var(--journey-rule);
+  border-radius: 0;
   background: transparent;
+  padding: 10px 12px 10px 0;
 }
 .mm-app-shell .mm-journey-goal-choices button:hover { background: var(--journey-paper); }
 .mm-app-shell .mm-journey-save-actions button { min-height: 46px; }
