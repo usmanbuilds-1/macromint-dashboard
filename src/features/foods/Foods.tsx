@@ -6,6 +6,7 @@ import { Input } from "@/components/ui/input";
 import { JourneyIntro } from "@/components/app/JourneyIntro";
 import { JourneyEmpty } from "@/components/app/JourneyEmpty";
 import { CustomFoodDialog } from "./CustomFoodDialog";
+import { SavedMealsTab } from "./SavedMealsTab";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { kcalOf } from "@/components/app/bits";
@@ -97,6 +98,7 @@ export function Foods() {
         <TabsList className="w-full justify-start">
           <TabsTrigger value="search">Search</TabsTrigger>
           <TabsTrigger value="favorites">Favorites</TabsTrigger>
+          <TabsTrigger value="meals">Saved meals</TabsTrigger>
         </TabsList>
 
         <TabsContent value="search" className="mm-journey-food-search mt-4 flex flex-col gap-4">
@@ -180,6 +182,9 @@ export function Foods() {
               />
             )}
           </div>
+        </TabsContent>
+        <TabsContent value="meals" className="mt-4">
+          <SavedMealsTab active={activeTab === "meals"} />
         </TabsContent>
       </Tabs>
 
