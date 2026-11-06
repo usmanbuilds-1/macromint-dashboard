@@ -43,7 +43,7 @@ function CommandDialog({
   description?: string
   className?: string
   showCloseButton?: boolean
-  contentStyle?: React.CSSProperties
+  contentStyle?: React.CSSProperties | undefined
   preventInputAutoFocus?: boolean
 }) {
   const contentRef = React.useRef<HTMLDivElement>(null)
