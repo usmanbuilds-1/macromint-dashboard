@@ -40,12 +40,12 @@ function AppShell() {
       navigate({ to: "/login", state: { from: location.pathname }, replace: true });
       return;
     }
-    if (profile && !profile.onboardedAt) {
-      navigate({ to: "/onboarding", replace: true });
-      return;
-    }
     if (profile && !hasAccess && !ownerAdminRoute) {
       navigate({ to: "/upgrade", replace: true });
+      return;
+    }
+    if (profile && !profile.onboardedAt && !ownerAdminRoute) {
+      navigate({ to: "/onboarding", replace: true });
     }
   }, [loading, user, profile, hasAccess, ownerAdminRoute, location.pathname, navigate]);
 
