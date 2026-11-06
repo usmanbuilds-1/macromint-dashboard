@@ -73,46 +73,35 @@
 .mm-app-shell .mm-journey-goal-grid p {
   color: var(--journey-muted);
 }
+
+/* A simple contents rail, not a four-cell dashboard. */
 .mm-app-shell .mm-journey-settings-links {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 0 !important;
-  border-top: 1px solid var(--journey-rule);
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0 23px;
+  border-top: 0;
   border-bottom: 1px solid var(--journey-rule);
 }
-.mm-app-shell .mm-journey-settings-links > a,
-.mm-app-shell .mm-journey-settings-links > button {
-  display: flex;
-  flex-direction: column;
-  align-items: flex-start;
-  justify-content: center;
-  gap: 4px;
-  min-width: 0;
-  min-height: 75px;
-  border: 0;
+.mm-app-shell .mm-journey-settings-links > :is(a,button) {
+  display: inline-flex;
+  flex: 0 0 auto;
+  align-items: center;
+  min-height: 48px;
+  padding: 8px 0 11px;
+  border: 0 !important;
   border-radius: 0;
-  background: transparent;
-  padding: 13px 18px;
+  background: transparent !important;
   color: var(--journey-ink);
-  font-size: 14px;
-  font-weight: 750;
+  font-size: 13px;
+  font-weight: 710;
   text-decoration: none;
   text-align: left;
 }
-.mm-app-shell .mm-journey-settings-links > :nth-child(odd) {
-  border-right: 1px solid var(--journey-rule);
-}
-.mm-app-shell .mm-journey-settings-links > :nth-child(-n + 2) {
-  border-bottom: 1px solid var(--journey-rule);
-}
 .mm-app-shell .mm-journey-settings-links > :is(a,button):hover {
-  background: var(--journey-paper);
+  box-shadow: inset 0 -2px 0 var(--journey-green);
 }
 .mm-app-shell .mm-journey-settings-links > :is(a,button) > span {
-  color: var(--journey-muted);
-  font-size: 12px;
-  font-weight: 480;
-  line-height: 1.45;
+  display: none;
 }
 .mm-app-shell .mm-journey-settings > section {
   padding-block: 8px 29px;
@@ -164,6 +153,17 @@
   min-width: 63px;
   min-height: 45px;
   padding-inline: 10px;
+  border: 0 !important;
+  border-bottom: 2px solid transparent !important;
+  border-radius: 0 !important;
+  background: transparent !important;
+  box-shadow: none !important;
+  color: var(--journey-muted);
+}
+.mm-app-shell .mm-admin-screen .mm-journey-intro [role="tab"][data-state="active"] {
+  border-bottom-color: var(--journey-green) !important;
+  color: var(--journey-ink);
+  font-weight: 750;
 }
 .mm-app-shell .mm-admin-screen section {
   border-color: var(--journey-rule);
@@ -186,7 +186,7 @@
   border-color: var(--journey-rule);
 }
 @media (max-width: 640px) {
-  .mm-app-shell .mm-journey-settings-links > :is(a,button) { padding-inline: 11px; }
+  .mm-app-shell .mm-journey-settings-links { gap: 0 19px; }
   .mm-app-shell .mm-journey-settings-links > :is(a,button) > span { font-size: 11px; }
   .mm-app-shell .mm-journey-weight-form > .grid-cols-2 { gap: 11px; }
   .mm-app-shell .mm-journey-weight-current { padding: 22px 19px; }
