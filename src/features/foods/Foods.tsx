@@ -6,6 +6,8 @@ import { Input } from "@/components/ui/input";
 import { JourneyIntro } from "@/components/app/JourneyIntro";
 import { JourneyEmpty } from "@/components/app/JourneyEmpty";
 import { CustomFoodDialog } from "./CustomFoodDialog";
+import { SavedMealsTab } from "./SavedMealsTab";
+import { matchingFavorite, toggleFavoriteCandidate } from "./favorite-actions";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { kcalOf } from "@/components/app/bits";
@@ -97,6 +99,7 @@ export function Foods() {
         <TabsList className="w-full justify-start">
           <TabsTrigger value="search">Search</TabsTrigger>
           <TabsTrigger value="favorites">Favorites</TabsTrigger>
+          <TabsTrigger value="meals">Saved meals</TabsTrigger>
         </TabsList>
 
         <TabsContent value="search" className="mm-journey-food-search mt-4 flex flex-col gap-4">
@@ -144,7 +147,11 @@ export function Foods() {
                       favActive={favoriteIds.has(food.id)} onFav={() => { void toggleFavorite(food.id); }} />
                   ))}
                   {hit.remote.map((product, i) => (
-                    <FoodRow key={`off-${i}`} food={offToLoggable(product)} onLog={log} />
+                    <FoodRow key={`off-${i}`} food={offToLoggable(product)} onLog={log}
+                      favActive={Boolean(matchingFavorite(favorites.data ?? [], offToLoggable(product)))}
+                      onFav={() => { void toggleFavoriteCandidate(offToLoggable(product), favorites.data ?? undefined)
+                        .then((added) => { bumpData(); toast.success(added ? "Added to favorites" : "Removed from favorites"); })
+                        .catch(() => toast.error("Could not update favorites")); }} />
                   ))}
                 </>
               )}
@@ -180,6 +187,9 @@ export function Foods() {
               />
             )}
           </div>
+        </TabsContent>
+        <TabsContent value="meals" className="mt-4">
+          <SavedMealsTab active={activeTab === "meals"} />
         </TabsContent>
       </Tabs>
 

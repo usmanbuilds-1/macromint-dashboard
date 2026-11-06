@@ -35,6 +35,21 @@ export function useMobileDialogViewport(open: boolean, placement: "bottom" | "ce
   if (!size?.mobile) return undefined;
   const available = Math.max(100, size.height - 16);
   const height = Math.min(520, available);
-  const top = size.top + (placement === "bottom" ? size.height - height - 8 : (size.height - height) / 2);
-  return { top: `${Math.max(0, top)}px`, bottom: "auto", maxHeight: `${height}px`, translate: "-50% 0" };
+  if (placement === "bottom") {
+    return {
+      top: `${Math.max(0, size.top + size.height - height - 8)}px`,
+      bottom: "auto",
+      height: `${height}px`,
+      maxHeight: `${height}px`,
+      translate: "-50% 0",
+    };
+  }
+  // A centered dialog's actual height can be smaller than the limit.
+  // Center it around the viewport midpoint, not around its maximum height.
+  return {
+    top: `${size.top + size.height / 2}px`,
+    bottom: "auto",
+    maxHeight: `${available}px`,
+    translate: "-50% -50%",
+  };
 }

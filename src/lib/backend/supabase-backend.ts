@@ -6,6 +6,7 @@ import type { TablesUpdate, Json } from "@/integrations/supabase/types";
 import { BackendError } from "./types";
 import { selectDiaryRange } from "./supabase/diary-range";
 import { logSavedMealBatch } from "./supabase/saved-meal-log";
+import { renameSavedMealForUser, deleteSavedMealForUser } from "./supabase/saved-meal-manage";
 import { toSavedMealItem } from "@/lib/nutrition/saved-meal";
 import { USERNAME_AUTH_ENABLED } from "@/lib/auth/username-config";
 import { isValidInviteCode } from "@/lib/beta/invite-code";
@@ -461,6 +462,14 @@ export const supabaseBackend: Backend = {
         createdAt: String(row["created_at"]),
       };
     });
+  },
+
+  async renameSavedMeal(id, name) {
+    return renameSavedMealForUser(id, name, await currentUserId());
+  },
+
+  async deleteSavedMeal(id) {
+    return deleteSavedMealForUser(id, await currentUserId());
   },
 
   async logSavedMeal(id, entryDate, mealType) {

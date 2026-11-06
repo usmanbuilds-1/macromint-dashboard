@@ -202,6 +202,8 @@ try {
   // and losing the selected meal/date.
   await page.getByRole("button", { name: "Search or enter a meal instead" }).click();
   await page.getByPlaceholder(/Search foods, brands/i).waitFor();
+  assert.notEqual(await page.evaluate(() => document.activeElement?.tagName), "INPUT",
+    "Switching from photo to search must not pop the keyboard without a tap");
   await page.keyboard.press("Escape");
   await page.getByRole("button", { name: "Add food", exact: true }).click();
   await page.getByRole("heading", { name: "Add food", exact: true }).waitFor();
@@ -212,6 +214,22 @@ try {
   await screenshotEverySize("food-entry-choices");
   await page.getByRole("button", { name: /Search or type a food/ }).click();
   await page.getByPlaceholder(/Search foods, brands/i).waitFor();
+  assert.notEqual(await page.evaluate(() => document.activeElement?.tagName), "INPUT",
+    "The search sheet must never autofocus on open");
+  await page.setViewportSize({ width: 390, height: 390 });
+  await page.waitForTimeout(350);
+  const clippedSheet = await page.getByRole("dialog").evaluate((dialog) => {
+    const box = dialog.getBoundingClientRect();
+    const style = getComputedStyle(dialog);
+    return { top: box.top, bottom: box.bottom, height: window.innerHeight,
+      style: dialog.getAttribute("style"), computed: {
+        top: style.top, height: style.height, minHeight: style.minHeight, maxHeight: style.maxHeight,
+        translate: style.translate, transform: style.transform, position: style.position },
+      visual: { height: window.visualViewport?.height, top: window.visualViewport?.offsetTop } };
+  });
+  assert.ok(clippedSheet.top >= -2 && clippedSheet.bottom <= clippedSheet.height + 2,
+    "Keyboard-sized screen must keep the full search sheet visible: " + JSON.stringify(clippedSheet));
+  await page.setViewportSize({ width: 390, height: 844 });
   // Close explicitly. Escape can be consumed by the focused command input
   // while a modal is transitioning, leaving nav inaccessible behind it.
   const searchDialog = page.getByRole("dialog");
@@ -234,6 +252,9 @@ try {
   await nav.getByRole("link", { name: "Foods" }).click();
   await page.getByRole("heading", { name: "Foods", exact: true }).waitFor();
   await page.getByRole("tab", { name: "Favorites" }).waitFor();
+  await page.getByRole("tab", { name: "Saved meals" }).click();
+  await page.getByText("Nothing saved yet").waitFor();
+  await page.getByRole("tab", { name: "Search", exact: true }).click();
   await page.getByText("Scan a photo", { exact: true }).waitFor();
   await page.locator(".mm-journey-food-options").waitFor();
   await screenshotEverySize("foods");

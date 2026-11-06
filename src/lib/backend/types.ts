@@ -141,6 +141,8 @@ export interface Backend {
   getRecentEntries(limit: number): Promise<DiaryEntry[]>;
   saveMeal(name: string, entryIds: string[]): Promise<SavedMeal>;
   getSavedMeals(): Promise<SavedMeal[]>;
+  renameSavedMeal(id: string, name: string): Promise<SavedMeal>;
+  deleteSavedMeal(id: string): Promise<void>;
   logSavedMeal(id: string, entryDate: string, mealType: MealType): Promise<void>;
 
   // Diary

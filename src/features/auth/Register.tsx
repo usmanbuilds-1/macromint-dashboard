@@ -24,6 +24,8 @@ export function Register() {
   );
   const [isBetaTester, setIsBetaTester] = useState(false);
   const [busy, setBusy] = useState(false);
+  const [recoveryCodes, setRecoveryCodes] = useState<string[] | null>(null);
+  const [codesSaved, setCodesSaved] = useState(false);
   const navigate = useNavigate();
   const { setAuthUser, refresh } = useSession();
 
@@ -49,9 +51,75 @@ export function Register() {
     setSignupStep("invitation");
   };
 
+  const finishRegistration = async () => {
+    setBusy(true);
+    try {
+      if (USERNAME_AUTH_ENABLED && !IS_DEMO) {
+        try {
+          await backend.signIn(username.trim(), password);
+        } catch {
+          toast.error("Account created. Sign in with your username and password to continue.");
+          navigate("/login", { replace: true });
+          return;
+        }
+      }
+      // Recovery codes are intentionally transient and never persisted by the client.
+      setRecoveryCodes(null);
+      setCodesSaved(false);
+      const user = await backend.getSessionUser();
+      setAuthUser(user);
+      await refresh();
+      navigate("/onboarding", { replace: true });
+    } catch {
+      toast.error("Could not finish signing in. You can sign in with your new account.");
+    } finally {
+      setBusy(false);
+    }
+  };
+
   const submit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if ((!USERNAME_AUTH_ENABLED || (!INVITE_REGISTRATION_ENABLED && !PUBLIC_REGISTRATION_ENABLED)) && !IS_DEMO) {
+    if (recoveryCodes) {
+    return (
+      <AuthShell title="Save your recovery codes"
+        subtitle="Your account was created. These eight codes are shown only once and are required if you forget your password.">
+        <div className="grid gap-4">
+          <p className="text-sm leading-6 text-muted-foreground">
+            Store these in a password manager or another private, secure place. Each code works once.
+            Never share them with support. Closing this page can permanently lose access to them.
+          </p>
+          <div aria-label="One-time backup recovery codes"
+            className="grid grid-cols-1 gap-2 rounded-lg border bg-secondary/30 p-3 sm:grid-cols-2">
+            {recoveryCodes.map((code, i) => (
+              <code key={i} className="break-all rounded-md border bg-background px-2 py-2 font-mono text-[11px] select-all">
+                {code}
+              </code>
+            ))}
+          </div>
+          <Button type="button" variant="outline" onClick={async () => {
+            try {
+              await navigator.clipboard.writeText(recoveryCodes.join("\n"));
+              toast.success("Codes copied. Save them somewhere private before continuing.");
+            } catch {
+              toast.error("Copy was blocked. Select and store the codes manually.");
+            }
+          }}>Copy all recovery codes</Button>
+          <label className="flex min-h-11 cursor-pointer items-center gap-3 text-sm">
+            <input type="checkbox" checked={codesSaved}
+              onChange={(event) => setCodesSaved(event.target.checked)}
+              className="h-4 w-4" />
+            I have securely saved my eight recovery codes.
+          </label>
+          <Button type="button" disabled={!codesSaved || busy}
+            onClick={() => { void finishRegistration(); }}>
+            {busy ? "Opening your account…" : "Continue to onboarding"}
+          </Button>
+        </div>
+      </AuthShell>
+    );
+  }
+
+  if ((!USERNAME_AUTH_ENABLED || (!INVITE_REGISTRATION_ENABLED && !PUBLIC_REGISTRATION_ENABLED)) && !IS_DEMO) {
       toast.error("New account registration is temporarily unavailable.");
       return;
     }
@@ -79,7 +147,7 @@ export function Register() {
       // until onboarding asks "What should we call you?" Never collect it twice.
       const initialName = USERNAME_AUTH_ENABLED ? username.trim()
         : email.trim().split("@")[0] || "Member";
-      const { needsVerification } = await backend.signUp(
+      const { needsVerification, recoveryCodes: issuedCodes } = await backend.signUp(
         USERNAME_AUTH_ENABLED ? username.trim() : email.trim(),
         password, initialName, isBetaTester ? inviteCode.trim() : "",
       );
@@ -87,23 +155,18 @@ export function Register() {
         navigate("/verify", { state: { email: email.trim() } });
         return;
       }
-      // Username registration creates a confirmed account, then signs it in.
-      // Don't block a new user with a recovery-codes interstitial.
       if (USERNAME_AUTH_ENABLED && !IS_DEMO) {
-        try {
-          await backend.signIn(username.trim(), password);
-        } catch {
-          toast.error("Your account was created, but automatic sign-in failed. Sign in with your username and password.");
-          navigate("/login", { replace: true });
+        // This account has no recoverable email. Show the one-time codes before
+        // allowing navigation; hiding them locks users out after a lost password.
+        if (!issuedCodes || issuedCodes.length !== 8) {
+          toast.error("Backup codes could not be shown. Contact the beta administrator.");
           return;
         }
+        setRecoveryCodes(issuedCodes);
+        setCodesSaved(false);
+        return;
       }
-      const user = await backend.getSessionUser();
-      setAuthUser(user);
-      // Onboarding is gated on the fetched profile. Load it before routing:
-      // setting the user alone can leave a blank onboarding loading state.
-      await refresh();
-      navigate("/onboarding", { replace: true });
+      await finishRegistration();
     } catch (err) {
       toast.error(err instanceof BackendError ? err.message : "Registration failed");
     } finally {
@@ -206,7 +269,7 @@ export function Register() {
             autoComplete="new-password" value={password} onChange={(e) => setPassword(e.target.value)} />
           <p className="text-xs text-muted-foreground">
             At least {USERNAME_AUTH_ENABLED ? USERNAME_MIN_PASSWORD_LENGTH : 8} characters.
-            {USERNAME_AUTH_ENABLED && " No email-based password recovery is available."}
+            {USERNAME_AUTH_ENABLED && " Save the one-time recovery codes after registration; email recovery is not available for username accounts."}
           </p>
         </div>
         <Button type="submit" disabled={busy}>{busy ? "Creating account…" : "Create account"}</Button>
