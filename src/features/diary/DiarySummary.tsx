@@ -3,14 +3,15 @@ import type { NutrientRecord } from "@/types";
 
 /** One clear daily reading, plus supporting macro context; no decorative ring. */
 export function DiarySummary({
-  totals, calorieTarget, proteinTarget, hasEntries, loading, complete,
+  totals, calorieTarget, proteinTarget, hasEntries, loading,
+  complete = { kcal: true, protein: true, carbs: true, fat: true },
 }: {
   totals: NutrientRecord;
   calorieTarget: number | null;
   proteinTarget: number | null;
   hasEntries: boolean;
   loading: boolean;
-  complete: Record<"kcal" | "protein" | "carbs" | "fat", boolean>;
+  complete?: Record<"kcal" | "protein" | "carbs" | "fat", boolean>;
 }) {
   const kcal = hasEntries ? totals.kcal ?? null : 0;
   const remaining = kcal !== null && calorieTarget !== null && complete.kcal ? calorieTarget - kcal : null;
