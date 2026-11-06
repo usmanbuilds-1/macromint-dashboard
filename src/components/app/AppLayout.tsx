@@ -22,6 +22,7 @@ import { Separator } from "@/components/ui/separator";
 import { useSession } from "@/context/Session";
 import { backend, IS_DEMO } from "@/lib/backend";
 import { FoodLogProvider } from "@/features/foods/FoodLogProvider";
+import { useAppDataInvalidation } from "@/hooks/useAppDataInvalidation";
 
 // Food dialogs are expensive relative to the shell. Load only when the
 // user opens them; keep the four routes usable without vision code.
@@ -72,6 +73,7 @@ function NavItem({ to, label, icon: Icon, onClick }: { to: string; label: string
 
 export function AppLayout() {
   const { profile, isAdmin, setAuthUser } = useSession();
+  useAppDataInvalidation();
   const navigate = useNavigate();
 
   const signOut = async () => {
