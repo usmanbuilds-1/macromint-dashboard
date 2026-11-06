@@ -18,10 +18,11 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
 import { useSession } from "@/context/Session";
 import { backend } from "@/lib/backend";
-import { useAsyncData, useDataVersion } from "@/hooks/useData";
+import { useAsyncData } from "@/hooks/useData";
+import { WeeklyArchive } from "./WeeklyArchive";
 import { adherenceStats, daysToKcal } from "@/lib/nutrition/math";
 import { summarizeNutrientCoverage } from "@/lib/nutrition/coverage";
-import { lastNWeeks, weekDates, weekLabel, formatDateShort, todayStr } from "@/lib/nutrition/datetime";
+import { lastNWeeks, weekDates, formatDateShort, todayStr } from "@/lib/nutrition/datetime";
 import { formatNumber } from "@/lib/utils";
 import { cn } from "@/lib/utils";
 
@@ -33,24 +34,39 @@ const RANGE_OPTIONS = [
 
 export function Trends() {
   const { goals } = useSession();
-  const version = useDataVersion();
   const [range, setRange] = useState<number>(14);
   const today = todayStr();
 
-  const weight = useAsyncData(() => backend.getWeights(90), [version]);
+  const weight = useAsyncData(() => backend.getWeights(90), [], "weights:90");
   const weights = weight.data ?? [];
   const rangeDates = useMemo(
     () => Array.from({ length: range }, (_, i) => addDaysStrLocal(today, -(range - 1 - i))),
     [today, range],
   );
 
-  const diaryData = useAsyncData(async () => {
-    const start = rangeDates[0];
-    const end = rangeDates[rangeDates.length - 1];
-    if (!start || !end) return { all: [], dates: rangeDates };
-    const all = await backend.getDiaryRange(start, end);
-    return { all, dates: rangeDates };
-  }, [version, range, today]);
+  // One bounded read supplies BOTH the selected charts and all four
+  // calendar-week summaries. Changing 7/14/30 days is now entirely local.
+  const weeks = useMemo(() => lastNWeeks(today, 4), [today]);
+  const oldestChartDay = addDaysStrLocal(today, -29);
+  const firstArchiveDay = weeks[0]?.[0] ?? oldestChartDay;
+  const historyStart = firstArchiveDay < oldestChartDay ? firstArchiveDay : oldestChartDay;
+  const history = useAsyncData(
+    () => backend.getDiaryRange(historyStart, today),
+    [historyStart, today],
+    "progress:diary-range",
+  );
+  const diaryData = useMemo(() => ({
+    data: history.data
+      ? {
+          all: history.data.filter((entry) =>
+            entry.entryDate >= (rangeDates[0] ?? today) && entry.entryDate <= today),
+          dates: rangeDates,
+        }
+      : null,
+    loading: history.loading,
+    error: history.error,
+    reload: history.reload,
+  }), [history.data, history.loading, history.error, history.reload, rangeDates, today]);
 
   const kcalByDay = useMemo(() => {
     if (!diaryData.data) return [];
@@ -270,68 +286,17 @@ export function Trends() {
       </div>
 
       {/* Weekly archive */}
-      <WeeklyArchive target={goals?.calorieTarget ?? 2000} version={version} />
+      <WeeklyArchive
+        weeks={weeks}
+        entries={history.data}
+        target={goals?.calorieTarget ?? 2000}
+        loading={history.loading}
+        error={history.error}
+        reload={history.reload}
+      />
     </div>
   );
 }
-
-function WeeklyArchive({ target, version }: { target: number; version: number }) {
-  const today = todayStr();
-  const weeks = useMemo(() => lastNWeeks(today, 4), [today]);
-
-  const data = useAsyncData(async () => {
-    const perWeek = await Promise.all(
-      weeks.map(async (dates) => {
-        const days = await Promise.all(dates.map((d) => backend.getDiary(d)));
-        const all = days.flat();
-        const stats = adherenceStats(daysToKcal(all, dates), target);
-        return { dates, stats };
-      }),
-    );
-    return perWeek;
-  }, [version, target]);
-
-  return (
-    <section aria-label="Weekly history" className="overflow-hidden border-y">
-      <div className="border-b px-2 py-3">
-        <h2 className="text-sm font-semibold">Week by week</h2>
-      </div>
-      {data.loading && <p role="status" className="px-4 py-4 text-sm text-muted-foreground">Loading weekly history…</p>}
-      {data.error && (
-        <div role="alert" className="flex items-center justify-between px-4 py-3 text-sm">
-          Weekly history unavailable.
-          <Button variant="outline" size="sm" onClick={data.reload}>Retry</Button>
-        </div>
-      )}
-      {data.data?.map(({ dates, stats }) => (
-        <div key={dates[0]} className="flex items-center justify-between gap-3 border-t px-4 py-3 first:border-t-0">
-          <div>
-            <p className="text-sm font-medium">{weekLabel(dates)}</p>
-            <p className="text-xs text-muted-foreground tabular-nums">
-              {stats.loggedDays === 0
-                ? "Nothing logged"
-                : `${stats.loggedDays}/7 days logged · avg ${formatNumber(stats.averageKcalLogged ?? 0)} kcal`}
-            </p>
-          </div>
-          {stats.adherencePct !== null && (
-            <Badge
-              variant="outline"
-              className={cn(
-                "shrink-0",
-                stats.label === "consistent" && "border-primary/40 text-primary",
-                stats.label === "over" && "border-macro-fat/40 text-macro-fat",
-                stats.label === "under" && "border-warning/40 text-warning",
-              )}
-            >
-              {stats.adherencePct}% on target
-            </Badge>
-          )}
-        </div>
-      ))}
-    </section>
-  );
-}
-
 
 function EmptyChart({ message }: { message: string }) {
   return (
