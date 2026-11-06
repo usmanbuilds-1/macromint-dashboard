@@ -188,7 +188,13 @@ for (const [width, height] of sizes) {
         await page.waitForURL((u) => u.pathname === "/today", { timeout: 15000 });
       }
       await page.getByRole("heading", { name: "Today", exact: true }).waitFor({ timeout: 15000 });
-      await page.locator(".mm-today-arc").waitFor({ timeout: 10000 });
+      await page.locator(".mm-home-overview").waitFor({ timeout: 10000 });
+      if (await page.locator(".mm-today-arc, .mm-today-arc-label").count()) {
+        throw new Error("The deprecated oversized calorie ring should not render");
+      }
+      await page.getByRole("heading", { name: "The daily ledger" }).waitFor();
+      await page.getByRole("button", { name: "Add food", exact: true }).waitFor();
+      await page.getByRole("button", { name: "Scan photo", exact: true }).waitFor();
       const todayOverflow = await page.evaluate(() => document.documentElement.scrollWidth - window.innerWidth);
       if (todayOverflow > 1) throw new Error("Today screen horizontal overflow: " + todayOverflow);
       await page.screenshot({ path: "mobile-audit/today-390.png", fullPage: true });
