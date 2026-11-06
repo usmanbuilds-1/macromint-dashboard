@@ -1,0 +1,197 @@
+/* Weight, goals, settings and admin: restrained account operations. */
+.mm-app-shell .mm-journey-weight {
+  max-width: 850px;
+}
+.mm-app-shell .mm-journey-weight-current {
+  border-block: 1px solid var(--journey-rule);
+  background: var(--journey-paper);
+  padding: clamp(21px, 3vw, 29px);
+}
+.mm-app-shell .mm-journey-weight-current > span {
+  color: var(--journey-muted);
+  font-size: 11px;
+  font-weight: 680;
+  letter-spacing: .13em;
+}
+.mm-app-shell .mm-journey-weight-current > div {
+  display: flex;
+  align-items: baseline;
+  gap: 9px;
+  margin-top: 6px;
+}
+.mm-app-shell .mm-journey-weight-current strong {
+  font-family: "Instrument Sans",Arial,sans-serif;
+  font-size: clamp(53px, 7vw, 76px);
+  font-weight: 630;
+  letter-spacing: -.08em;
+  line-height: 1.06;
+  color: var(--journey-ink);
+}
+.mm-app-shell .mm-journey-weight-current small {
+  color: var(--journey-muted);
+  font-size: 15px;
+  font-weight: 500;
+}
+.mm-app-shell .mm-journey-weight-current p {
+  margin-top: 9px;
+  color: var(--journey-muted);
+  font-size: 13px;
+  line-height: 1.5;
+}
+.mm-app-shell .mm-journey-weight-form {
+  border-color: var(--journey-rule);
+  padding-bottom: 25px;
+}
+.mm-app-shell .mm-journey-weight-form .grid > div { min-width: 0; }
+.mm-app-shell .mm-journey-weight-form input { min-width: 0; width: 100%; }
+.mm-app-shell .mm-journey-weight-form button[type="submit"] {
+  min-height: 48px;
+  background: #1b5136;
+  color: #fff;
+}
+.mm-app-shell .mm-journey-weight section[aria-labelledby] {
+  min-width: 0;
+  padding-bottom: 27px;
+  border-color: var(--journey-rule);
+}
+.mm-app-shell .mm-journey-weight section[aria-labelledby] .text-xs {
+  line-height: 1.6;
+}
+.mm-app-shell .mm6-page-goals .mm-journey-edit-section:first-of-type {
+  margin-top: 4px;
+}
+.mm-app-shell .mm-journey-goal-grid input {
+  min-width: 0;
+  background: var(--color-card);
+  border-color: var(--journey-rule);
+  border-radius: 5px;
+}
+.mm-app-shell .mm-journey-goal-grid label {
+  font-size: 13px;
+  font-weight: 670;
+}
+.mm-app-shell .mm-journey-goal-grid p {
+  color: var(--journey-muted);
+}
+.mm-app-shell .mm-journey-settings-links {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0 !important;
+  border-top: 1px solid var(--journey-rule);
+  border-bottom: 1px solid var(--journey-rule);
+}
+.mm-app-shell .mm-journey-settings-links > a,
+.mm-app-shell .mm-journey-settings-links > button {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  justify-content: center;
+  gap: 4px;
+  min-width: 0;
+  min-height: 75px;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  padding: 13px 18px;
+  color: var(--journey-ink);
+  font-size: 14px;
+  font-weight: 750;
+  text-decoration: none;
+  text-align: left;
+}
+.mm-app-shell .mm-journey-settings-links > :nth-child(odd) {
+  border-right: 1px solid var(--journey-rule);
+}
+.mm-app-shell .mm-journey-settings-links > :nth-child(-n + 2) {
+  border-bottom: 1px solid var(--journey-rule);
+}
+.mm-app-shell .mm-journey-settings-links > :is(a,button):hover {
+  background: var(--journey-paper);
+}
+.mm-app-shell .mm-journey-settings-links > :is(a,button) > span {
+  color: var(--journey-muted);
+  font-size: 12px;
+  font-weight: 480;
+  line-height: 1.45;
+}
+.mm-app-shell .mm-journey-settings > section {
+  padding-block: 8px 29px;
+  border-color: var(--journey-rule);
+}
+.mm-app-shell .mm-journey-settings section h2 {
+  font-family: "Fraunces",Georgia,serif;
+  font-size: 27px;
+  font-weight: 450;
+  letter-spacing: -.045em;
+}
+.mm-app-shell .mm-journey-settings [id="ref-profile"] input {
+  min-width: 0;
+  width: 100%;
+  border-color: var(--journey-rule);
+}
+.mm-app-shell .mm-journey-settings [id="ref-profile"] .grid > div {
+  min-width: 0;
+}
+.mm-app-shell .mm-journey-export-actions {
+  display: grid;
+  gap: 0;
+  border-top: 1px solid var(--journey-rule);
+}
+.mm-app-shell .mm-journey-export-actions > button {
+  justify-content: flex-start;
+  min-height: 55px;
+  border: 0;
+  border-radius: 0;
+  border-bottom: 1px solid var(--journey-rule);
+  background: transparent;
+  color: var(--journey-ink);
+  text-align: left;
+}
+.mm-app-shell .mm-journey-export-actions > button:hover { background: var(--journey-paper); }
+.mm-app-shell .mm-journey-export-actions button.text-destructive {
+  color: var(--color-destructive);
+  border-bottom: 0;
+}
+.mm-app-shell .mm-admin-screen > .mm-journey-intro {
+  border-bottom: 1px solid var(--journey-rule);
+  padding-bottom: 22px;
+}
+.mm-app-shell .mm-admin-screen .mm-journey-intro [role="tablist"] {
+  min-height: 45px;
+  background: transparent;
+}
+.mm-app-shell .mm-admin-screen .mm-journey-intro [role="tab"] {
+  min-width: 63px;
+  min-height: 45px;
+  padding-inline: 10px;
+}
+.mm-app-shell .mm-admin-screen section {
+  border-color: var(--journey-rule);
+}
+.mm-app-shell .mm-admin-screen section h2 {
+  font-family: "Fraunces",Georgia,serif;
+  font-size: clamp(22px, 2.8vw, 27px);
+  font-weight: 450;
+  letter-spacing: -.045em;
+}
+.mm-app-shell .mm-admin-screen .mm-journey-edit-section {
+  border: 0;
+  border-top: 1px solid var(--journey-rule);
+  border-radius: 0;
+  padding: 24px 0 30px;
+  background: transparent;
+}
+.mm-app-shell .mm-admin-screen .mm-journey-edit-section input {
+  min-height: 46px;
+  border-color: var(--journey-rule);
+}
+@media (max-width: 640px) {
+  .mm-app-shell .mm-journey-settings-links > :is(a,button) { padding-inline: 11px; }
+  .mm-app-shell .mm-journey-settings-links > :is(a,button) > span { font-size: 11px; }
+  .mm-app-shell .mm-journey-weight-form > .grid-cols-2 { gap: 11px; }
+  .mm-app-shell .mm-journey-weight-current { padding: 22px 19px; }
+  .mm-app-shell .mm-admin-screen > .mm-journey-intro {
+    align-items: stretch;
+  }
+}
+.dark .mm-app-shell .mm-journey-weight-form button[type="submit"] { background: #33704e; }
