@@ -25,6 +25,8 @@ import { summarizeNutrientCoverage } from "@/lib/nutrition/coverage";
 import { lastNWeeks, weekDates, formatDateShort, todayStr } from "@/lib/nutrition/datetime";
 import { formatNumber } from "@/lib/utils";
 import { cn } from "@/lib/utils";
+import { JourneyIntro } from "@/components/app/JourneyIntro";
+import { JourneyEmpty } from "@/components/app/JourneyEmpty";
 
 const RANGE_OPTIONS = [
   { value: 7, label: "7 days" },
@@ -110,6 +112,9 @@ export function Trends() {
     return { protein, carbs, fat };
   }, [diaryData.data]);
 
+  const noHistory = !diaryData.loading && !weight.loading && !diaryData.error && !weight.error &&
+    diaryData.data?.all.length === 0 && weights.length === 0;
+
   const macroEnergy = macroTotals
     ? macroTotals.protein * 4 + macroTotals.carbs * 4 + macroTotals.fat * 9
     : 0;
@@ -123,19 +128,20 @@ export function Trends() {
 
   return (
     <div className="mm6-subpage mm6-page-trends ref-live-progress flex flex-col gap-6">
-      <header className="flex flex-wrap items-end justify-between gap-3">
-        <div>
-          <h1 className="text-2xl font-semibold tracking-tight">Progress</h1>
-          <p className="mt-0.5 text-sm text-muted-foreground">Your nutrition and weight, seen in the longer view.</p>
-        </div>
-        <Tabs value={String(range)} onValueChange={(v) => setRange(Number(v))}>
-          <TabsList>
-            {RANGE_OPTIONS.map((r) => (
-              <TabsTrigger key={r.value} value={String(r.value)}>{r.label}</TabsTrigger>
-            ))}
-          </TabsList>
-        </Tabs>
-      </header>
+      <JourneyIntro
+        eyebrow="THE LONGER VIEW"
+        title="Progress"
+        description="Patterns emerge with consistent entries. Your history stays yours to review."
+        action={(
+          <Tabs value={String(range)} onValueChange={(value) => setRange(Number(value))}>
+            <TabsList aria-label="Progress period">
+              {RANGE_OPTIONS.map((option) => (
+                <TabsTrigger key={option.value} value={String(option.value)}>{option.label}</TabsTrigger>
+              ))}
+            </TabsList>
+          </Tabs>
+        )}
+      />
 
       {diaryData.loading && !diaryData.data && (
         <p role="status" className="text-sm text-muted-foreground">Loading your nutrition history…</p>
@@ -152,20 +158,27 @@ export function Trends() {
           <Button variant="outline" size="sm" onClick={weight.reload}>Retry</Button>
         </div>
       )}
-      {!diaryData.loading && !weight.loading && !diaryData.error && !weight.error &&
-        diaryData.data?.all.length === 0 && weights.length === 0 && (
-        <p className="border-y py-4 text-sm leading-6 text-muted-foreground">
-          Your charts will build as you track. <Link to="/diary" className="font-medium text-foreground underline underline-offset-4">Add your first meal</Link> to start a nutrition history, and record weight to see a weight trend.
-        </p>
+      {noHistory && (
+        <JourneyEmpty
+          title="Your first trend begins with a single entry."
+          description="Add food to build your nutrition history, or record a weight to see how it changes over time."
+          supporting={(
+            <div className="mm-journey-empty-links">
+              <Link to="/diary">Log food</Link>
+              <Link to="/weight">Record weight</Link>
+            </div>
+          )}
+        />
       )}
 
-      <nav className="ref-progress-categories" aria-label="Progress categories"><a href="#ref-weight-trend">Weight</a><a href="#ref-calorie-trend">Calories</a><a href="#ref-macro-trend">Macros</a></nav>
+      {!noHistory && (
+        <>
 
       {/* Calorie trend */}
       <section id="ref-calorie-trend" className="border-b bg-card/0 pb-6" aria-label="Calorie trend">
         <div className="flex flex-wrap items-center justify-between gap-2">
           <h2 className="text-sm font-semibold">Daily calories</h2>
-          {adherence.adherencePct !== null ? (
+          {goals?.calorieTarget != null && adherence.adherencePct !== null ? (
             <div className="flex items-center gap-2 text-xs text-muted-foreground">
               <Badge
                 variant="outline"
@@ -198,16 +211,22 @@ export function Trends() {
                   contentStyle={{ background: "var(--popover)", border: "1px solid var(--border)", borderRadius: 8, fontSize: 12 }}
                   formatter={(value) => [`${formatNumber(Number(value))} kcal`, "Calories"]}
                 />
-                <ReferenceLine y={goals?.calorieTarget ?? 2000} stroke="var(--primary)" strokeDasharray="6 4" />
+                {goals?.calorieTarget != null && (
+                  <ReferenceLine y={goals.calorieTarget} stroke="var(--primary)" strokeDasharray="6 4" />
+                )}
                 <Bar dataKey="kcal" fill="var(--chart-1)" radius={[3, 3, 0, 0]} maxBarSize={18} />
               </BarChart>
             </ResponsiveContainer>
           )}
         </div>
-        <p className="mt-2 text-[11px] text-muted-foreground">Dashed line: your {formatNumber(goals?.calorieTarget ?? 2000)} kcal target.</p>
+        {goals?.calorieTarget != null && (
+          <p className="mt-2 text-[11px] text-muted-foreground">
+            Dashed line: your {formatNumber(goals.calorieTarget)} kcal target.
+          </p>
+        )}
       </section>
 
-      <div className="grid gap-6 lg:grid-cols-2">
+      <div className="mm-journey-progress-secondary grid gap-6">
         {/* Weight */}
         <section id="ref-weight-trend" className="border-b pb-6" aria-label="Weight trend">
           <div className="flex items-center justify-between gap-2">
@@ -289,18 +308,20 @@ export function Trends() {
       <WeeklyArchive
         weeks={weeks}
         entries={history.data}
-        target={goals?.calorieTarget ?? 2000}
+        target={goals?.calorieTarget ?? null}
         loading={history.loading}
         error={history.error}
         reload={history.reload}
       />
+      </>
+      )}
     </div>
   );
 }
 
 function EmptyChart({ message }: { message: string }) {
   return (
-    <div className="flex h-full min-h-32 items-center justify-center rounded-lg border border-dashed px-6 text-center text-sm text-muted-foreground">
+    <div className="mm-journey-chart-empty">
       {message}
     </div>
   );
