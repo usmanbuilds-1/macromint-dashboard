@@ -94,6 +94,12 @@ try {
   await page.getByRole("button", { name: /Start tracking/ }).click();
   await page.getByRole("heading", { name: "Today", exact: true }).waitFor({ timeout: 20000 });
   await screenshotEverySize("today");
+  // A compact phone is narrower than our usual 390px screen audit.
+  await page.setViewportSize({ width: 320, height: 740 });
+  await page.screenshot({ path: "mobile-audit/screens/today-320.png", fullPage: true });
+  const smallPhoneOverflow = await page.evaluate(() => document.documentElement.scrollWidth - innerWidth);
+  assert.ok(smallPhoneOverflow <= 2, "Today must not horizontally overflow a 320px phone");
+  await page.setViewportSize({ width: 390, height: 844 });
 
   // Daily navigation never buries diary, the task users perform most often.
   const nav = page.locator(".ref-mobile-tabs");
