@@ -89,7 +89,7 @@ export function CustomFoodDialog({ open, onClose, onCreated }: { open: boolean; 
               <Input id="cf-brand" maxLength={120} value={brand} onChange={(e) => setBrand(e.target.value)} />
             </div>
           </div>
-          <p className="text-xs text-muted-foreground">Values per 100 g or 100 ml. Leave optional fields empty if unknown — Macromint never invents values.</p>
+          <p className="text-xs text-muted-foreground">Values per 100 g. Convert liquid labels that use 100 ml into a gram basis before entering them. Leave optional fields empty if unknown — Macromint never invents values.</p>
           <div className="grid grid-cols-2 gap-3">
             {MACRO_INPUTS.map((m) => (
               <div key={m.key} className="grid gap-1.5">
