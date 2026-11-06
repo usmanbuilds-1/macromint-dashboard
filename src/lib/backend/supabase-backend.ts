@@ -463,6 +463,35 @@ export const supabaseBackend: Backend = {
     });
   },
 
+  async renameSavedMeal(id, name) {
+    const trimmed = name.trim();
+    if (trimmed.length < 1 || trimmed.length > 100) throw new BackendError("VALIDATION", "Meal name must be 1–100 characters");
+    const { data, error } = await getSupabase()
+      .from("saved_meals")
+      .update({ name: trimmed })
+      .eq("id", id)
+      .eq("user_id", await currentUserId())
+      .select("*")
+      .single();
+    if (error) throw new BackendError("DB", error.message);
+    return {
+      id: String(data.id),
+      userId: String(data.user_id),
+      name: String(data.name),
+      items: data.items as unknown as SavedMeal["items"],
+      createdAt: String(data.created_at),
+    };
+  },
+
+  async deleteSavedMeal(id) {
+    const { error } = await getSupabase()
+      .from("saved_meals")
+      .delete()
+      .eq("id", id)
+      .eq("user_id", await currentUserId());
+    if (error) throw new BackendError("DB", error.message);
+  },
+
   async logSavedMeal(id, entryDate, mealType) {
     return logSavedMealBatch(id, entryDate, mealType, await currentUserId());
   },
