@@ -1,5 +1,5 @@
 import assert from "node:assert/strict";
-import { mkdir } from "node:fs/promises";
+import { mkdir, writeFile } from "node:fs/promises";
 import { chromium } from "playwright";
 
 // This preview is built with intentionally empty Supabase environment variables.
@@ -10,6 +10,7 @@ const browser = await chromium.launch({ headless: true });
 const context = await browser.newContext({ viewport: { width: 390, height: 844 } });
 const page = await context.newPage();
 const errors = [];
+const visualMetrics = [];
 page.on("pageerror", error => errors.push(error.message));
 
 async function screenshotEverySize(name) {
@@ -19,6 +20,18 @@ async function screenshotEverySize(name) {
       path: `mobile-audit/screens/${name}-${width}.png`,
       fullPage: true, animations: "disabled",
     });
+    const metrics = await page.evaluate(() => {
+      const resources = performance.getEntriesByType("resource");
+      return {
+        pathname: location.pathname,
+        title: document.title,
+        domNodes: document.querySelectorAll("*").length,
+        jsResources: resources.filter((resource) => /\\.m?js(?:\\?|$)/.test(resource.name)).length,
+        transferredKb: Math.round(resources.reduce((sum, resource) => sum + (resource.transferSize || 0), 0) / 1024),
+        heading: document.querySelector("h1")?.textContent?.trim() || null,
+      };
+    });
+    visualMetrics.push({ name, width, ...metrics });
     const overflow = await page.evaluate(() => document.documentElement.scrollWidth - innerWidth);
     if (overflow > 2) {
       const offenders = await page.evaluate(() => [...document.querySelectorAll("body *")]
@@ -205,6 +218,8 @@ try {
     console.log("PASS internal pages width", width);
   }
   assert.deepEqual(errors, [], "Browser runtime errors");
+  await writeFile("mobile-audit/screens/metrics.json", JSON.stringify(visualMetrics, null, 2));
+  console.log("CAPTURED", visualMetrics.length, "responsive app screenshots with DOM and transfer metrics");
   console.log("PASS isolated onboarding, daily logging, photo gallery, navigation, diary, foods, progress, settings");
 } finally {
   await context.close();
