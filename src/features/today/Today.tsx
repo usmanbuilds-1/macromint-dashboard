@@ -5,6 +5,7 @@ import { useSession } from "@/context/Session";
 import { backend, bumpData } from "@/lib/backend";
 import { useAsyncData } from "@/hooks/useData";
 import { dailyTotals } from "@/lib/nutrition/math";
+import { hasCompleteNutrientData } from "@/lib/nutrition/coverage";
 import { formatDateLong, todayStr, addDaysStr } from "@/lib/nutrition/datetime";
 import { MEAL_LABELS, type MealType } from "@/types";
 import { useFoodLog } from "@/features/foods/FoodLogProvider";
@@ -86,6 +87,12 @@ export function Today() {
         fatTarget={goals?.fatG ?? null}
         loading={diary.loading && !diary.data}
         hasEntries={entries.length > 0}
+        complete={{
+          kcal: entries.length === 0 || hasCompleteNutrientData(entries, "kcal"),
+          protein: entries.length === 0 || hasCompleteNutrientData(entries, "protein"),
+          carbs: entries.length === 0 || hasCompleteNutrientData(entries, "carbs"),
+          fat: entries.length === 0 || hasCompleteNutrientData(entries, "fat"),
+        }}
       />
 
       <section aria-label="Add food" className="mm-home-actions">
