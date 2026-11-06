@@ -73,6 +73,11 @@ try {
   await page.getByRole("heading", { name: "Add food from a photo" }).waitFor();
   await page.getByRole("button", { name: "Take photo" }).waitFor();
   await page.getByRole("button", { name: "Choose from gallery" }).waitFor();
+  await page.getByRole("button", { name: "Search or enter a meal instead" }).waitFor();
+  assert.equal(await page.locator("#scan-hints").count(), 0,
+    "Notes should remain collapsed until the user asks to type");
+  assert.equal(await page.evaluate(() => document.activeElement?.tagName), "BUTTON",
+    "Photo dialog must not auto-focus a text field and summon the mobile keyboard");
   const images = page.getByRole("dialog").locator('input[type="file"]');
   assert.equal(await images.count(), 2);
   assert.equal(await images.nth(0).getAttribute("capture"), "environment");
@@ -81,6 +86,13 @@ try {
   await page.screenshot({ path: "mobile-audit/internal-gallery-390.png", fullPage: true });
   await page.keyboard.press("Escape");
   await page.getByRole("button", { name: "Add food", exact: true }).click();
+  await page.getByRole("heading", { name: "Add food", exact: true }).waitFor();
+  await page.getByRole("button", { name: /Search or type a food/ }).waitFor();
+  await page.getByRole("button", { name: /Use a meal photo/ }).waitFor();
+  assert.notEqual(await page.evaluate(() => document.activeElement?.tagName), "INPUT",
+    "The Add food chooser must not open the keyboard");
+  await page.screenshot({ path: "mobile-audit/internal-add-food-choice-390.png", fullPage: true });
+  await page.getByRole("button", { name: /Search or type a food/ }).click();
   await page.getByPlaceholder(/Search foods, brands/i).waitFor();
   await page.keyboard.press("Escape");
   await page.screenshot({ path: "mobile-audit/internal-today-390.png", fullPage: true });
