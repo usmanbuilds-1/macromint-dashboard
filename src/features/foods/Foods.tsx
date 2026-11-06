@@ -16,7 +16,7 @@ import {
 import { Label } from "@/components/ui/label";
 import { kcalOf } from "@/components/app/bits";
 import { backend, bumpData } from "@/lib/backend";
-import { useAsyncData, useDataVersion } from "@/hooks/useData";
+import { useAsyncData } from "@/hooks/useData";
 import { todayStr } from "@/lib/nutrition/datetime";
 import { foodToLoggable, offToLoggable, useFoodLog, type LoggableFood } from "./FoodLogProvider";
 import { formatNumber } from "@/lib/utils";
@@ -62,7 +62,6 @@ function FoodRow({ food, onLog, favActive, onFav }: { food: LoggableFood; onLog:
 
 export function Foods() {
   const foodLog = useFoodLog();
-  const version = useDataVersion();
   const [q, setQ] = useState("");
   const [hit, setHit] = useState<Awaited<ReturnType<typeof backend.searchFoods>> | null>(null);
   const [searching, setSearching] = useState(false);
@@ -70,7 +69,7 @@ export function Foods() {
   const [activeTab, setActiveTab] = useState("search");
   const today = todayStr();
 
-  const favorites = useAsyncData(() => backend.getFavorites(), [version]);
+  const favorites = useAsyncData(() => backend.getFavorites(), [], "favorites");
 
   const runSearch = async (term: string) => {
     if (term.trim().length < 2) {
