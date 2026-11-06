@@ -75,7 +75,7 @@ export function ResetPassword() {
 
   if (USERNAME_AUTH_ENABLED && !legacyEmailRecovery) {
     return (
-      <AuthShell title="Recover your account" subtitle="Use one of the backup codes you saved during signup. No email address is needed.">
+      <AuthShell title="Recover your account" subtitle="Use a previously saved recovery code. New accounts that skipped backup codes cannot use this option.">
         <form className="grid gap-4" onSubmit={async (event) => {
           event.preventDefault();
           if (!isValidUsername(username)) {

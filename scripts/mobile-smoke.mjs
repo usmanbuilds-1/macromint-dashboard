@@ -111,7 +111,9 @@ for (const [width, height] of sizes) {
         await page.getByRole("button", { name: "Continue", exact: true }).click();
         await page.getByRole("heading", { name: "Set up your beta account" }).waitFor({ timeout: 15000 });
         await page.getByText("Beta tester invitation selected").waitFor();
-        await page.locator("#name").waitFor();
+        if (await page.locator("#name").count()) {
+          throw new Error("Signup must not duplicate the name question from onboarding");
+        }
         await page.locator("#username").waitFor();
         await page.locator("#password").waitFor();
         if (await page.locator("#invite").count()) throw new Error("Invitation field incorrectly repeated in account setup");
@@ -126,7 +128,9 @@ for (const [width, height] of sizes) {
           await page.getByRole("heading", { name: "Create your account", exact: true }).waitFor();
           await page.getByText("Regular account · No invitation needed").waitFor();
           if (await page.locator("#invite").count()) throw new Error("Regular account wrongly requires an invite");
-          await page.locator("#name").waitFor();
+          if (await page.locator("#name").count()) {
+            throw new Error("Regular signup must ask for name only in onboarding");
+          }
           await page.locator("#username").waitFor();
           await page.locator("#password").waitFor();
           await page.screenshot({ path: "mobile-audit/signup-regular-390.png", fullPage: true });
@@ -138,7 +142,9 @@ for (const [width, height] of sizes) {
         }
       } else {
         await page.getByRole("heading", { name: "Create your account" }).waitFor({ timeout: 15000 });
-        await page.locator("#name").waitFor();
+        if (await page.locator("#name").count()) {
+          throw new Error("Signup must not duplicate the onboarding name");
+        }
         await page.locator("#username").waitFor();
         await page.locator("#password").waitFor();
       }

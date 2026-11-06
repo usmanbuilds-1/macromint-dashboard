@@ -13,7 +13,6 @@ import { USERNAME_AUTH_ENABLED, USERNAME_MIN_PASSWORD_LENGTH } from "@/lib/auth/
 import { isValidUsername } from "@/lib/auth/username";
 
 export function Register() {
-  const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
@@ -25,8 +24,6 @@ export function Register() {
   );
   const [isBetaTester, setIsBetaTester] = useState(false);
   const [busy, setBusy] = useState(false);
-  const [recoveryCodes, setRecoveryCodes] = useState<string[] | null>(null);
-  const [acknowledged, setAcknowledged] = useState(false);
   const navigate = useNavigate();
   const { setAuthUser } = useSession();
 
@@ -58,10 +55,6 @@ export function Register() {
       toast.error("New account registration is temporarily unavailable.");
       return;
     }
-    if (!name.trim() || name.trim().length < 2) {
-      toast.error("Enter your name");
-      return;
-    }
     if (!IS_DEMO && isBetaTester && !isValidInviteCode(inviteCode)) {
       toast.error("Enter your beta invitation code");
       setSignupStep("invitation");
@@ -82,22 +75,28 @@ export function Register() {
     }
     setBusy(true);
     try {
-      const { needsVerification, recoveryCodes: issuedCodes } = await backend.signUp(
+      // The server still expects an initial profile name; use the username
+      // until onboarding asks "What should we call you?" Never collect it twice.
+      const initialName = USERNAME_AUTH_ENABLED ? username.trim()
+        : email.trim().split("@")[0] || "Member";
+      const { needsVerification } = await backend.signUp(
         USERNAME_AUTH_ENABLED ? username.trim() : email.trim(),
-        password, name.trim(), isBetaTester ? inviteCode.trim() : "",
+        password, initialName, isBetaTester ? inviteCode.trim() : "",
       );
-      if (USERNAME_AUTH_ENABLED && !IS_DEMO) {
-        if (!issuedCodes?.length) {
-          toast.error("Account recovery is not configured. Contact your beta administrator.");
-          return;
-        }
-        setRecoveryCodes(issuedCodes);
-        setAcknowledged(false);
-        return;
-      }
       if (needsVerification && !IS_DEMO) {
         navigate("/verify", { state: { email: email.trim() } });
         return;
+      }
+      // Username registration creates a confirmed account, then signs it in.
+      // Don't block a new user with a recovery-codes interstitial.
+      if (USERNAME_AUTH_ENABLED && !IS_DEMO) {
+        try {
+          await backend.signIn(username.trim(), password);
+        } catch {
+          toast.error("Your account was created, but automatic sign-in failed. Sign in with your username and password.");
+          navigate("/login", { replace: true });
+          return;
+        }
       }
       const user = await backend.getSessionUser();
       setAuthUser(user);
@@ -109,46 +108,6 @@ export function Register() {
     }
     return;
   };
-
-  if (recoveryCodes) {
-    return (
-      <AuthShell title="Save your recovery codes" subtitle="These codes are shown once. Keep them somewhere private and offline. Each code works only once.">
-        <div className="grid gap-4">
-          <p className="text-sm leading-6 text-muted-foreground">
-            Your account was created as <strong>@{username.trim().toLowerCase()}</strong>.
-            No recovery email is collected. These codes are the self-service method to reset your password.
-          </p>
-          <div className="max-h-64 overflow-auto rounded-md border bg-muted/30 p-3 font-mono text-xs leading-8" aria-label="One-time account recovery codes">
-            {recoveryCodes.map((code, index) => <div className="select-all" key={code}>{index + 1}. {code}</div>)}
-          </div>
-          <Button type="button" variant="outline" onClick={() => {
-            void navigator.clipboard.writeText(recoveryCodes.join("\n"))
-              .then(() => toast.success("Recovery codes copied"))
-              .catch(() => toast.error("Copy unavailable. Save the codes manually."));
-          }}>Copy recovery codes</Button>
-          <label className="flex items-start gap-2 text-sm leading-6">
-            <input type="checkbox" className="mt-1.5 accent-primary" checked={acknowledged}
-              onChange={event => setAcknowledged(event.target.checked)} />
-            I have saved these recovery codes somewhere secure.
-          </label>
-          <Button disabled={!acknowledged || busy} onClick={() => {
-            setBusy(true);
-            void backend.signIn(username.trim(), password)
-              .then(async () => {
-                const user = await backend.getSessionUser();
-                setAuthUser(user);
-                setRecoveryCodes(null);
-                setPassword("");
-                navigate("/onboarding", { replace: true });
-              })
-              .catch(() => toast.error("Account created, but sign-in failed. Save your codes and sign in manually."))
-              .finally(() => setBusy(false));
-          }}>{busy ? "Signing in…" : "Continue to onboarding"}</Button>
-        </div>
-      </AuthShell>
-    );
-  }
-
 
   if ((!USERNAME_AUTH_ENABLED || (!INVITE_REGISTRATION_ENABLED && !PUBLIC_REGISTRATION_ENABLED)) && !IS_DEMO) {
     return (
@@ -219,11 +178,6 @@ export function Register() {
             </button>
           </div>
         )}
-        <div className="grid gap-1.5">
-          <Label htmlFor="name">Name</Label>
-          <Input id="name" required maxLength={100} autoComplete="name"
-            value={name} onChange={(e) => setName(e.target.value)} placeholder="Your name" />
-        </div>
         {USERNAME_AUTH_ENABLED ? (
           <div className="grid gap-1.5">
             <Label htmlFor="username">Username</Label>
