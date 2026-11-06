@@ -142,7 +142,11 @@ export function WeightProgressModule({ onSaved }: WeightProgressModuleProps) {
       <div className="mm-journey-weight-current" aria-label="Latest recorded weight">
         <span>CURRENT WEIGHT</span>
         <div><strong>{latestKg === null ? "—" : (latestKg * (isImperial ? POUNDS_PER_KG : 1)).toFixed(1)}</strong><small>{units}</small></div>
-        <p>{latestKg === null ? "Add your first weigh-in to start the trend." : "From your most recent saved weigh-in."}</p>
+        <p>{weights.length > 0
+          ? "From your most recent saved weigh-in."
+          : latestKg === null
+            ? "Add your first weigh-in to start the trend."
+            : "From your profile. Record a weigh-in to build your trend."}</p>
       </div>
       <form className="mm-journey-weight-form grid gap-4 border-b pb-6" onSubmit={(event) => { event.preventDefault(); void save(); }}>
         <div className="grid grid-cols-2 gap-3">
