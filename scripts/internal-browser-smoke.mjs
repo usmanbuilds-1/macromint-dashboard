@@ -14,6 +14,9 @@ const visualMetrics = [];
 page.on("pageerror", error => errors.push(error.message));
 
 async function screenshotEverySize(name) {
+  // Full-page captures should start at the page origin, even after opening
+  // and closing an offscreen disclosure that scrolled the browser.
+  await page.evaluate(() => window.scrollTo(0, 0));
   for (const [width, height] of [[390, 844], [768, 1024], [1440, 900]]) {
     await page.setViewportSize({ width, height });
     await page.screenshot({
@@ -50,6 +53,7 @@ async function screenshotEverySize(name) {
 }
 
 async function screenshotCompact(name) {
+  await page.evaluate(() => window.scrollTo(0, 0));
   await page.setViewportSize({ width: 320, height: 740 });
   await page.screenshot({
     path: `mobile-audit/screens/${name}-320.png`,
