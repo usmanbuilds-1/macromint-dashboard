@@ -46,13 +46,20 @@ function ActionChip({ label, onClick, destructive }: { label: string; onClick: (
 
 export function Admin({ section }: { section: "users" | "audit" | "settings" }) {
   return (
-    <div className="flex flex-col gap-6">
+    <div className="mm-admin-screen flex flex-col gap-6">
       <header className="flex flex-wrap items-end justify-between gap-3">
         <div>
           <p className="text-[11px] font-medium uppercase tracking-wide text-primary">Administration</p>
           <h1 className="mt-0.5 text-2xl font-semibold tracking-tight">
             {section === "users" ? "Users" : section === "audit" ? "Audit log" : "Platform settings"}
           </h1>
+          <p className="mt-2 max-w-[56ch] text-sm leading-6 text-muted-foreground">
+            {section === "users"
+              ? "Invite testers, review access and manage user accounts."
+              : section === "audit"
+                ? "Review account access changes and administrative decisions."
+                : "Configure trial settings and feature availability."}
+          </p>
         </div>
         <Tabs value={section} onValueChange={() => undefined}>
           <TabsList>
