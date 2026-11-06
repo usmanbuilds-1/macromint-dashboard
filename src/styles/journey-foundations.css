@@ -64,6 +64,10 @@
   border-block: 1px solid var(--journey-rule);
   padding: 28px 0 30px;
 }
+.mm-app-shell .mm6-page-trends > .mm-journey-empty {
+  border-top: 0;
+  padding-top: 14px;
+}
 .mm-app-shell .mm-journey-empty h3 {
   max-width: 30ch;
   margin: 10px 0 0;
