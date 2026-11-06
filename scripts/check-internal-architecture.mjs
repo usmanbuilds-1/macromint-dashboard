@@ -11,6 +11,12 @@ const budgets = {
   "src/features/foods/FoodLogProvider.tsx": 165,
   "src/lib/backend/supabase/diary-range.ts": 100,
   "src/styles/internal-polish.css": 220,
+  "src/hooks/useCachedData.ts": 80,
+  "src/hooks/useAppDataInvalidation.ts": 60,
+  "src/hooks/usePrimaryRoutePreload.ts": 80,
+  "src/features/trends/WeeklyArchive.tsx": 135,
+  "src/features/trends/Trends.tsx": 330,
+  "src/lib/backend/supabase/saved-meal-log.ts": 100,
   // Legacy debt: do not grow these files. Split domain code first.
   "src/lib/backend/supabase-backend.ts": 990,
   "src/styles.css": 1720,
@@ -29,4 +35,14 @@ for (const name of ["FoodSearchDialog", "ServingConfigHost", "ScanDialog"]) {
 const progress = readFileSync("src/features/trends/Trends.tsx", "utf8");
 assert.match(progress, /backend\.getDiaryRange\(/);
 assert.doesNotMatch(progress, /Promise\.all\(rangeDates\.map/);
-console.log("PASS: modals remain route-delayed and progress reads are batched");
+const weekly = readFileSync("src/features/trends/WeeklyArchive.tsx", "utf8");
+const backend = readFileSync("src/lib/backend/supabase-backend.ts", "utf8");
+assert.doesNotMatch(progress, /backend\\.getDiary\\(/,
+  "Progress must never fetch calendar days one by one");
+assert.doesNotMatch(weekly, /backend\\.|useAsyncData/,
+  "Weekly archive must derive from the shared progress range");
+assert.match(backend, /logSavedMealBatch\\(/,
+  "Saved meal logging must use one atomic batch instead of N inserts");
+assert.doesNotMatch(backend.slice(backend.indexOf("async logSavedMeal("), backend.indexOf("async getDiary(")),
+  /for\\s*\\(/, "Do not reintroduce per-food insertion loops");
+console.log("PASS: tab data caching, no weekly N+1 reads, and atomic saved-meal batch");
