@@ -18,6 +18,7 @@ import { useAsyncData } from "@/hooks/useData";
 import { ACCESS_STATES, type AccessState, type AdminUserRow } from "@/types";
 import { formatDateShort, todayStr } from "@/lib/nutrition/datetime";
 import { cn } from "@/lib/utils";
+import { JourneyIntro } from "@/components/app/JourneyIntro";
 
 const STATE_STYLES: Record<AccessState, string> = {
   trial_active: "border-primary/40 text-primary",
@@ -47,28 +48,24 @@ function ActionChip({ label, onClick, destructive }: { label: string; onClick: (
 export function Admin({ section }: { section: "users" | "audit" | "settings" }) {
   return (
     <div className="mm-admin-screen flex flex-col gap-6">
-      <header className="flex flex-wrap items-end justify-between gap-3">
-        <div>
-          <p className="text-[11px] font-medium uppercase tracking-wide text-primary">Administration</p>
-          <h1 className="mt-0.5 text-2xl font-semibold tracking-tight">
-            {section === "users" ? "Users" : section === "audit" ? "Audit log" : "Platform settings"}
-          </h1>
-          <p className="mt-2 max-w-[56ch] text-sm leading-6 text-muted-foreground">
-            {section === "users"
-              ? "Invite testers, review access and manage user accounts."
-              : section === "audit"
-                ? "Review account access changes and administrative decisions."
-                : "Configure trial settings and feature availability."}
-          </p>
-        </div>
-        <Tabs value={section} onValueChange={() => undefined}>
-          <TabsList>
-            <TabsTrigger value="users" asChild><Link to="/admin">Users</Link></TabsTrigger>
-            <TabsTrigger value="audit" asChild><Link to="/admin/audit">Audit</Link></TabsTrigger>
-            <TabsTrigger value="settings" asChild><Link to="/admin/settings">Settings</Link></TabsTrigger>
-          </TabsList>
-        </Tabs>
-      </header>
+      <JourneyIntro
+        eyebrow="ADMINISTRATION"
+        title={section === "users" ? "Users" : section === "audit" ? "Audit log" : "Platform settings"}
+        description={section === "users"
+          ? "Manage invitations, account status, and access decisions."
+          : section === "audit"
+            ? "A chronological record of account decisions and changes."
+            : "Control access rules. Existing trials remain unchanged when you edit their length."}
+        action={(
+          <Tabs value={section} onValueChange={() => undefined}>
+            <TabsList>
+              <TabsTrigger value="users" asChild><Link to="/admin">Users</Link></TabsTrigger>
+              <TabsTrigger value="audit" asChild><Link to="/admin/audit">Audit</Link></TabsTrigger>
+              <TabsTrigger value="settings" asChild><Link to="/admin/settings">Settings</Link></TabsTrigger>
+            </TabsList>
+          </Tabs>
+        )}
+      />
       {section === "users" && <AdminUsers />}
       {section === "audit" && <AdminAudit />}
       {section === "settings" && <AdminSettings />}
@@ -449,8 +446,8 @@ function AdminSettings() {
 
   return (
     <div className="flex flex-col gap-4">
-      <section className="rounded-xl border bg-card p-5">
-        <h2 className="text-sm font-semibold">Free trial</h2>
+      <section className="mm-journey-edit-section">
+        <h2 className="mm-journey-section-title">Free trial</h2>
         <p className="mt-1 text-xs text-muted-foreground">Configurable without touching code. Existing trials are unaffected.</p>
         <div className="mt-4 flex flex-wrap items-end gap-4">
           <div className="grid w-32 gap-1.5">
@@ -460,8 +457,8 @@ function AdminSettings() {
         </div>
       </section>
 
-      <section className="rounded-xl border bg-card p-5">
-        <h2 className="text-sm font-semibold">Rewarded advertising</h2>
+      <section className="mm-journey-edit-section">
+        <h2 className="mm-journey-section-title">Rewarded advertising</h2>
         <p className="mt-1 text-xs text-muted-foreground">
           Access granted per verified ad view. Requires a configured provider (see docs/MONETIZATION.md); until then rewards are disabled and shown as unavailable.
         </p>
