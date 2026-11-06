@@ -5,13 +5,14 @@ import { formatNumber } from "@/lib/utils";
 type DailyGoal = number | null;
 
 function MacroMeasure({
-  name, value, target, emphasis = false, loading,
+  name, value, target, emphasis = false, loading, complete,
 }: {
   name: string;
   value: number | null;
   target: DailyGoal;
   emphasis?: boolean;
   loading: boolean;
+  complete: boolean;
 }) {
   const percentage = value !== null && target !== null && target > 0
     ? Math.min(100, Math.max(0, (value / target) * 100))
@@ -21,18 +22,18 @@ function MacroMeasure({
     <div className={`mm-home-macro ${emphasis ? "mm-home-macro--primary" : ""}`}>
       <dt className="mm-home-macro-label">{name}</dt>
       <dd className="mm-home-macro-value tabular-nums">
-        <strong>{loading || value === null ? "—" : formatNumber(value)}</strong>
+        <strong>{loading || value === null ? "—" : `${complete ? "" : "≥ "}${formatNumber(value)}`}</strong>
         <span>g</span>
       </dd>
-      <div className="mm-home-macro-track" role="progressbar"
+      {complete && <div className="mm-home-macro-track" role="progressbar"
         aria-label={`${name} logged`}
         aria-valuemin={0}
         aria-valuenow={value ?? 0}
         aria-valuemax={Math.max(target ?? 0, value ?? 0, 1)}>
         <span style={{ width: `${percentage}%` }} />
-      </div>
+      </div>}
       <p className="mm-home-macro-target tabular-nums">
-        {target === null ? "No target set" : `of ${formatNumber(target)} g`}
+        {!complete ? "Known amount only" : target === null ? "No target set" : `of ${formatNumber(target)} g`}
       </p>
     </div>
   );
@@ -43,7 +44,7 @@ function MacroMeasure({
  * invents missing nutrient measurements.
  */
 export function TodayOverview({
-  totals, target, proteinTarget, carbsTarget, fatTarget, loading, hasEntries,
+  totals, target, proteinTarget, carbsTarget, fatTarget, loading, hasEntries, complete,
 }: {
   totals: NutrientRecord;
   target: DailyGoal;
@@ -52,11 +53,12 @@ export function TodayOverview({
   fatTarget: DailyGoal;
   loading: boolean;
   hasEntries: boolean;
+  complete: Record<"kcal" | "protein" | "carbs" | "fat", boolean>;
 }) {
   const energy = totals.kcal ?? null;
   const consumed = energy ?? 0;
   const targetReady = target !== null && target > 0;
-  const difference = targetReady && energy !== null ? target - consumed : null;
+  const difference = targetReady && energy !== null && complete.kcal ? target - consumed : null;
   const percentage = difference !== null
     ? Math.min(100, Math.max(0, (consumed / target!) * 100))
     : 0;
@@ -67,6 +69,8 @@ export function TodayOverview({
       ? "A fresh page. Start with whatever you've eaten."
       : energy === null
         ? "Calories aren't available for the foods entered yet."
+        : !complete.kcal
+          ? "Known calories only. Some foods have no energy data, so remaining calories cannot be calculated."
         : !targetReady
           ? "Add a calorie target to see your daily balance."
           : difference! > 0
@@ -92,7 +96,7 @@ export function TodayOverview({
           <p className="mm-home-overline">EATEN TODAY</p>
           <div className="mm-home-calorie-figure">
             <strong className="mm-home-calories tabular-nums">
-              {loading ? "—" : !hasEntries ? "0" : energy === null ? "—" : formatNumber(consumed)}
+              {loading ? "—" : !hasEntries ? "0" : energy === null ? "—" : `${complete.kcal ? "" : "≥ "}${formatNumber(consumed)}`}
             </strong>
             <span>kcal</span>
           </div>
@@ -113,7 +117,7 @@ export function TodayOverview({
 
       <p className={`mm-home-balance-copy ${!hasEntries ? "mm-home-balance-copy--empty" : ""}`} role="status">{context}</p>
 
-      {targetReady && (
+      {targetReady && complete.kcal && (
         <div className="mm-home-energy-track" role="progressbar"
           aria-label="Daily calorie progress"
           aria-valuemin={0} aria-valuenow={consumed}
@@ -123,9 +127,9 @@ export function TodayOverview({
       )}
 
       <dl className="mm-home-macro-grid" aria-label="Daily macronutrients">
-        <MacroMeasure name="Protein" value={nutrient("protein")} target={proteinTarget} emphasis loading={loading} />
-        <MacroMeasure name="Carbs" value={nutrient("carbs")} target={carbsTarget} loading={loading} />
-        <MacroMeasure name="Fat" value={nutrient("fat")} target={fatTarget} loading={loading} />
+        <MacroMeasure name="Protein" value={nutrient("protein")} target={proteinTarget} emphasis loading={loading} complete={complete.protein} />
+        <MacroMeasure name="Carbs" value={nutrient("carbs")} target={carbsTarget} loading={loading} complete={complete.carbs} />
+        <MacroMeasure name="Fat" value={nutrient("fat")} target={fatTarget} loading={loading} complete={complete.fat} />
       </dl>
     </section>
   );
