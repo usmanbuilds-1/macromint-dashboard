@@ -135,9 +135,9 @@ function Field({ label, id, value, limitKey, onChange }: {
 }) {
   const limit = LIMITS[limitKey];
   return (
-    <div className="grid gap-1.5">
+    <div className="grid min-w-0 gap-1.5">
       <Label htmlFor={id}>{label}</Label>
-      <Input id={id} type="number" min={limit.min} max={limit.max} step={1}
+      <Input id={id} className="min-w-0 w-full" type="number" min={limit.min} max={limit.max} step={1}
         inputMode="numeric" value={value} onChange={(e) => onChange(e.target.value)} />
       <p className="text-[11px] text-muted-foreground">Range: {limit.min}–{limit.max}</p>
     </div>
