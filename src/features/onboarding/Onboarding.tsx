@@ -16,6 +16,7 @@ import { estimateWeightTimeline, weightTimelineLabel } from "@/lib/weight/timeli
 import { ACTIVITY_DESCRIPTIONS, ACTIVITY_FACTORS } from "@/lib/nutrition/constants";
 import type { ActivityLevel, Objective, Sex, Units } from "@/types";
 import { cn } from "@/lib/utils";
+import { cmToFeetInches, feetInchesToCm, kgToLb, lbToKg } from "@/lib/units/body";
 
 const OBJECTIVES: Array<{ value: Objective; label: string; note: string }> = [
   { value: "lose", label: "Lose weight", note: "A moderate daily deficit" },
@@ -39,24 +40,76 @@ export function Onboarding() {
   const [heightCm, setHeightCm] = useState<string>(profile?.heightCm ? String(profile.heightCm) : "");
   const [weightKg, setWeightKg] = useState<string>(profile?.weightKg ? String(profile.weightKg) : "");
   const [targetWeightKg, setTargetWeightKg] = useState<string>(profile?.targetWeightKg ? String(profile.targetWeightKg) : "");
+  const [heightFeet, setHeightFeet] = useState<string>(
+    profile?.heightCm ? cmToFeetInches(profile.heightCm).feet : "",
+  );
+  const [heightInches, setHeightInches] = useState<string>(
+    profile?.heightCm ? cmToFeetInches(profile.heightCm).inches : "",
+  );
+  const [weightLb, setWeightLb] = useState<string>(profile?.weightKg ? kgToLb(profile.weightKg) : "");
+  const [targetWeightLb, setTargetWeightLb] = useState<string>(
+    profile?.targetWeightKg ? kgToLb(profile.targetWeightKg) : "",
+  );
   const [objective, setObjective] = useState<Objective | null>(profile?.objective ?? null);
   const [activityLevel, setActivityLevel] = useState<ActivityLevel | null>(profile?.activityLevel ?? null);
+
+  const changeUnits = (next: Units) => {
+    if (next === units) return;
+    if (next === "imperial") {
+      // Recalculate display values from canonical metric input every time
+      // so switching formats never carries stale numbers.
+      const ftIn = cmToFeetInches(Number(heightCm));
+      setHeightFeet(ftIn.feet);
+      setHeightInches(ftIn.inches);
+      setWeightLb(kgToLb(Number(weightKg)));
+      setTargetWeightLb(kgToLb(Number(targetWeightKg)));
+    }
+    // The canonical metric fields are synchronized as imperial input changes.
+    setUnits(next);
+  };
+
+  const changeImperialHeight = (feet: string, inches: string) => {
+    setHeightFeet(feet);
+    setHeightInches(inches);
+    const cm = feetInchesToCm(feet, inches);
+    setHeightCm(cm === null ? "" : String(cm));
+  };
+
+  const changeImperialWeight = (pounds: string, target = false) => {
+    const kg = lbToKg(pounds);
+    if (target) {
+      setTargetWeightLb(pounds);
+      setTargetWeightKg(kg === null ? "" : String(kg));
+    } else {
+      setWeightLb(pounds);
+      setWeightKg(kg === null ? "" : String(kg));
+    }
+  };
+
+  const weightUnit = units === "imperial" ? "lb" : "kg";
+  const targetInput = units === "imperial" ? targetWeightLb : targetWeightKg;
 
   const ageNum = Number(age);
   const heightNum = Number(heightCm);
   const weightNum = Number(weightKg);
   const personalValid =
     sex !== null && withinLimit(age, "ageYears") && Number.isInteger(ageNum) &&
-    withinLimit(heightCm, "heightCm") && withinLimit(weightKg, "weightKg") && name.trim().length <= 100;
-  const targetRequested = targetWeightKg.trim().length > 0;
+    withinLimit(heightCm, "heightCm") && withinLimit(weightKg, "weightKg") &&
+    (units === "metric" || (feetInchesToCm(heightFeet, heightInches) !== null &&
+      withinLimit(weightLb, "weightLb"))) &&
+    name.trim().length <= 100;
+  const targetRequested = targetInput.trim().length > 0;
+  const targetValueValid = units === "metric"
+    ? withinLimit(targetWeightKg, "weightKg")
+    : withinLimit(targetWeightLb, "weightLb") && withinLimit(targetWeightKg, "weightKg");
   const timeline = useMemo(() => {
-    if (!objective || !personalValid || !targetRequested || !withinLimit(targetWeightKg, "weightKg")) return null;
+    if (!objective || !personalValid || !targetRequested || !targetValueValid) return null;
     return estimateWeightTimeline({
       currentKg: weightNum, targetKg: Number(targetWeightKg), heightCm: heightNum, objective,
     });
-  }, [objective, personalValid, targetRequested, targetWeightKg, weightNum, heightNum]);
+  }, [objective, personalValid, targetRequested, targetWeightKg, targetValueValid, weightNum, heightNum]);
   const goalTargetValid = !targetRequested ||
-    (withinLimit(targetWeightKg, "weightKg") &&
+    (targetValueValid &&
      timeline !== null &&
      !["invalid_input", "objective_mismatch", "review_target"].includes(timeline.status));
 
@@ -141,7 +194,7 @@ export function Onboarding() {
               </div>
               <div className="grid gap-1.5">
                 <Label>Measurement system</Label>
-                <RadioGroup value={units} onValueChange={(v) => setUnits(v as Units)} className="flex gap-3">
+                <RadioGroup value={units} onValueChange={(v) => changeUnits(v as Units)} className="flex gap-3">
                   {(["metric", "imperial"] as Units[]).map((u) => (
                     <Label key={u} className="flex flex-1 cursor-pointer items-center gap-2 rounded-md border px-3 py-2.5 text-sm font-normal capitalize has-[button[data-state=checked]]:border-primary">
                       <RadioGroupItem value={u} /> {u}
@@ -165,12 +218,39 @@ export function Onboarding() {
                   <Input id="ob-age" type="number" min={LIMITS.ageYears.min} max={LIMITS.ageYears.max} step={1} inputMode="numeric" value={age} onChange={(e) => setAge(e.target.value)} placeholder="30" />
                 </div>
                 <div className="grid gap-1.5">
-                  <Label htmlFor="ob-height">Height (cm)</Label>
-                  <Input id="ob-height" type="number" min={LIMITS.heightCm.min} max={LIMITS.heightCm.max} step="any" inputMode="decimal" value={heightCm} onChange={(e) => setHeightCm(e.target.value)} placeholder="176" />
+                  {units === "imperial" ? (
+                    <>
+                      <Label htmlFor="ob-height-feet">Height (ft / in)</Label>
+                      <div className="grid grid-cols-2 gap-2">
+                        <Input id="ob-height-feet" type="number" min={0} max={8} step={1}
+                          inputMode="numeric" value={heightFeet}
+                          onChange={(e) => changeImperialHeight(e.target.value, heightInches)}
+                          placeholder="5" aria-label="Height feet" />
+                        <Input id="ob-height-inches" type="number" min={0} max={11.9} step="any"
+                          inputMode="decimal" value={heightInches}
+                          onChange={(e) => changeImperialHeight(heightFeet, e.target.value)}
+                          placeholder="9" aria-label="Height inches" />
+                      </div>
+                    </>
+                  ) : (
+                    <>
+                      <Label htmlFor="ob-height">Height (cm)</Label>
+                      <Input id="ob-height" type="number" min={LIMITS.heightCm.min} max={LIMITS.heightCm.max}
+                        step="any" inputMode="decimal" value={heightCm} onChange={(e) => setHeightCm(e.target.value)}
+                        placeholder="176" />
+                    </>
+                  )}
                 </div>
                 <div className="col-span-2 grid gap-1.5 sm:col-span-1">
-                  <Label htmlFor="ob-weight">Weight (kg)</Label>
-                  <Input id="ob-weight" type="number" min={LIMITS.weightKg.min} max={LIMITS.weightKg.max} step="any" inputMode="decimal" value={weightKg} onChange={(e) => setWeightKg(e.target.value)} placeholder="78" />
+                  <Label htmlFor="ob-weight">Weight ({weightUnit})</Label>
+                  <Input id="ob-weight" type="number"
+                    min={units === "imperial" ? LIMITS.weightLb.min : LIMITS.weightKg.min}
+                    max={units === "imperial" ? LIMITS.weightLb.max : LIMITS.weightKg.max}
+                    step="any" inputMode="decimal"
+                    value={units === "imperial" ? weightLb : weightKg}
+                    onChange={(e) => units === "imperial"
+                      ? changeImperialWeight(e.target.value) : setWeightKg(e.target.value)}
+                    placeholder={units === "imperial" ? "172" : "78"} />
                 </div>
               </div>
             </div>
@@ -195,16 +275,24 @@ export function Onboarding() {
               ))}
             </RadioGroup>
             <div className="grid gap-2">
-              <Label htmlFor="ob-target-weight">Target weight (kg, optional)</Label>
-              <Input id="ob-target-weight" type="number" min={LIMITS.weightKg.min} max={LIMITS.weightKg.max}
-                step="any" inputMode="decimal" value={targetWeightKg} onChange={(e) => setTargetWeightKg(e.target.value)}
-                placeholder="e.g. 74" aria-describedby="ob-target-help" />
+              <Label htmlFor="ob-target-weight">Target weight ({weightUnit}, optional)</Label>
+              <Input id="ob-target-weight" type="number"
+                min={units === "imperial" ? LIMITS.weightLb.min : LIMITS.weightKg.min}
+                max={units === "imperial" ? LIMITS.weightLb.max : LIMITS.weightKg.max}
+                step="any" inputMode="decimal"
+                value={units === "imperial" ? targetWeightLb : targetWeightKg}
+                onChange={(e) => units === "imperial"
+                  ? changeImperialWeight(e.target.value, true) : setTargetWeightKg(e.target.value)}
+                placeholder={units === "imperial" ? "e.g. 163" : "e.g. 74"}
+                aria-describedby="ob-target-help" />
               <p id="ob-target-help" className="text-xs text-muted-foreground">
                 Set a destination to see an illustrative timeline. You can change it anytime.
               </p>
               {targetRequested && !goalTargetValid && (
                 <p role="alert" className="text-xs text-destructive">
-                  {timeline?.note ?? `Target weight must be between ${LIMITS.weightKg.min} and ${LIMITS.weightKg.max} kg.`}
+                  {timeline?.note ?? (units === "imperial"
+                    ? `Target weight must be between ${Math.ceil(LIMITS.weightLb.min)} and ${Math.floor(LIMITS.weightLb.max)} lb.`
+                    : `Target weight must be between ${LIMITS.weightKg.min} and ${LIMITS.weightKg.max} kg.`)}
                 </p>
               )}
               {timeline && goalTargetValid && (
