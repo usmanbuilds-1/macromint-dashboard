@@ -1,7 +1,7 @@
 import { LIMITS } from "@/lib/validation/limits";
 import { useRef, useState } from "react";
 import { toast } from "sonner";
-import { Info, Loader2, TriangleAlert } from "lucide-react";
+import { Loader2 } from "lucide-react";
 import {
   Dialog,
   DialogContent,
@@ -11,37 +11,15 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Badge } from "@/components/ui/badge";
-import { Label } from "@/components/ui/label";
 import { ScanError, friendlyScanError, prepareImage, scanImage, type ScanResponse } from "@/lib/scan/client";
 import { groundScanItems, type RawModelItem } from "@/lib/scan/grounding";
 import { backend, bumpData } from "@/lib/backend";
-import { checkPlausibility, rescaleScanNutrients } from "@/lib/nutrition/math";
-import { kcalOf } from "@/components/app/bits";
-import { formatNumber } from "@/lib/utils";
-import { cn } from "@/lib/utils";
 import type { MealType, ScanItem } from "@/types";
 import { ScanCapture } from "./ScanCapture";
+import { ScanReview } from "./ScanReview";
 import { useFoodLog } from "@/features/foods/FoodLogProvider";
 
 type Phase = "capture" | "scanning" | "review";
-
-function ConfidenceBadge({ level }: { level: "low" | "medium" | "high" }) {
-  return (
-    <Badge
-      variant="outline"
-      className={cn(
-        "text-[11px]",
-        level === "high" && "border-primary/40 text-primary",
-        level === "medium" && "border-warning/40 text-warning",
-        level === "low" && "border-destructive/40 text-destructive",
-      )}
-    >
-      {level} confidence
-    </Badge>
-  );
-}
 
 export function ScanDialog({
   open,
@@ -154,7 +132,6 @@ export function ScanDialog({
 
   const invalidGramDraft = Object.values(gramDrafts).some((draft) => !Number.isSafeInteger(Number(draft)) || Number(draft) < 1 || Number(draft) > LIMITS.foodGrams.max || draft.length === 0);
 
-  const totalKcal = items.reduce((s, i) => s + kcalOf(i.nutrients), 0);
 
   return (
     <Dialog open onOpenChange={(o) => (!o ? onClose() : undefined)}>
@@ -199,95 +176,9 @@ export function ScanDialog({
         )}
 
         {phase === "review" && result && (
-          <div className="flex flex-col gap-4">
-            {preview && (
-              <img src={preview} alt="Scanned meal" className="h-36 w-full rounded-md border object-cover" />
-            )}
-            <div className="flex items-center justify-between gap-2">
-              <div className="flex items-center gap-2">
-                <ConfidenceBadge level={result.overallConfidence} />
-                {items.some((i) => i.grounding === "db") && (
-                  <Badge variant="outline" className="text-[11px] text-muted-foreground">
-                    <Info className="mr-1 h-3 w-3" /> Database-grounded
-                  </Badge>
-                )}
-              </div>
-              <span className="text-sm tabular-nums text-muted-foreground">≈ {formatNumber(totalKcal)} kcal total</span>
-            </div>
-
-            {items.length === 0 ? (
-              <p className="rounded-md border px-4 py-6 text-center text-sm text-muted-foreground">
-                No food was recognised in this photo. Try again with the plate fully in frame.
-              </p>
-            ) : (
-              <div className="flex max-h-80 flex-col gap-3 overflow-y-auto pr-1">
-                {items.map((item, idx) => {
-                  const plausibility = checkPlausibility(item.nutrients);
-                  return (
-                    <div key={idx} className="rounded-lg border bg-card p-3">
-                      <div className="flex items-start justify-between gap-3">
-                        <div className="min-w-0">
-                          <p className="truncate text-sm font-medium">{item.label}</p>
-                          <div className="mt-1 flex flex-wrap items-center gap-1.5">
-                            <Badge variant="secondary" className="text-[10px]">
-                              {item.grounding === "db" ? "Database match" : "AI estimate"}
-                            </Badge>
-                            <ConfidenceBadge level={item.confidence} />
-                          </div>
-                        </div>
-                        <div className="shrink-0 text-right">
-                          <p className="text-sm font-semibold tabular-nums">{formatNumber(kcalOf(item.nutrients))}</p>
-                          <p className="text-[11px] text-muted-foreground">kcal</p>
-                        </div>
-                      </div>
-                      <div className="mt-2.5 flex items-center gap-2">
-                        <Label htmlFor={`grams-${idx}`} className="text-xs text-muted-foreground">Grams</Label>
-                        <Input
-                          id={`grams-${idx}`}
-                          type="number" min={1} max={LIMITS.foodGrams.max} step={1}
-                          inputMode="numeric"
-                          className="h-8 w-24 text-sm tabular-nums"
-                          value={gramDrafts[idx] ?? String(item.grams)}
-                          aria-describedby={`grams-help-${idx}`}
-                          onChange={(e) => {
-                            const draft = e.target.value.replace(/[^0-9]/g, "");
-                            setGramDrafts((prev) => ({ ...prev, [idx]: draft }));
-                            const grams = Number(draft);
-                            const original = originalItems.current[idx];
-                            if (!original || !Number.isSafeInteger(grams) || grams < 1 || grams > LIMITS.foodGrams.max) return;
-                            setItems((prev) => prev.map((it, i) =>
-                              i === idx
-                                ? { ...it, grams, nutrients: rescaleScanNutrients(original.nutrients, original.grams, grams) }
-                                : it,
-                            ));
-                          }}
-                          onBlur={() => setGramDrafts((prev) => {
-                            const next = { ...prev };
-                            delete next[idx];
-                            return next;
-                          })}
-
-                        />
-                        <span id={`grams-help-${idx}`} className="text-xs tabular-nums text-muted-foreground">
-                          P {formatNumber(item.nutrients.protein ?? 0)} · C {formatNumber(item.nutrients.carbs ?? 0)} · F {formatNumber(item.nutrients.fat ?? 0)}
-                        </span>
-                      </div>
-                      {(!plausibility.ok || item.warnings.length > 0) && (
-                        <ul className="mt-2.5 flex flex-col gap-1">
-                          {[...item.warnings, ...plausibility.issues].map((w, wi) => (
-                            <li key={wi} className="flex items-start gap-1.5 text-xs text-warning">
-                              <TriangleAlert className="mt-0.5 h-3 w-3 shrink-0" /> {w}
-                            </li>
-                          ))}
-                        </ul>
-                      )}
-                    </div>
-                  );
-                })}
-              </div>
-            )}
-            {result.attribution && <p className="text-[11px] text-muted-foreground/70">{result.attribution}</p>}
-          </div>
+          <ScanReview result={result} items={items} preview={preview}
+            gramDrafts={gramDrafts} setGramDrafts={setGramDrafts}
+            setItems={setItems} originalItems={originalItems} />
         )}
 
         <DialogFooter className="mt-1 gap-2 sm:justify-between">
