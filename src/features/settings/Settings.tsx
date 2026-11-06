@@ -19,6 +19,7 @@ import {
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 import { useSession } from "@/context/Session";
+import { JourneyIntro } from "@/components/app/JourneyIntro";
 import { backend, bumpData, IS_DEMO } from "@/lib/backend";
 import { cmToFeetInches, feetInchesToCm } from "@/lib/units/body";
 import { LIMITS, validateNumeric } from "@/lib/validation/limits";
@@ -161,13 +162,15 @@ export function Settings() {
   };
 
   return (
-    <div className="mm6-subpage mm6-page-settings ref-live-settings flex flex-col gap-6">
-      <header>
-        <h1 className="text-2xl font-semibold tracking-tight">Settings</h1>
-        <p className="mt-0.5 text-sm text-muted-foreground">{publicAccountLabel(profile ?? {})}</p>
-      </header>
+    <div className="mm6-subpage mm6-page-settings mm-journey-settings flex flex-col gap-6">
+      <JourneyIntro
+        eyebrow="YOUR ACCOUNT"
+        title="Settings"
+        description="Your details, preferences, and private data in one place."
+        supporting={<p className="mm-journey-account-label">{publicAccountLabel(profile ?? {})}</p>}
+      />
 
-      <nav aria-label="Settings sections" className="ref-settings-links">
+      <nav aria-label="Settings sections" className="mm-journey-settings-links ref-settings-links">
         <a href="#ref-profile">Profile <span>Height, weight and personal details</span></a>
         <button type="button" onClick={() => navigate("/goals")}>Goals <span>Calorie and macro targets</span></button>
         <a href="#ref-export">Exports <span>Download your data</span></a>
@@ -200,7 +203,7 @@ export function Settings() {
       )}
 
       <section id="ref-profile" className="border-b pb-6" aria-label="Profile">
-        <h2 className="text-sm font-semibold">Profile</h2>
+        <h2 className="mm-journey-section-title">Profile</h2>
         <div className="mt-4 grid gap-4 sm:grid-cols-3">
           <div className="grid gap-1.5">
             <Label htmlFor="s-name">Name</Label>
@@ -234,7 +237,7 @@ export function Settings() {
       </section>
 
       <section id="ref-privacy" className="border-b pb-6" aria-label="Privacy">
-        <h2 className="text-sm font-semibold">Privacy</h2>
+        <h2 className="mm-journey-section-title">Privacy</h2>
         <div className="mt-4 flex flex-col gap-4">
           <ConsentRow
             title="Analytics"
@@ -254,8 +257,8 @@ export function Settings() {
       </section>
 
       <section id="ref-export" className="border-b pb-6" aria-label="Account">
-        <h2 className="text-sm font-semibold">Account</h2>
-        <div className="mt-4 flex flex-col gap-3">
+        <h2 className="mm-journey-section-title">Your data</h2>
+        <div className="mm-journey-export-actions mt-4 flex flex-col gap-3">
           <Button variant="outline" className="min-h-11 justify-start gap-2" onClick={() => void exportData()}>
             <Download className="h-4 w-4" /> Export all account data (JSON)
           </Button>
