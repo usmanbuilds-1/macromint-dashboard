@@ -17,6 +17,7 @@ import { ServingConfigDialog } from "@/features/foods/ServingConfig";
 import { JourneyIntro } from "@/components/app/JourneyIntro";
 import { JourneyEmpty } from "@/components/app/JourneyEmpty";
 import { DiarySummary } from "./DiarySummary";
+import { favoriteCandidateFromEntry, toggleFavoriteCandidate } from "@/features/foods/favorite-actions";
 
 function preferredMeal(): MealType {
   const hour = new Date().getHours();
@@ -90,13 +91,13 @@ export function Diary() {
   };
 
   const favoriteEntry = async (entry: DiaryEntry) => {
-    if (!entry.foodId) {
-      toast.info("Only database foods can be favourited");
-      return;
+    try {
+      const added = await toggleFavoriteCandidate(favoriteCandidateFromEntry(entry));
+      bumpData();
+      toast.success(added ? "Added to favorites" : "Removed from favorites");
+    } catch {
+      toast.error("Could not save this food to favorites. Try again.");
     }
-    const added = await backend.toggleFavorite(entry.foodId);
-    bumpData();
-    toast.success(added ? "Added to favourites" : "Removed from favourites");
   };
 
   const saveAsMeal = async (mealEntries: DiaryEntry[]) => {
