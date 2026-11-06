@@ -432,7 +432,7 @@ export const supabaseBackend: Backend = {
     });
     const { data: saved, error: insertError } = await getSupabase()
       .from("saved_meals")
-      .insert({ user_id: await currentUserId(), name, items })
+      .insert({ user_id: await currentUserId(), name, items: items as unknown as Json })
       .select()
       .single();
     if (insertError) throw new BackendError("DB", insertError.message);
