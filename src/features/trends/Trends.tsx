@@ -135,6 +135,12 @@ export function Trends() {
           <Button variant="outline" size="sm" onClick={weight.reload}>Retry</Button>
         </div>
       )}
+      {!diaryData.loading && !weight.loading && !diaryData.error && !weight.error &&
+        diaryData.data?.all.length === 0 && weights.length === 0 && (
+        <p className="border-y py-4 text-sm leading-6 text-muted-foreground">
+          Your charts will build as you track. <Link to="/diary" className="font-medium text-foreground underline underline-offset-4">Add your first meal</Link> to start a nutrition history, and record weight to see a weight trend.
+        </p>
+      )}
 
       <nav className="ref-progress-categories" aria-label="Progress categories"><a href="#ref-weight-trend">Weight</a><a href="#ref-calorie-trend">Calories</a><a href="#ref-macro-trend">Macros</a></nav>
 
