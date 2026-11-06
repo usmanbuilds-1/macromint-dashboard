@@ -25,10 +25,13 @@ export function usePrimaryRoutePreload(): void {
 
     let idleId: number | null = null;
     let timeoutId: number | null = null;
-    if ("requestIdleCallback" in window) {
+    // Keep the fallback outside the type guard. Current TS DOM typings
+    // always declare requestIdleCallback, which narrows window to never.
+    const fallback = () => window.setTimeout(() => { void warmTabs(); }, 1000);
+    if (typeof window.requestIdleCallback === "function") {
       idleId = window.requestIdleCallback(() => { void warmTabs(); }, { timeout: 2500 });
     } else {
-      timeoutId = window.setTimeout(() => { void warmTabs(); }, 1000);
+      timeoutId = fallback();
     }
     return () => {
       cancelled = true;
