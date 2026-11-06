@@ -55,9 +55,11 @@ Deno.serve(async (request) => {
       Deno.env.get("BETA_INVITATIONS_ENABLED") === "false")) {
     return errorResponse("NOT_CONFIGURED", "Tester invitations are unavailable", 503);
   }
-  if (!isTester && (Deno.env.get("PUBLIC_REGISTRATION_ENABLED") !== "true" ||
-      Deno.env.get("USERNAME_PUBLIC_SIGNUP_TICKET_VERIFIED") !== "true")) {
+  if (!isTester && Deno.env.get("PUBLIC_REGISTRATION_ENABLED") !== "true") {
     return errorResponse("NOT_CONFIGURED", "Public registration is not enabled", 503);
+  }
+  if (Deno.env.get("USERNAME_PUBLIC_SIGNUP_TICKET_VERIFIED") !== "true") {
+    return errorResponse("NOT_CONFIGURED", "Registration admission security is not verified", 503);
   }
 
   const normalizedUsername = username.toLowerCase();
@@ -91,22 +93,18 @@ Deno.serve(async (request) => {
     .select("id", { head: true, count: "exact" }).limit(0);
   if (recoveryTableError) return errorResponse("NOT_CONFIGURED", "Recovery service unavailable", 503);
 
-  // Normal users never need an invite. Instead, a 256-bit random secret
-  // authorizes ONE auth.users insert only after all registration checks pass.
-  // The SQL BEFORE INSERT trigger consumes its hash, strips plaintext
-  // metadata, and rejects direct Supabase Auth signup attempts.
-  let signupTicket: string | null = null;
-  if (!isTester) {
-    const rawTicket = crypto.getRandomValues(new Uint8Array(32));
-    signupTicket = Array.from(rawTicket, (byte) => byte.toString(16).padStart(2, "0")).join("");
-    const digest = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(signupTicket));
-    const hash = Array.from(new Uint8Array(digest), (byte) => byte.toString(16).padStart(2, "0")).join("");
-    const { data: issued, error: issueError } = await admin.rpc("issue_public_signup_ticket", {
-      p_hash: hash,
-    });
-    if (issueError || issued !== true) {
-      return errorResponse("NOT_CONFIGURED", "Public registration security is unavailable", 503);
-    }
+  // Every signup, invited or public, must consume a 256-bit one-use ticket
+  // minted AFTER account/IP rate limiting. This prevents alternate GoTrue
+  // signup routes from bypassing security even with a valid beta invite.
+  const rawTicket = crypto.getRandomValues(new Uint8Array(32));
+  const signupTicket = Array.from(rawTicket, (byte) => byte.toString(16).padStart(2, "0")).join("");
+  const digest = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(signupTicket));
+  const hash = Array.from(new Uint8Array(digest), (byte) => byte.toString(16).padStart(2, "0")).join("");
+  const { data: issued, error: issueError } = await admin.rpc("issue_public_signup_ticket", {
+    p_hash: hash,
+  });
+  if (issueError || issued !== true) {
+    return errorResponse("NOT_CONFIGURED", "Registration admission security is unavailable", 503);
   }
 
   const recoveryCodes = Array.from({ length: 8 }, () => {
@@ -128,7 +126,8 @@ Deno.serve(async (request) => {
     email_confirm: true,
     user_metadata: {
       name, username: normalizedUsername,
-      ...(isTester ? { beta_invite_code: inviteCode } : { public_signup_ticket: signupTicket }),
+      public_signup_ticket: signupTicket,
+      ...(isTester ? { beta_invite_code: inviteCode } : {}),
     },
   });
   if (signupError || !registered?.user) {
