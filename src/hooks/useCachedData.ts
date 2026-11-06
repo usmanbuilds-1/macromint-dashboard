@@ -1,3 +1,4 @@
+import { useCallback } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useSession } from "@/context/Session";
 
@@ -30,10 +31,11 @@ export function useAsyncData<T>(
     refetchOnWindowFocus: false,
   });
 
+  const reload = useCallback(() => { void query.refetch(); }, [query.refetch]);
   return {
     data: query.data ?? null,
     loading: query.isPending,
     error: query.error?.message ?? null,
-    reload: () => { void query.refetch(); },
+    reload,
   };
 }
