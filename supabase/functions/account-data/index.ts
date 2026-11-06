@@ -47,11 +47,12 @@ Deno.serve(async (req) => {
   // Throw rather than deliver an incomplete export after any read failure.
   const page = async (
     table: string, column: string, id: string, order: string,
+    fields = "*",
   ): Promise<Record<string, unknown>[]> => {
     const rows: Record<string, unknown>[] = [];
     const step = 500;
     for (let index = 0; index < 200; index++) {
-      const { data, error } = await sb.from(table).select("*")
+      const { data, error } = await sb.from(table).select(fields)
         .eq(column, id).order(order).range(index*step, index*step+step-1);
       if (error || !data) throw new Error("Export collection unavailable");
       rows.push(...(data as Record<string, unknown>[]));
@@ -83,11 +84,10 @@ Deno.serve(async (req) => {
     }
     exportPayload.recipeIngredients = recipeIngredients;
     // Exclude private audit reasons, recovery-code hashes and secret material.
-    const { data: appeals, error: appealError } = await sb.from("beta_reactivation_requests")
-      .select("id,status,message,created_at,reviewed_at,approved_days")
-      .eq("user_id",userId).order("created_at",{ascending:false}).limit(500);
-    if (appealError) throw new Error("Could not export access requests");
-    exportPayload.reactivationRequests = appeals ?? [];
+    exportPayload.reactivationRequests = await page(
+      "beta_reactivation_requests","user_id",userId,"id",
+      "id,status,message,created_at,reviewed_at,approved_days",
+    );
 
     return json(exportPayload);
   } catch {
