@@ -191,7 +191,7 @@ export function Diary() {
               <div className="flex items-baseline gap-2.5">
                 <h2 className="text-sm font-semibold">{MEAL_LABELS[meal]}</h2>
                 <span className="text-xs tabular-nums text-muted-foreground">
-                  {mealEntries.length ? `${formatNumber((mealEntries.reduce((s, e) => s + (e.nutrients.kcal ?? 0), 0)))} kcal` : ""}
+                  {mealEntries.length ? `${mealEntries.some((e) => e.nutrients.kcal == null) ? "≥ " : ""}${formatNumber((mealEntries.reduce((s, e) => s + (e.nutrients.kcal ?? 0), 0)))} kcal${mealEntries.some((e) => e.nutrients.kcal == null) ? " known" : ""}` : ""}
                 </span>
               </div>
               <div className="flex items-center gap-1">
@@ -226,12 +226,12 @@ export function Diary() {
                             )}
                           </span>
                           <span className="tabular-nums">
-                            P {formatNumber(entry.nutrients.protein ?? 0, 1)} · C {formatNumber(entry.nutrients.carbs ?? 0, 1)} · F {formatNumber(entry.nutrients.fat ?? 0, 1)}
+                            P {entry.nutrients.protein == null ? "—" : formatNumber(entry.nutrients.protein, 1)} · C {entry.nutrients.carbs == null ? "—" : formatNumber(entry.nutrients.carbs, 1)} · F {entry.nutrients.fat == null ? "—" : formatNumber(entry.nutrients.fat, 1)}
                           </span>
                         </p>
                       </button>
                       <div className="flex shrink-0 items-center gap-1">
-                        <span className="text-sm font-semibold tabular-nums">{formatNumber(entry.nutrients.kcal ?? 0)} <span className="text-xs font-normal text-muted-foreground">kcal</span></span>
+                        <span className="text-sm font-semibold tabular-nums">{entry.nutrients.kcal == null ? "—" : formatNumber(entry.nutrients.kcal)} <span className="text-xs font-normal text-muted-foreground">kcal</span></span>
                         <Button variant="ghost" size="icon" aria-label={`Edit ${entry.name}`} onClick={() => setEditEntry(entry)}>
                           <Pencil className="h-4 w-4" />
                         </Button>
