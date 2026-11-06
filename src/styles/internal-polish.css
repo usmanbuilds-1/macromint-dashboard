@@ -172,3 +172,25 @@
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 }
+
+/* Administrative actions are operational, not another dashboard grid. */
+.mm-app-shell .mm-admin-screen > header {
+  border-bottom: 1px solid var(--mm-divider);
+  padding-bottom: 20px;
+}
+.mm-app-shell .mm-admin-screen > header h1 {
+  font-size: clamp(28px, 3vw, 38px);
+  font-weight: 720;
+  letter-spacing: -.045em;
+}
+.mm-app-shell .mm-admin-screen [role="tablist"] {
+  max-width: 100%;
+}
+.mm-app-shell .mm-admin-screen [role="tab"] {
+  min-height: 44px;
+}
+@media (max-width: 640px) {
+  .mm-app-shell .mm-admin-screen > header {
+    align-items: flex-start;
+  }
+}
