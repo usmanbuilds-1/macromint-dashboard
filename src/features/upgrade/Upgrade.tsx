@@ -26,20 +26,22 @@ export function Upgrade() {
   const { user, entitlement, refresh, hasAccess, isAdmin } = useSession();
   const navigate = useNavigate();
   const [requests, setRequests] = useState<ReactivationRequest[]>([]);
+  const [isBetaTester, setIsBetaTester] = useState(false);
   const [note, setNote] = useState("");
   const [busy, setBusy] = useState<"request" | "export" | "delete" | "logout" | null>(null);
 
   useEffect(() => {
     if (!user) return;
     void backend.getReactivationRequests()
-      .then(setRequests).catch(() => undefined);
+      .then((value) => { setRequests(value.requests); setIsBetaTester(value.isBetaTester); })
+      .catch(() => undefined);
   }, [user?.id]);
 
   const sendRequest = async () => {
     setBusy("request");
     try {
       await backend.submitReactivationRequest(note.trim());
-      setRequests(await backend.getReactivationRequests());
+      setRequests((await backend.getReactivationRequests()).requests);
       setNote("");
       toast.success("Your request was sent to the beta owner.");
     } catch {
@@ -106,7 +108,7 @@ export function Upgrade() {
             {hasAccess && <Button onClick={() => navigate("/today")} className="w-full">Return to tracking</Button>}
             {isAdmin && <Link to="/admin" className="block text-sm font-medium underline underline-offset-4">Open Owner Admin</Link>}
 
-            {!hasAccess && (
+            {!hasAccess && isBetaTester && (
               <section className="space-y-3 border-t pt-6">
                 <h2 className="text-base font-semibold">Request more beta testing time</h2>
                 <p className="text-sm text-muted-foreground">
@@ -127,6 +129,12 @@ export function Upgrade() {
               </section>
             )}
 
+            {!hasAccess && !isBetaTester && !isAdmin && (
+              <p className="mt-5 text-sm text-muted-foreground">
+                Regular accounts cannot request beta tester extensions.
+                Payment checkout is not yet available. Your saved data remains accessible below.
+              </p>
+            )}
             <section className="space-y-3 border-t pt-6">
               <h2 className="text-base font-semibold">Your data</h2>
               <p className="text-sm text-muted-foreground">
