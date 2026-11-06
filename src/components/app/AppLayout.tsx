@@ -1,4 +1,5 @@
 import { lazy, Suspense } from "react";
+import "@/styles/internal-polish.css";
 import { publicAccountLabel } from "@/lib/auth/username";
 import { NavLink, Outlet, useNavigate } from "react-router-dom";
 import {
