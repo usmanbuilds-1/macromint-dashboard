@@ -176,7 +176,10 @@ export const supabaseBackend: Backend = {
   },
 
   onAuthChange(cb) {
-    const { data } = getSupabase().auth.onAuthStateChange((_event, session) => {
+    const { data } = getSupabase().auth.onAuthStateChange((event, session) => {
+      // Refreshing a JWT is not a new login and must never tear down the
+      // entire authenticated React shell or issue four account RPCs.
+      if (event === "TOKEN_REFRESHED") return;
       const u = session?.user;
       const username = usernameFromAuthEmail(u?.email);
       cb(u ? {
