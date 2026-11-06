@@ -19,6 +19,7 @@ import { kcalOf } from "@/components/app/bits";
 import { formatNumber } from "@/lib/utils";
 import { cn } from "@/lib/utils";
 import { useMobileDialogViewport } from "@/hooks/useMobileDialogViewport";
+import { matchingFavorite, toggleFavoriteCandidate } from "./favorite-actions";
 
 function ResultRow({ food, onSelect, isFavorite, onToggleFavorite }: {
   food: LoggableFood;
@@ -76,11 +77,11 @@ export function FoodSearchDialog({
   const savedMeals = useAsyncData(() => backend.getSavedMeals(), [], "saved-meals", open);
   const favoriteIds = useMemo(() => new Set((favorites.data ?? []).map((fav) => fav.foodId)), [favorites.data]);
 
-  const toggleFavorite = async (foodId: string) => {
+  const toggleFavorite = async (food: LoggableFood) => {
     if (favoriteBusy) return;
-    setFavoriteBusy(foodId);
+    setFavoriteBusy(food.foodId ?? food.name);
     try {
-      const added = await backend.toggleFavorite(foodId);
+      const added = await toggleFavoriteCandidate(food, favorites.data ?? undefined);
       bumpData();
       toast.success(added ? "Added to favorites" : "Removed from favorites");
     } catch {
@@ -170,7 +171,7 @@ export function FoodSearchDialog({
               <CommandGroup heading="Favourites">
                 {favorites.data.map((fav) => (
                   <ResultRow key={fav.id} food={foodToLoggable(fav.food)} onSelect={onPicked}
-                    isFavorite onToggleFavorite={() => { void toggleFavorite(fav.foodId); }} />
+                    isFavorite onToggleFavorite={() => { void toggleFavorite(foodToLoggable(fav.food)); }} />
                 ))}
               </CommandGroup>
             )}
@@ -231,14 +232,16 @@ export function FoodSearchDialog({
               <CommandGroup heading="Food database">
                 {hit.local.map((food) => (
                   <ResultRow key={food.id} food={foodToLoggable(food)} onSelect={onPicked}
-                    isFavorite={favoriteIds.has(food.id)} onToggleFavorite={() => { void toggleFavorite(food.id); }} />
+                    isFavorite={favoriteIds.has(food.id)} onToggleFavorite={() => { void toggleFavorite(foodToLoggable(food)); }} />
                 ))}
               </CommandGroup>
             )}
             {hit.remote.length > 0 && (
               <CommandGroup heading="Open Food Facts">
                 {hit.remote.map((product, i) => (
-                  <ResultRow key={`${product.sourceId ?? i}`} food={offToLoggable(product)} onSelect={onPicked} />
+                  <ResultRow key={`${product.sourceId ?? i}`} food={offToLoggable(product)} onSelect={onPicked}
+                    isFavorite={Boolean(matchingFavorite(favorites.data ?? [], offToLoggable(product)))}
+                    onToggleFavorite={() => { void toggleFavorite(offToLoggable(product)); }} />
                 ))}
               </CommandGroup>
             )}
