@@ -222,12 +222,24 @@ export interface DayKcal {
 }
 
 export function daysToKcal(entries: DiaryEntry[], dates: string[]): DayKcal[] {
-  const byDate = new Map<string, number>();
-  for (const e of entries) {
-    const kcal = e.nutrients.kcal;
-    if (typeof kcal === "number") byDate.set(e.entryDate, (byDate.get(e.entryDate) ?? 0) + kcal);
+  const byDate = new Map<string, { total: number; missing: boolean; known: boolean }>();
+  for (const entry of entries) {
+    const current = byDate.get(entry.entryDate) ?? { total: 0, missing: false, known: false };
+    const kcal = entry.nutrients.kcal;
+    if (typeof kcal === "number" && Number.isFinite(kcal) && kcal >= 0) {
+      current.total += kcal;
+      current.known = true;
+    } else {
+      current.missing = true;
+    }
+    byDate.set(entry.entryDate, current);
   }
-  return dates.map((date) => ({ date, kcal: byDate.has(date) ? roundTo(byDate.get(date)!, 0) : null }));
+  // A partial calorie day cannot legitimately count toward adherence or
+  // masquerade as the full value on a chart; retain null for that date.
+  return dates.map((date) => {
+    const item = byDate.get(date);
+    return { date, kcal: item && item.known && !item.missing ? roundTo(item.total, 0) : null };
+  });
 }
 
 export function goalMacroSplit(goals: GoalSet): { protein: number; carbs: number; fat: number } {
