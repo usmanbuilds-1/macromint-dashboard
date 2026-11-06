@@ -14,7 +14,7 @@
 
 1. Ensure SQL migrations 0014 and 0015 are installed on the intended Lovable Cloud database.
 2. Back up the database. Run `drizzle/migrations/0016_public_registration_tickets.sql` once through Lovable Cloud SQL Editor. Do not replay 0006 or apply 0014/0015 again.
-3. Confirm the new `public.public_signup_tickets` table, the service-role-only `issue_public_signup_ticket(text)` function, and both existing `auth.users` admission triggers. No public Auth signup should work without an invitation or server-minted ticket.
+3. Confirm the new `public.public_signup_tickets` table, the service-role-only `issue_public_signup_ticket(text)` function, and both existing `auth.users` admission triggers. No direct Auth signup should work without a server-minted ticket, even when the user possesses a valid invitation.
 
 ## Edge deployment: exact GitHub main SHA after CI merge
 
@@ -32,7 +32,7 @@ Do not have Lovable regenerate source or migrate SQL as part of the Edge pass. I
 - Set `USERNAME_REGISTRATION_ENABLED=true`, `USERNAME_RECOVERY_ENABLED=true`, `PUBLIC_REGISTRATION_ENABLED=true`. Set `BETA_INVITATIONS_ENABLED=true` to accept private tester codes.
 - Enable build-time flags `VITE_USERNAME_AUTH_ENABLED=true`, `VITE_PUBLIC_REGISTRATION_ENABLED=true`, `VITE_BETA_INVITES_ENABLED=true`. **These are frontend build flags, not Cloud Edge secrets**. Publish after smoke testing preview. Do not expose any `SUPABASE_SERVICE_ROLE_KEY`, recovery code, plaintext invite, HMAC secret or signup ticket.
 - Register the owner using the preexisting single-use bootstrap invite, save eight codes offline, verify that account's UUID, and manually promote **only** that verified account to owner. No automatic first-user promotion.
-- Test a regular public signup with blank invite, an invited beta signup, a rejected reused/expired invite, a direct Supabase Auth signup without ticket (must fail), proof of rate limit 429, recovery, cross-account RLS, owner Admin, tester extension only, and data export/deletion.
+- Test a regular public signup with blank invite, an invited beta signup, a rejected reused/expired invite, a direct Supabase Auth signup without ticket, both with and without an invitation (must fail), proof of rate limit 429, recovery, cross-account RLS, owner Admin, tester extension only, and data export/deletion.
 - No genuine user should be onboarded while these checks are unverified.
 
 ## Read-only checks after SQL 0016
