@@ -51,12 +51,11 @@ function setup(name, options = {}) {
         calls.push("createUser");
         assert.equal(payload.email, "beta_user@macromint.internal");
         assert.equal(payload.user_metadata.username, "beta_user");
+        assert.match(payload.user_metadata.public_signup_ticket, /^[0-9a-f]{64}$/);
         if (options.publicSignUp) {
-          assert.match(payload.user_metadata.public_signup_ticket, /^[0-9a-f]{64}$/);
           assert.equal(payload.user_metadata.beta_invite_code, undefined);
         } else {
           assert.equal(payload.user_metadata.beta_invite_code, INVITE);
-          assert.equal(payload.user_metadata.public_signup_ticket, undefined);
           inviteUsed++;
         }
         return { data: { user: { id: USER_ID } }, error: null };
@@ -172,7 +171,8 @@ let checked = 0;
   assert.equal(body.recoveryCodes.length, 8);
   assert.equal(new Set(body.recoveryCodes).size, 8);
   assert.ok(body.recoveryCodes.every(code => /^MMR-(?:[A-F0-9]{8}-){3}[A-F0-9]{8}$/.test(code)));
-  assert.ok(calls.indexOf("budget:register") < calls.indexOf("createUser"));
+  assert.ok(calls.indexOf("budget:register") < calls.indexOf("issueTicket"));
+  assert.ok(calls.indexOf("issueTicket") < calls.indexOf("createUser"));
   assert.ok(calls.indexOf("createUser") < calls.indexOf("storeRecovery"));
   checked++;
 }
