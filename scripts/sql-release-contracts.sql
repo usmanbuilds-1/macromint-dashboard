@@ -2,6 +2,7 @@
 -- These are executable behavioral checks, not just SQL string/syntax matching.
 \set ON_ERROR_STOP on
 \i drizzle/migrations/0014_owner_tester_access.sql
+\i drizzle/migrations/0015_beta_account_lifecycle.sql
 
 INSERT INTO auth.users(id,email) VALUES
  ('11111111-1111-4111-8111-111111111111','owner@test.invalid'),
@@ -235,3 +236,66 @@ BEGIN
   RAISE NOTICE 'PASS: owner can directly read app settings';
 END $$;
 ROLLBACK;
+
+-- 0015: Last-mile beta account lifecycle. Revoked access must not be bypassed
+-- by an old positive access_until or by a stale JWT in a protected query.
+DO $$
+DECLARE
+  tester uuid := '33333333-3333-4333-8333-333333333333';
+  owner_id uuid := '11111111-1111-4111-8111-111111111111';
+  other uuid := '22222222-2222-4222-8222-222222222222';
+  r jsonb;
+  first_id uuid;
+  again_id uuid;
+  rejected boolean;
+  n integer;
+BEGIN
+  UPDATE public.entitlements
+     SET state='revoked', access_until=now()+interval '30 days'
+     WHERE user_id=tester;
+  IF public.has_access(tester) THEN
+    RAISE EXCEPTION 'Revoked tester retained premium access through access_until';
+  END IF;
+
+  r := public.beta_submit_reactivation(tester,'Please extend the test');
+  first_id := (r->>'id')::uuid;
+  IF first_id IS NULL THEN RAISE EXCEPTION 'Request was not created'; END IF;
+  r := public.beta_submit_reactivation(tester,'Duplicate');
+  again_id := (r->>'id')::uuid;
+  IF first_id <> again_id THEN
+    RAISE EXCEPTION 'Duplicate request created a second pending item';
+  END IF;
+  SELECT count(*) INTO n FROM public.beta_reactivation_requests
+    WHERE user_id=tester AND status='pending';
+  IF n <> 1 THEN RAISE EXCEPTION 'One-pending constraint failed'; END IF;
+
+  rejected := false;
+  BEGIN
+    PERFORM public.beta_review_reactivation(other,first_id,true,7,'Not owner');
+  EXCEPTION WHEN OTHERS THEN rejected := true; END;
+  IF NOT rejected THEN RAISE EXCEPTION 'Nonowner approved request'; END IF;
+  rejected := false;
+  BEGIN
+    PERFORM public.beta_review_reactivation(owner_id,first_id,true,7,' ');
+  EXCEPTION WHEN OTHERS THEN rejected := true; END;
+  IF NOT rejected THEN RAISE EXCEPTION 'Empty audit reason allowed'; END IF;
+
+  r := public.beta_review_reactivation(owner_id,first_id,true,7,'Approved seven-day beta test');
+  IF r->>'status' <> 'approved' OR NOT public.has_access(tester) THEN
+    RAISE EXCEPTION 'Approved tester extension did not activate access';
+  END IF;
+  SELECT count(*) INTO n FROM public.admin_audit_logs
+   WHERE action='approve_beta_reactivation' AND target_user_id=tester;
+  IF n <> 1 THEN RAISE EXCEPTION 'Approval was not audited exactly once'; END IF;
+  rejected := false;
+  BEGIN
+    PERFORM public.beta_review_reactivation(owner_id,first_id,true,7,'Duplicate approval');
+  EXCEPTION WHEN OTHERS THEN rejected := true; END;
+  IF NOT rejected THEN RAISE EXCEPTION 'Same request approved twice'; END IF;
+  rejected := false;
+  BEGIN
+    PERFORM public.beta_submit_reactivation(other,'Not invited');
+  EXCEPTION WHEN OTHERS THEN rejected := true; END;
+  IF NOT rejected THEN RAISE EXCEPTION 'Non-tester appealed'; END IF;
+  RAISE NOTICE 'PASS: revoked deny, one pending appeal, owner approval and audit';
+END $$;
