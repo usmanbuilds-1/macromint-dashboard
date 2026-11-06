@@ -36,5 +36,5 @@ export function useMobileDialogViewport(open: boolean, placement: "bottom" | "ce
   const available = Math.max(100, size.height - 16);
   const height = Math.min(520, available);
   const top = size.top + (placement === "bottom" ? size.height - height - 8 : (size.height - height) / 2);
-  return { top: `${Math.max(0, top)}px`, bottom: "auto", maxHeight: `${height}px`, translate: "-50% 0" };
+  return { top: `${Math.max(0, top)}px`, bottom: "auto", height: `${height}px`, maxHeight: `${height}px`, translate: "-50% 0" };
 }
