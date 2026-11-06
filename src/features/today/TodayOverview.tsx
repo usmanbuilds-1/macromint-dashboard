@@ -44,7 +44,8 @@ function MacroMeasure({
  * invents missing nutrient measurements.
  */
 export function TodayOverview({
-  totals, target, proteinTarget, carbsTarget, fatTarget, loading, hasEntries, complete,
+  totals, target, proteinTarget, carbsTarget, fatTarget, loading, hasEntries,
+  complete = { kcal: true, protein: true, carbs: true, fat: true },
 }: {
   totals: NutrientRecord;
   target: DailyGoal;
@@ -53,7 +54,7 @@ export function TodayOverview({
   fatTarget: DailyGoal;
   loading: boolean;
   hasEntries: boolean;
-  complete: Record<"kcal" | "protein" | "carbs" | "fat", boolean>;
+  complete?: Record<"kcal" | "protein" | "carbs" | "fat", boolean>;
 }) {
   const energy = totals.kcal ?? null;
   const consumed = energy ?? 0;
