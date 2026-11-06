@@ -774,7 +774,9 @@ export const supabaseBackend: Backend = {
     // Avoid direct reads of the full, admin-controlled app_settings table.
     const { data: config, error } = await sb.rpc("get_public_app_settings");
     if (!error) {
-      if (!config) throw new BackendError("DB", "Application settings are unavailable");
+      if (!config || typeof config !== "object" || Array.isArray(config)) {
+        throw new BackendError("DB", "Application settings are unavailable");
+      }
       return {
         trialDays: n(config.trial_days),
         rewardAccessHours: n(config.reward_access_hours),
