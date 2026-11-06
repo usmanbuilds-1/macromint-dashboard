@@ -253,7 +253,12 @@ try {
   await screenshotCompact("settings");
   await page.goto(url + "/goals", { waitUntil: "domcontentloaded" });
   await page.getByRole("heading", { name: "Goals", exact: true }).waitFor();
+  const recalcToggle = page.getByText("Choose a goal to recalculate");
+  await recalcToggle.waitFor();
+  await recalcToggle.click();
   await page.getByText("How these estimates are calculated").waitFor();
+  await page.getByRole("button", { name: /Maintain/ }).waitFor();
+  await recalcToggle.click();
   await screenshotEverySize("goals");
   await screenshotCompact("goals");
   await page.goto(url + "/weight", { waitUntil: "domcontentloaded" });
