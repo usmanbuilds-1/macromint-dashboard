@@ -5,7 +5,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useSession } from "@/context/Session";
 import { backend, bumpData } from "@/lib/backend";
-import { useAsyncData, useDataVersion } from "@/hooks/useData";
+import { useAsyncData } from "@/hooks/useData";
 import { todayStr } from "@/lib/nutrition/datetime";
 import { estimateAdultEnergy, type EnergyAssessment } from "@/lib/weight/energy";
 import { evaluateWeightTrend, type WeightTrendAnalysis } from "@/lib/weight/trends";
@@ -32,9 +32,8 @@ function isoDateIsValid(s: string): boolean {
  */
 export function WeightProgressModule({ onSaved }: WeightProgressModuleProps) {
   const { profile, refresh } = useSession();
-  const version = useDataVersion();
   const today = todayStr();
-  const weightsState = useAsyncData(() => backend.getWeights(90), [version]);
+  const weightsState = useAsyncData(() => backend.getWeights(90), [], "weights:90");
   const weights = weightsState.data ?? [];
   const isImperial = profile?.units === "imperial";
   const units = isImperial ? "lb" : "kg";
