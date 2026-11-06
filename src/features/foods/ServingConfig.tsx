@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
 import { Loader2, Trash2 } from "lucide-react";
 import {
@@ -96,6 +96,7 @@ export function ServingConfigDialog({
     return null;
   }, [food, entry]);
 
+  const dialogRef = useRef<HTMLDivElement>(null);
   const [mealType, setMealType] = useState<MealType>("breakfast");
   const [grams, setGrams] = useState("100");
   const [unit, setUnit] = useState("g");
@@ -208,11 +209,11 @@ export function ServingConfigDialog({
 
   return (
     <Dialog open onOpenChange={(o) => (!o ? onClose() : undefined)}>
-      <DialogContent className="max-h-[88dvh] overflow-y-auto sm:max-w-md"
+      <DialogContent ref={dialogRef} className="max-h-[88dvh] overflow-y-auto sm:max-w-md"
         style={sheetStyle}
         onOpenAutoFocus={(event) => {
           event.preventDefault();
-          event.currentTarget.focus({ preventScroll: true });
+          dialogRef.current?.focus({ preventScroll: true });
         }}
         onCloseAutoFocus={(event) => event.preventDefault()}>
         <DialogHeader>
