@@ -41,7 +41,11 @@ jobs:
         env:
           VITE_SUPABASE_URL: ""
           VITE_SUPABASE_PUBLISHABLE_KEY: ""
-        run: pnpm build
+        run: |
+          # Deliberately remove checked-in public Cloud configuration from
+          # this disposable browser preview; never create production accounts.
+          sed -i '/^VITE_SUPABASE_URL=/d; /^VITE_SUPABASE_PUBLISHABLE_KEY=/d' .env
+          VITE_SUPABASE_URL="" VITE_SUPABASE_PUBLISHABLE_KEY="" pnpm build
       - name: Start isolated demo preview
         run: |
           pnpm dlx wrangler@4.45.0 dev --config .output/server/wrangler.json --ip 127.0.0.1 --port 4174 --local > /tmp/macromint-demo-preview.log 2>&1 &
