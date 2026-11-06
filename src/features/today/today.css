@@ -427,6 +427,12 @@
   .mm-app-shell .mm-home-action-secondary { height: 54px; padding-inline: 13px; }
 }
 @media (max-width: 365px) {
+  /* Keep Add food above the fixed nav on short phones. The meal-specific
+     empty state already explains the next action, so skip its duplicate. */
+  .mm-home-balance-copy--empty { display: none; }
+  .mm-app-shell .mm-home-overview { padding: 17px 19px; }
+  .mm-home-calorie-line { margin-top: 14px; }
+  .mm-home-macro-grid { margin-top: 15px; padding-top: 14px; }
   /* Narrow phones still get a real hierarchy, not squashed calorie columns. */
   .mm-home-calorie-line { grid-template-columns: minmax(0, 1fr) 90px; gap: 9px; }
   .mm-home-calorie-figure { flex-wrap: wrap; column-gap: 5px; row-gap: 1px; }
