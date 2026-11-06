@@ -37,6 +37,22 @@ jobs:
           exit 1
       - name: Inspect landing and invite form at phone/tablet/desktop widths
         run: node scripts/mobile-smoke.mjs
+      - name: Build isolated demo for internal page tests (no live account access)
+        env:
+          VITE_SUPABASE_URL: ""
+          VITE_SUPABASE_PUBLISHABLE_KEY: ""
+        run: pnpm build
+      - name: Start isolated demo preview
+        run: |
+          pnpm dlx wrangler@4.45.0 dev --config .output/server/wrangler.json --ip 127.0.0.1 --port 4174 --local > /tmp/macromint-demo-preview.log 2>&1 &
+          for i in $(seq 1 60); do
+            if curl -fsS http://127.0.0.1:4174/ > /dev/null; then exit 0; fi
+            sleep 1
+          done
+          cat /tmp/macromint-demo-preview.log
+          exit 1
+      - name: Audit authenticated internal journeys in isolated demo
+        run: node scripts/internal-browser-smoke.mjs
       - name: Upload screenshots even on failure
         if: always()
         uses: actions/upload-artifact@v4
