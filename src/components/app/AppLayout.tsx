@@ -28,14 +28,14 @@ const NAV = [
   { to: "/today", label: "Today", icon: Home },
   { to: "/diary", label: "Diary", icon: CalendarDays },
   { to: "/foods", label: "Foods", icon: Apple },
-  { to: "/trends", label: "Trends", icon: ChartLine },
+  { to: "/trends", label: "Progress", icon: ChartLine },
 ];
 
 const MOBILE_NAV = [
   { to: "/today", label: "Today" },
-  { to: "/foods", label: "Food" },
+  { to: "/diary", label: "Diary" },
+  { to: "/foods", label: "Foods" },
   { to: "/trends", label: "Progress" },
-  { to: "/settings", label: "Settings" },
 ];
 
 const SECONDARY = [
@@ -145,7 +145,7 @@ export function AppLayout() {
           <Logo />
           <Sheet>
             <SheetTrigger asChild>
-              <Button variant="ghost" size="icon" aria-label="Menu">
+              <Button variant="ghost" size="icon" className="h-11 w-11" aria-label="More and settings">
                 <Menu className="h-5 w-5" />
               </Button>
             </SheetTrigger>
@@ -179,7 +179,8 @@ export function AppLayout() {
           <Outlet />
         </main>
 
-        {/* Fast five-destination navigation. Text-only rather than decorative glyphs. */}
+        {/* The four daily destinations stay available on every mobile screen.
+            Settings and account actions are in the always-present header menu. */}
         <nav className="ref-mobile-tabs fixed inset-x-0 bottom-0 z-40 grid grid-cols-4 border-t bg-background pb-[env(safe-area-inset-bottom)] md:hidden" aria-label="Primary">
           {MOBILE_NAV.map((item) => (
             <NavLink key={item.to} to={item.to} className={({ isActive }) =>
