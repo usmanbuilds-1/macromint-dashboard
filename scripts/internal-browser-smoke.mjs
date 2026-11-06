@@ -217,10 +217,15 @@ try {
   assert.notEqual(await page.evaluate(() => document.activeElement?.tagName), "INPUT",
     "The search sheet must never autofocus on open");
   await page.setViewportSize({ width: 390, height: 390 });
-  await page.waitForTimeout(120);
+  await page.waitForTimeout(350);
   const clippedSheet = await page.getByRole("dialog").evaluate((dialog) => {
     const box = dialog.getBoundingClientRect();
-    return { top: box.top, bottom: box.bottom, height: window.innerHeight };
+    const style = getComputedStyle(dialog);
+    return { top: box.top, bottom: box.bottom, height: window.innerHeight,
+      style: dialog.getAttribute("style"), computed: {
+        top: style.top, height: style.height, minHeight: style.minHeight, maxHeight: style.maxHeight,
+        translate: style.translate, transform: style.transform, position: style.position },
+      visual: { height: window.visualViewport?.height, top: window.visualViewport?.offsetTop } };
   });
   assert.ok(clippedSheet.top >= -2 && clippedSheet.bottom <= clippedSheet.height + 2,
     "Keyboard-sized screen must keep the full search sheet visible: " + JSON.stringify(clippedSheet));
