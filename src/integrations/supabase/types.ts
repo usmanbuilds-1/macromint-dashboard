@@ -68,6 +68,27 @@ export type Database = {
         }
         Relationships: []
       }
+      ai_scan_attempt_budgets: {
+        Row: {
+          attempts: number
+          scope: string
+          user_id: string
+          window_start: string
+        }
+        Insert: {
+          attempts: number
+          scope: string
+          user_id: string
+          window_start: string
+        }
+        Update: {
+          attempts?: number
+          scope?: string
+          user_id?: string
+          window_start?: string
+        }
+        Relationships: []
+      }
       app_settings: {
         Row: {
           id: number
@@ -98,6 +119,107 @@ export type Database = {
           scanning_enabled?: boolean
           trial_days?: number
           updated_at?: string
+        }
+        Relationships: []
+      }
+      beta_invite_redemptions: {
+        Row: {
+          id: string
+          invite_id: string
+          redeemed_at: string
+          user_id: string
+        }
+        Insert: {
+          id?: string
+          invite_id: string
+          redeemed_at?: string
+          user_id: string
+        }
+        Update: {
+          id?: string
+          invite_id?: string
+          redeemed_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "beta_invite_redemptions_invite_id_fkey"
+            columns: ["invite_id"]
+            isOneToOne: false
+            referencedRelation: "beta_invites"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      beta_invites: {
+        Row: {
+          code_hash: string
+          created_at: string
+          created_by: string | null
+          expires_at: string
+          id: string
+          max_uses: number
+          note: string | null
+          revoked_at: string | null
+          used_count: number
+        }
+        Insert: {
+          code_hash: string
+          created_at?: string
+          created_by?: string | null
+          expires_at: string
+          id?: string
+          max_uses?: number
+          note?: string | null
+          revoked_at?: string | null
+          used_count?: number
+        }
+        Update: {
+          code_hash?: string
+          created_at?: string
+          created_by?: string | null
+          expires_at?: string
+          id?: string
+          max_uses?: number
+          note?: string | null
+          revoked_at?: string | null
+          used_count?: number
+        }
+        Relationships: []
+      }
+      beta_reactivation_requests: {
+        Row: {
+          approved_days: number | null
+          created_at: string
+          id: string
+          message: string
+          owner_reason: string | null
+          reviewed_at: string | null
+          reviewed_by: string | null
+          status: string
+          user_id: string
+        }
+        Insert: {
+          approved_days?: number | null
+          created_at?: string
+          id?: string
+          message?: string
+          owner_reason?: string | null
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          status?: string
+          user_id: string
+        }
+        Update: {
+          approved_days?: number | null
+          created_at?: string
+          id?: string
+          message?: string
+          owner_reason?: string | null
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          status?: string
+          user_id?: string
         }
         Relationships: []
       }
@@ -423,6 +545,27 @@ export type Database = {
           updated_at?: string
           user_id?: string
           weight_kg?: number | null
+        }
+        Relationships: []
+      }
+      public_signup_tickets: {
+        Row: {
+          consumed_at: string | null
+          created_at: string
+          expires_at: string
+          ticket_hash: string
+        }
+        Insert: {
+          consumed_at?: string | null
+          created_at?: string
+          expires_at: string
+          ticket_hash: string
+        }
+        Update: {
+          consumed_at?: string | null
+          created_at?: string
+          expires_at?: string
+          ticket_hash?: string
         }
         Relationships: []
       }
@@ -830,16 +973,61 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      am_i_admin: { Args: never; Returns: boolean }
-      check_access: { Args: never; Returns: boolean }
-      get_public_app_settings: {
-        Args: never
-        Returns: {
-          trial_days: number
-          reward_access_hours: number
-          max_daily_rewarded_ads: number
-        } | null
+      admin_change_entitlement: {
+        Args: {
+          p_action: string
+          p_admin: string
+          p_date?: string
+          p_days?: number
+          p_note?: string
+          p_reason?: string
+          p_state?: string
+          p_target: string
+        }
+        Returns: Json
       }
+      admin_create_beta_invite: {
+        Args: {
+          p_admin: string
+          p_code_hash: string
+          p_expires_at: string
+          p_max_uses: number
+          p_note: string
+        }
+        Returns: Json
+      }
+      admin_revoke_beta_invite: {
+        Args: { p_admin: string; p_invite_id: string }
+        Returns: boolean
+      }
+      admin_set_app_config: {
+        Args: {
+          p_action: string
+          p_admin: string
+          p_ads?: number
+          p_days?: number
+          p_hours?: number
+          p_reason?: string
+        }
+        Returns: Json
+      }
+      am_i_admin: { Args: never; Returns: boolean }
+      beta_review_reactivation: {
+        Args: {
+          p_approve: boolean
+          p_days: number
+          p_owner: string
+          p_reason: string
+          p_request: string
+        }
+        Returns: Json
+      }
+      beta_submit_reactivation: {
+        Args: { p_message?: string; p_user: string }
+        Returns: Json
+      }
+      check_access: { Args: never; Returns: boolean }
+      consume_ai_scan_budget: { Args: { p_user_id: string }; Returns: string }
       consume_username_auth_budget: {
         Args: {
           p_key_hash: string
@@ -853,12 +1041,14 @@ export type Database = {
         Args: { p_code_hash: string; p_user_id: string }
         Returns: boolean
       }
+      get_public_app_settings: { Args: never; Returns: Json }
       has_access: { Args: { uid?: string }; Returns: boolean }
       has_active_entitlement: {
         Args: { target_user_id: string }
         Returns: boolean
       }
       is_admin: { Args: never; Returns: boolean }
+      issue_public_signup_ticket: { Args: { p_hash: string }; Returns: boolean }
       log_admin_action: {
         Args: {
           p_action: string
