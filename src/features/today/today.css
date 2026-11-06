@@ -46,10 +46,6 @@
   letter-spacing: -.075em;
   line-height: .99;
 }
-.mm-home-title::after {
-  content: ".";
-  color: var(--home-progress);
-}
 .mm-home-heading > p {
   max-width: 47ch;
   color: var(--home-muted);
