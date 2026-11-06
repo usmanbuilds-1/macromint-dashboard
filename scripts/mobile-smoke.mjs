@@ -90,19 +90,60 @@ for (const [width, height] of sizes) {
     const reg = await page.goto(url + "/register", { waitUntil: "networkidle", timeout: 30000 });
     if (!reg || reg.status() >= 400) throw new Error("Registration HTTP status " + reg?.status());
     if (expectSignup) {
-      await page.getByRole("heading", { name: "Create your account" }).waitFor({ timeout: 15000 });
-      await page.locator("#name").waitFor({ timeout: 15000 });
-      await page.locator("#username").waitFor({ timeout: 15000 });
-      await page.locator("#password").waitFor({ timeout: 15000 });
+      if (expectTesterInvites) {
+        // First visit: the beta code is the only field. No account is created
+        // when Continue is clicked; the actual server validates at signup.
+        await page.getByRole("heading", { name: "Enter your beta invitation" }).waitFor({ timeout: 15000 });
+        await page.locator("#invite").waitFor({ timeout: 15000 });
+        if (await page.locator("#name").count() || await page.locator("#password").count()) {
+          throw new Error("Beta invitation must come before account setup");
+        }
+        if (width === 390) {
+          await page.locator("#invite").fill("NOT-A-VALID-CODE");
+          await page.getByRole("button", { name: "Continue", exact: true }).click();
+          await page.getByRole("heading", { name: "Enter your beta invitation" }).waitFor();
+          if (await page.locator("#name").count()) {
+            throw new Error("Invalid beta code format advanced to account setup");
+          }
+        }
+        await page.screenshot({ path: `mobile-audit/signup-code-${width}.png`, fullPage: true });
+        await page.locator("#invite").fill("MM-" + "A".repeat(40));
+        await page.getByRole("button", { name: "Continue", exact: true }).click();
+        await page.getByRole("heading", { name: "Set up your beta account" }).waitFor({ timeout: 15000 });
+        await page.getByText("Beta tester invitation selected").waitFor();
+        await page.locator("#name").waitFor();
+        await page.locator("#username").waitFor();
+        await page.locator("#password").waitFor();
+        if (await page.locator("#invite").count()) throw new Error("Invitation field incorrectly repeated in account setup");
+        if (width === 390) {
+          // Moving back must not lose the code or accidentally create a user.
+          await page.getByRole("button", { name: "Change invitation code" }).click();
+          await page.getByRole("heading", { name: "Enter your beta invitation" }).waitFor();
+          if (await page.locator("#invite").inputValue() !== "MM-" + "A".repeat(40)) {
+            throw new Error("Invitation lost when navigating back");
+          }
+          await page.getByRole("button", { name: /Don't have a code\? Create a regular account/ }).click();
+          await page.getByRole("heading", { name: "Create your account", exact: true }).waitFor();
+          await page.getByText("Regular account · No invitation needed").waitFor();
+          if (await page.locator("#invite").count()) throw new Error("Regular account wrongly requires an invite");
+          await page.locator("#name").waitFor();
+          await page.locator("#username").waitFor();
+          await page.locator("#password").waitFor();
+          await page.screenshot({ path: "mobile-audit/signup-regular-390.png", fullPage: true });
+          await page.getByRole("button", { name: "Use a beta invitation instead" }).click();
+          await page.getByRole("heading", { name: "Enter your beta invitation" }).waitFor();
+          await page.locator("#invite").fill("MM-" + "B".repeat(40));
+          await page.getByRole("button", { name: "Continue", exact: true }).click();
+          await page.getByRole("heading", { name: "Set up your beta account" }).waitFor();
+        }
+      } else {
+        await page.getByRole("heading", { name: "Create your account" }).waitFor({ timeout: 15000 });
+        await page.locator("#name").waitFor();
+        await page.locator("#username").waitFor();
+        await page.locator("#password").waitFor();
+      }
       if (await page.locator("#username").getAttribute("type") !== "text") {
         throw new Error("Unified signup must use username, not email");
-      }
-      if (expectTesterInvites) {
-        await page.locator("#invite").waitFor({ timeout: 15000 });
-        if (await page.locator("#invite").getAttribute("required") !== null) {
-          throw new Error("Normal signup should not require a beta invitation");
-        }
-        await page.getByText("Beta tester invitation (optional)").waitFor();
       }
       if (width === 390) {
         const login = await page.goto(url + "/login", { waitUntil: "networkidle" });
