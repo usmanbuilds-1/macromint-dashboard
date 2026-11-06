@@ -490,6 +490,32 @@ export const supabaseBackend: Backend = {
     return (data ?? []).map(mapEntry);
   },
 
+  async getDiaryRange(startDate, endDate) {
+    if (!/^\\d{4}-\\d{2}-\\d{2}$/.test(startDate) ||
+        !/^\\d{4}-\\d{2}-\\d{2}$/.test(endDate) || startDate > endDate) {
+      throw new BackendError("VALIDATION", "Invalid diary date range");
+    }
+    // PostgREST has a row limit. Page through results rather than silently
+    // dropping entries from people who log many foods.
+    const pageSize = 500;
+    const entries: DiaryEntry[] = [];
+    const userId = await currentUserId();
+    for (let offset = 0; ; offset += pageSize) {
+      const { data, error } = await getSupabase().from("diary_entries")
+        .select("*").eq("user_id", userId)
+        .gte("entry_date", startDate).lte("entry_date", endDate)
+        .order("entry_date", { ascending: true })
+        .order("logged_at", { ascending: true })
+        .order("id", { ascending: true })
+        .range(offset, offset + pageSize - 1);
+      if (error) throw new BackendError("DB", error.message);
+      const page = data ?? [];
+      entries.push(...page.map(mapEntry));
+      if (page.length < pageSize) break;
+    }
+    return entries;
+  },
+
   async addEntry(input: AddEntryInput) {
     const nutrients = applyPortionPercent(input.baseNutrients, input.portionPercent);
     const { data, error } = await getSupabase()
