@@ -135,7 +135,7 @@ export function ScanDialog({
 
   return (
     <Dialog open onOpenChange={(o) => (!o ? onClose() : undefined)}>
-      <DialogContent className="max-h-[calc(100dvh-1rem)] overflow-y-auto sm:max-w-lg"
+      <DialogContent className="mm-scan-dialog max-h-[calc(100dvh-1rem)] overflow-y-auto sm:max-w-lg"
         onOpenAutoFocus={(event) => {
           // Radix otherwise focuses the notes input and opens the phone
           // keyboard on a screen whose main action is selecting a photo.
