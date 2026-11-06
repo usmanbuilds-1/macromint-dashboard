@@ -88,6 +88,20 @@ export interface AdminActionInput {
   note?: string;
 }
 
+export interface ReactivationRequest {
+  id: string;
+  status: "pending" | "approved" | "denied";
+  createdAt: string;
+  reviewedAt: string | null;
+  approvedDays: number | null;
+}
+
+export interface AdminReactivationRequest extends ReactivationRequest {
+  userId: string;
+  message: string;
+  account: { name: string; email: string } | null;
+}
+
 export interface SessionUser {
   id: string;
   email: string;
@@ -163,6 +177,10 @@ export interface Backend {
   adminAction(input: AdminActionInput): Promise<{ ok: boolean; entitlement?: Entitlement }>;
   adminGetAudit(targetUserId?: string): Promise<AuditLogEntry[]>;
   adminGetSettings(): Promise<AppSettings>;
+  getReactivationRequests(): Promise<ReactivationRequest[]>;
+  submitReactivationRequest(message: string): Promise<void>;
+  adminGetReactivationQueue(): Promise<AdminReactivationRequest[]>;
+  adminReviewReactivation(id: string, approve: boolean, days: number | null, reason: string): Promise<void>;
 
   // Notifications, consents, export
   getNotifications(): Promise<NotificationItem[]>;
