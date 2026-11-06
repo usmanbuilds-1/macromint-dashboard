@@ -6,7 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { AuthShell } from "./AuthShell";
 import { backend, BackendError } from "@/lib/backend";
-import { useSession } from "@/context/Session";
+import { hasAccessClient, useSession } from "@/context/Session";
 import { getRememberMe, setRememberMe } from "@/lib/auth/remember-me";
 import { USERNAME_AUTH_ENABLED } from "@/lib/auth/username-config";
 
@@ -36,8 +36,18 @@ export function Login() {
   const setAuthUserAndGo = async () => {
     const user = await backend.getSessionUser();
     setAuthUser(user);
-    const profile = user ? await backend.getProfile().catch(() => null) : null;
-    navigate(profile?.onboardedAt ? (location.state?.from as string) ?? "/today" : "/onboarding", { replace: true });
+    const [profile, entitlement, admin] = user ? await Promise.all([
+      backend.getProfile().catch(() => null),
+      backend.getEntitlement().catch(() => null),
+      backend.amIAdmin().catch(() => false),
+    ]) : [null, null, false] as const;
+    if (!admin && !hasAccessClient(entitlement)) {
+      navigate("/upgrade", { replace: true });
+    } else {
+      navigate(admin && !hasAccessClient(entitlement) ? "/admin" :
+        profile?.onboardedAt ? (location.state?.from as string) ?? "/today" : "/onboarding",
+        { replace: true });
+    }
   };
 
   return (
