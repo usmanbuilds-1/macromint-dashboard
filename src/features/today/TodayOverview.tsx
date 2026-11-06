@@ -79,7 +79,7 @@ export function TodayOverview({
     !hasEntries ? 0 : totals[key] ?? null;
 
   return (
-    <section aria-labelledby="daily-intake-heading" className="mm-home-overview ref-live-today-summary">
+    <section aria-labelledby="daily-intake-heading" className="mm-home-overview">
       <div className="mm-home-overview-heading">
         <h2 id="daily-intake-heading">The daily ledger</h2>
         {target === null && (
