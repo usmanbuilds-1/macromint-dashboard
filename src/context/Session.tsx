@@ -62,10 +62,10 @@ export function SessionProvider({ children }: { children: React.ReactNode }) {
     const [p, g, e, a] = await Promise.all([
       backend.getProfile().catch(() => null),
       backend.getGoals().catch(() => null),
-      backend.getEntitlement().catch(() => null),
+      backend.getEntitlement().catch(() => undefined),
       backend.amIAdmin().catch(() => false),
     ]);
-    if (!a && trackedUser.current === current.id && !hasAccessClient(e)) {
+    if (!a && trackedUser.current === current.id && e !== undefined && !hasAccessClient(e)) {
       // Server RLS independently blocks requests made with stale JWTs.
       trackedUser.current = null;
       await backend.signOut().catch(() => undefined);
@@ -76,10 +76,10 @@ export function SessionProvider({ children }: { children: React.ReactNode }) {
       setIsAdmin(false);
       return;
     }
-    if (hasAccessClient(e)) trackedUser.current = current.id;
+    if (e !== undefined && hasAccessClient(e)) trackedUser.current = current.id;
     setProfile(p);
     setGoals(g);
-    setEntitlement(e);
+    if (e !== undefined) setEntitlement(e);
     setIsAdmin(a);
   }, []);
 
