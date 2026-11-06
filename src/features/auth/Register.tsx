@@ -25,7 +25,7 @@ export function Register() {
   const [isBetaTester, setIsBetaTester] = useState(false);
   const [busy, setBusy] = useState(false);
   const navigate = useNavigate();
-  const { setAuthUser } = useSession();
+  const { setAuthUser, refresh } = useSession();
 
   const continueWithInvitation = (e: React.FormEvent) => {
     e.preventDefault();
@@ -100,6 +100,9 @@ export function Register() {
       }
       const user = await backend.getSessionUser();
       setAuthUser(user);
+      // Onboarding is gated on the fetched profile. Load it before routing:
+      // setting the user alone can leave a blank onboarding loading state.
+      await refresh();
       navigate("/onboarding", { replace: true });
     } catch (err) {
       toast.error(err instanceof BackendError ? err.message : "Registration failed");
