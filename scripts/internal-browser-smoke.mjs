@@ -131,7 +131,7 @@ try {
         // continued animating for 550–720 ms on every return.
         await page.waitForFunction(() => {
           const today = document.querySelector(".ref-live-today");
-          const calories = today?.querySelector(".mm-today-arc-label strong");
+          const calories = today?.querySelector(".mm-home-calories");
           const summary = today?.querySelector(".ref-live-today-summary");
           return Boolean(today && summary && calories &&
             calories.textContent?.trim() !== "—");
