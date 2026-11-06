@@ -1,5 +1,5 @@
 import { useMemo, useState } from "react";
-import { ChevronDown, ChevronLeft, ChevronRight, Copy, Pencil, Plus, Star, BookMarked, Trash2 } from "lucide-react";
+import { Camera, ChevronDown, ChevronLeft, ChevronRight, Copy, Pencil, Plus, Star, BookMarked, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -159,14 +159,18 @@ export function Diary() {
 
       <div className="flex flex-wrap items-center gap-3">
         <Button className="min-h-11 flex-1 gap-2 sm:flex-none" onClick={() => foodLog.open({ entryDate: date, mealType: preferredMeal() })}>
-          <Plus className="h-4 w-4" /> Log food
+          <Plus className="h-4 w-4" /> Add food
+        </Button>
+        <Button variant="outline" className="min-h-11 gap-2"
+          onClick={() => foodLog.openScan({ entryDate: date, mealType: preferredMeal() })}>
+          <Camera className="h-4 w-4" aria-hidden="true" /> Scan photo
         </Button>
         <details className="group relative">
           <summary className="flex min-h-11 cursor-pointer list-none items-center px-3 text-sm font-medium text-muted-foreground underline underline-offset-4">
-            Reuse a day
+            Copy meals
           </summary>
           <div className="absolute right-0 top-full z-10 mt-1 flex min-w-48 flex-col gap-1 rounded-md border bg-card p-2 shadow-sm">
-            <button type="button" className="min-h-11 rounded-md px-3 text-left text-sm hover:bg-accent" onClick={() => void copyDay(addDaysStr(date, -1), date)}>Copy yesterday here</button>
+            <button type="button" className="min-h-11 rounded-md px-3 text-left text-sm hover:bg-accent" onClick={() => void copyDay(addDaysStr(date, -1), date)}>Copy previous day's meals here</button>
             {date < todayStr() && <button type="button" className="min-h-11 rounded-md px-3 text-left text-sm hover:bg-accent" onClick={() => void copyDay(date, addDaysStr(date, 1))}>Copy this day forward</button>}
           </div>
         </details>
