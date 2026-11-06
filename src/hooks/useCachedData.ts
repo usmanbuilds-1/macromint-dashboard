@@ -1,6 +1,7 @@
 import { useCallback } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useSession } from "@/context/Session";
+import { appDataKey } from "./app-data-key";
 
 /** Reads are cached for a short window per account and logical resource.
  * Mutations call bumpData(), which invalidates active queries via
@@ -22,7 +23,7 @@ export function useAsyncData<T>(
 } {
   const { user } = useSession();
   const query = useQuery<T, Error>({
-    queryKey: ["app-data", user?.id ?? "signed-out", resource, ...deps],
+    queryKey: appDataKey(user?.id ?? "signed-out", resource, deps),
     queryFn: loader,
     enabled: Boolean(user?.id),
     staleTime: 45_000,
