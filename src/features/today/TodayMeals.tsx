@@ -30,7 +30,7 @@ export function TodayMeals({
   }, [entries]);
 
   return (
-    <section aria-labelledby="meals-heading" className="mm-home-meals ref-live-diary">
+    <section aria-labelledby="meals-heading" className="mm-home-meals">
       <div className="mm-home-section-head">
         <div>
           <p className="mm-home-overline">THE FOOD JOURNAL</p>
