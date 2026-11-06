@@ -55,9 +55,18 @@ try {
   // Daily navigation never buries diary, the task users perform most often.
   const nav = page.locator(".ref-mobile-tabs");
   for (const name of ["Today", "Diary", "Foods", "Progress"]) {
-    assert.equal(await nav.getByRole("link", { name, exact: true }).count(), 1,
-      "Missing mobile destination: " + name);
+    const tab = nav.getByRole("link", { name, exact: true });
+    assert.equal(await tab.count(), 1, "Missing mobile destination: " + name);
+    assert.equal(await tab.locator("svg.ref-mobile-tab-icon").count(), 1,
+      "Mobile tab must have exactly one visible icon: " + name);
+    assert.equal(await tab.locator("svg").getAttribute("aria-hidden"), "true",
+      "Decorative tab icons must not duplicate the accessible tab name");
+    const hitArea = await tab.boundingBox();
+    assert.ok(hitArea && hitArea.height >= 44,
+      "Mobile tab must meet minimum tap area: " + name);
   }
+  assert.equal(await nav.getByRole("link", { name: "Today" }).getAttribute("aria-current"), "page",
+    "Selected tab should be indicated accessibly");
   await page.getByRole("button", { name: "More and settings" }).waitFor();
   await page.getByRole("button", { name: "Add food", exact: true }).waitFor();
   await page.getByRole("button", { name: "Scan photo", exact: true }).click();
@@ -78,6 +87,8 @@ try {
 
   await nav.getByRole("link", { name: "Diary" }).click();
   await page.getByRole("heading", { name: "Diary", exact: true }).waitFor();
+  assert.equal(await nav.getByRole("link", { name: "Diary" }).getAttribute("aria-current"), "page",
+    "Selected tab indicator should follow navigation");
   await page.getByRole("button", { name: "Add food", exact: true }).waitFor();
   await page.getByRole("button", { name: "Scan photo", exact: true }).waitFor();
   await page.screenshot({ path: "mobile-audit/internal-diary-390.png", fullPage: true });
