@@ -158,6 +158,45 @@ try {
   await screenshotEverySize("goals");
   await page.goto(url + "/weight", { waitUntil: "domcontentloaded" });
   await screenshotEverySize("weight");
+
+  // Keep all captures on the disposable localStorage demo fixture. Switch to
+  // the seeded owner only after the explicit demo-mode safety check above.
+  await page.evaluate(() => {
+    const key = "macromint.demo.v2";
+    const store = JSON.parse(localStorage.getItem(key) || "null");
+    const owner = store?.users.find((user) => user.email === "demo@macromint.app");
+    if (!owner || !store.adminUserIds.includes(owner.id))
+      throw new Error("Disposable demo owner fixture missing");
+    store.sessionUserId = owner.id;
+    localStorage.setItem(key, JSON.stringify(store));
+  });
+  await page.goto(url + "/admin", { waitUntil: "domcontentloaded" });
+  await page.getByRole("heading", { name: "Users", exact: true }).waitFor();
+  await screenshotEverySize("admin-users");
+  await page.goto(url + "/admin/audit", { waitUntil: "domcontentloaded" });
+  await page.getByRole("heading", { name: "Audit log", exact: true }).waitFor();
+  await screenshotEverySize("admin-audit");
+  await page.goto(url + "/admin/settings", { waitUntil: "domcontentloaded" });
+  await page.getByRole("heading", { name: "Platform settings", exact: true }).waitFor();
+  await screenshotEverySize("admin-settings");
+
+  // Restricted account view is part of the product, not a broken dashboard.
+  await page.evaluate(() => {
+    const key = "macromint.demo.v2";
+    const store = JSON.parse(localStorage.getItem(key) || "null");
+    const expired = store?.users.find((user) => user.email === "expired.user@example.com");
+    if (!expired) throw new Error("Disposable expired fixture missing");
+    store.sessionUserId = expired.id;
+    localStorage.setItem(key, JSON.stringify(store));
+  });
+  await page.goto(url + "/upgrade", { waitUntil: "domcontentloaded" });
+  await page.getByRole("heading", { name: /free trial has ended|Account access is paused/ }).waitFor();
+  await screenshotEverySize("restricted-account");
+
+  for (const path of ["/terms", "/privacy"]) {
+    await page.goto(url + path, { waitUntil: "domcontentloaded" });
+    await screenshotEverySize(path.slice(1));
+  }
   for (const width of [390, 768, 1440]) {
     await page.setViewportSize({ width, height: 900 });
     const overflow = await page.evaluate(() =>
