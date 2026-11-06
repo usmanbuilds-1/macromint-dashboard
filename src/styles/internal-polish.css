@@ -194,3 +194,15 @@
     align-items: flex-start;
   }
 }
+
+/* Today is an operational home screen, not a splash animation. On every
+ * return visit, cached values and controls must be visible on first paint. */
+.mm-app-shell .mm6-today .mm-live-enter {
+  animation: none !important;
+  opacity: 1;
+  transform: none;
+}
+.mm-app-shell .mm6-today .mm-today-macro-track i,
+.mm-app-shell .mm6-today .mm-today-arc svg circle {
+  transition: none;
+}
