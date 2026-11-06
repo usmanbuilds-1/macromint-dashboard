@@ -20,6 +20,17 @@ async function screenshotEverySize(name) {
       fullPage: true, animations: "disabled",
     });
     const overflow = await page.evaluate(() => document.documentElement.scrollWidth - innerWidth);
+    if (overflow > 2) {
+      const offenders = await page.evaluate(() => [...document.querySelectorAll("body *")]
+        .map((element) => ({ tag: element.tagName, className: String(element.getAttribute("class") || "").slice(0,120),
+          text: element.textContent?.trim().slice(0,55),
+          left: Math.round(element.getBoundingClientRect().left),
+          right: Math.round(element.getBoundingClientRect().right),
+          width: Math.round(element.getBoundingClientRect().width) }))
+        .filter((element) => element.right > innerWidth + 2 || element.left < -2)
+        .sort((a,b) => b.right - a.right).slice(0,12));
+      console.error("LAYOUT OFFENDERS", name, width, JSON.stringify(offenders));
+    }
     assert.ok(overflow <= 2, `Horizontal overflow on ${name} at ${width}px: ${overflow}`);
   }
   await page.setViewportSize({ width: 390, height: 844 });
