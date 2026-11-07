@@ -8,10 +8,11 @@ import { JourneyIntro } from "@/components/app/JourneyIntro";
 import { JourneyEmpty } from "@/components/app/JourneyEmpty";
 import { CustomFoodDialog } from "./CustomFoodDialog";
 import { SavedMealsTab } from "./SavedMealsTab";
+import { FoodsRecent } from "./FoodsRecent";
+import { recentEntryToLoggable } from "./recent-food";
 import { matchingFavorite, toggleFavoriteCandidate } from "./favorite-actions";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { kcalOf } from "@/components/app/bits";
 import { backend, bumpData } from "@/lib/backend";
 import { useAsyncData } from "@/hooks/useData";
 import { todayStr } from "@/lib/nutrition/datetime";
@@ -29,7 +30,7 @@ function FoodRow({ food, onLog, favActive, onFav }: { food: LoggableFood; onLog:
         </p>
         <p className="mt-0.5 flex items-center gap-2 text-xs text-muted-foreground">
           <span>{food.servingLabel}</span>
-          <span className="tabular-nums">{formatNumber(kcalOf(food.per100g))} kcal per 100 g</span>
+          <span className="tabular-nums">{food.per100g.kcal == null ? "Calories unknown" : `${formatNumber(food.per100g.kcal)} kcal per 100 g`}</span>
         </p>
       </button>
       <div className="flex shrink-0 items-center gap-1">
@@ -57,6 +58,7 @@ export function Foods() {
   const today = todayStr();
 
   const favorites = useAsyncData(() => backend.getFavorites(), [], "favorites");
+  const recents = useAsyncData(() => backend.getRecentEntries(8), [], "recent:8");
   const favoriteIds = new Set((favorites.data ?? []).map((favorite) => favorite.foodId));
 
   const toggleFavorite = async (foodId: string) => {
@@ -91,9 +93,8 @@ export function Foods() {
   return (
     <div className="mm6-subpage mm6-page-foods mm-journey-foods flex flex-col gap-6">
       <JourneyIntro
-        eyebrow="FOOD LIBRARY"
         title="Foods"
-        description="Search or save foods you eat often. Tap Log to choose a portion for today."
+        description="Search foods, save favorites and reuse your meals."
       />
 
       <Tabs value={activeTab} onValueChange={setActiveTab}>
@@ -115,7 +116,7 @@ export function Foods() {
               <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
               <Input
                 value={q}
-                onChange={(e) => setQ(e.target.value)}
+                onChange={(e) => { setQ(e.target.value); setHit(null); }}
                 placeholder="Search for a food or meal"
                 className="pl-9"
                 aria-label="Search foods"
@@ -131,6 +132,11 @@ export function Foods() {
               <span>Create a food</span><small>Enter nutrition from a label</small>
             </button>
           </div>
+
+          {!hit && !searching && !recents.loading && (
+            <FoodsRecent entries={recents.data ?? []}
+              onLog={(entry) => log(recentEntryToLoggable(entry))} />
+          )}
 
           {hit && (
             <div className="mm-journey-food-results overflow-hidden border-y">

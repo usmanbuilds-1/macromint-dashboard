@@ -86,13 +86,34 @@ export function TodayOverview({
   if (!hasEntries && !loading) {
     return (
       <section aria-labelledby="daily-intake-heading" className="mm-home-overview mm-home-overview--empty">
-        <div className="mm-home-empty-target-line">
-          <h2 id="daily-intake-heading">Daily target</h2>
-          {targetReady
-            ? <strong className="tabular-nums">{formatNumber(target!)} <span>kcal</span></strong>
-            : <Link to="/goals" className="mm-home-overview-link">Set your target</Link>}
+        <div className="mm-home-day-facts">
+          <div>
+            <p className="mm-home-fact-label">Logged today</p>
+            <p className="mm-home-fact-value tabular-nums"><strong>0</strong> <span>kcal</span></p>
+          </div>
+          <div className="mm-home-day-target">
+            <h2 id="daily-intake-heading" className="mm-home-fact-label">Daily target</h2>
+            {targetReady
+              ? <p className="mm-home-fact-value tabular-nums"><strong>{formatNumber(target!)}</strong> <span>kcal</span></p>
+              : <Link to="/goals" className="mm-home-overview-link">Set targets</Link>}
+          </div>
         </div>
-        <p className="mm-home-empty-help">Your calorie and macro totals appear after you log a food.</p>
+        {targetReady && <div className="mm-home-energy-track" role="progressbar"
+          aria-label="Daily calorie progress" aria-valuemin={0} aria-valuenow={0} aria-valuemax={target!}>
+          <span style={{ width: "0%" }} />
+        </div>}
+        {(proteinTarget !== null || carbsTarget !== null || fatTarget !== null) && (
+          <dl className="mm-home-macro-plan" aria-label="Daily macro targets">
+            {([
+              ["Protein", proteinTarget], ["Carbs", carbsTarget], ["Fat", fatTarget],
+            ] as const).map(([label, amount]) => (
+              <div key={label}>
+                <dt>{label}</dt>
+                <dd className="tabular-nums">{amount === null ? "Not set" : `${formatNumber(amount)} g`}</dd>
+              </div>
+            ))}
+          </dl>
+        )}
       </section>
     );
   }
@@ -100,7 +121,7 @@ export function TodayOverview({
   return (
     <section aria-labelledby="daily-intake-heading" className="mm-home-overview">
       <div className="mm-home-overview-heading">
-        <h2 id="daily-intake-heading">The daily ledger</h2>
+        <h2 id="daily-intake-heading">Today’s nutrition</h2>
         {target === null && (
           <Link to="/goals" className="mm-home-overview-link">Set your targets</Link>
         )}

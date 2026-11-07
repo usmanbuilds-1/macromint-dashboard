@@ -17,7 +17,6 @@ import { formatNumber } from "@/lib/utils";
 import { cn } from "@/lib/utils";
 import { ServingConfigDialog } from "@/features/foods/ServingConfig";
 import { JourneyIntro } from "@/components/app/JourneyIntro";
-import { JourneyEmpty } from "@/components/app/JourneyEmpty";
 import { DiarySummary } from "./DiarySummary";
 import { favoriteCandidateFromEntry, toggleFavoriteCandidate } from "@/features/foods/favorite-actions";
 
@@ -119,9 +118,8 @@ export function Diary() {
   return (
     <div className="mm6-subpage mm6-page-diary flex flex-col gap-6">
       <JourneyIntro
-        eyebrow="YOUR FOOD JOURNAL"
         title="Diary"
-        description={`Food entries for ${formatDateLong(date)}.`}
+        description={formatDateLong(date)}
         action={(
           <div className="mm-journey-date-switch" aria-label="Change diary day">
             <Button variant="ghost" size="icon" aria-label="Previous day"
@@ -157,15 +155,7 @@ export function Diary() {
           onClick={() => foodLog.openScan({ entryDate: date, mealType: suggestedMealNow() })}>
           <Camera className="h-4 w-4" aria-hidden="true" /> Scan photo
         </Button>
-        <details className="group relative">
-          <summary className="flex min-h-11 cursor-pointer list-none items-center px-3 text-sm font-medium text-muted-foreground underline underline-offset-4">
-            Copy meals
-          </summary>
-          <div className="absolute right-0 top-full z-10 mt-1 flex min-w-48 flex-col gap-1 rounded-md border bg-card p-2 shadow-sm">
-            <button type="button" className="min-h-11 rounded-md px-3 text-left text-sm hover:bg-accent" onClick={() => void copyDay(addDaysStr(date, -1), date)}>Copy previous day's meals here</button>
-            {date < todayStr() && <button type="button" className="min-h-11 rounded-md px-3 text-left text-sm hover:bg-accent" onClick={() => void copyDay(date, addDaysStr(date, 1))}>Copy this day forward</button>}
-          </div>
-        </details>
+
       </div>
 
       {diary.loading && !diary.data && <div className="space-y-2" aria-label="Loading diary">
@@ -179,15 +169,10 @@ export function Diary() {
         </div>
       )}
       {!diary.loading && !diary.error && entries.length === 0 && (
-        <JourneyEmpty
-          title={date === todayStr() ? "Nothing logged yet" : "Nothing logged for this day"}
-          description={date === todayStr()
-            ? "Start with a meal or snack. You'll be able to edit portions and foods afterwards."
-            : "You can add a meal for this date or copy foods from another day."}
-        />
+        <p className="mm-diary-guidance">Nothing recorded on this date. Choose a meal below to start.</p>
       )}
 
-      {entries.length > 0 && MEAL_TYPES.filter((meal) => (byMeal.get(meal)?.length ?? 0) > 0).map((meal) => {
+      {(entries.length > 0 || (!diary.loading && !diary.error)) && MEAL_TYPES.map((meal) => {
         const mealEntries = byMeal.get(meal) ?? [];
         return (
           <section key={meal} aria-label={MEAL_LABELS[meal]} className="mm-journey-meal-section overflow-hidden border-b">
@@ -195,7 +180,7 @@ export function Diary() {
               <div className="flex items-baseline gap-2.5">
                 <h2 className="text-sm font-semibold">{MEAL_LABELS[meal]}</h2>
                 <span className="text-xs tabular-nums text-muted-foreground">
-                  {mealEntries.length ? `${mealEntries.some((e) => e.nutrients.kcal == null) ? "≥ " : ""}${formatNumber((mealEntries.reduce((s, e) => s + (e.nutrients.kcal ?? 0), 0)))} kcal${mealEntries.some((e) => e.nutrients.kcal == null) ? " known" : ""}` : ""}
+                  {mealEntries.length ? `${mealEntries.some((e) => e.nutrients.kcal == null) ? "≥ " : ""}${formatNumber((mealEntries.reduce((s, e) => s + (e.nutrients.kcal ?? 0), 0)))} kcal${mealEntries.some((e) => e.nutrients.kcal == null) ? " known" : ""}` : "Not logged"}
                 </span>
               </div>
               <div className="flex items-center gap-1">
@@ -204,14 +189,12 @@ export function Diary() {
                     <BookMarked className="h-3.5 w-3.5" /> Save as meal
                   </Button>
                 )}
-                <Button variant="ghost" size="icon" aria-label={`Add to ${MEAL_LABELS[meal]}`} onClick={() => foodLog.open({ entryDate: date, mealType: meal })}>
+                <Button variant="ghost" size="icon" aria-label={`Add to ${MEAL_LABELS[meal]}`} onClick={() => foodLog.openSearch({ entryDate: date, mealType: meal })}>
                   <Plus className="h-4 w-4" />
                 </Button>
               </div>
             </div>
-            {mealEntries.length === 0 ? (
-              <p className="mm-journey-meal-empty">Add food to this meal using the plus button.</p>
-            ) : (
+            {mealEntries.length > 0 && (
               <ul>
                 {mealEntries.map((entry) => (
                   <li key={entry.id} className={cn("px-4 py-3", mealEntries.indexOf(entry) > 0 && "border-t")}>
@@ -270,6 +253,17 @@ export function Diary() {
           </section>
         );
       })}
+
+      <div className="mm-diary-copy">
+        <details className="group relative">
+          <summary className="flex min-h-11 cursor-pointer list-none items-center px-3 text-sm font-medium text-muted-foreground underline underline-offset-4">
+            Copy meals from another day
+          </summary>
+          <div className="absolute right-0 top-full z-10 mt-1 flex min-w-48 flex-col gap-1 rounded-md border bg-card p-2 shadow-sm">
+            <button type="button" className="min-h-11 rounded-md px-3 text-left text-sm hover:bg-accent" onClick={() => void copyDay(addDaysStr(date, -1), date)}>Copy previous day's meals here</button>
+            {date < todayStr() && <button type="button" className="min-h-11 rounded-md px-3 text-left text-sm hover:bg-accent" onClick={() => void copyDay(date, addDaysStr(date, 1))}>Copy this day forward</button>}
+          </div>
+        </details></div>
 
       {editEntry && (
         <ServingConfigDialog

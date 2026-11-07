@@ -125,11 +125,11 @@ try {
   const onboardingActivation = await page.locator(".ref-live-today").evaluate((element) => {
     const action = element.querySelector(".mm-home-action-primary")?.getBoundingClientRect();
     const ledger = element.querySelector(".mm-home-overview")?.getBoundingClientRect();
-    const macroGrid = element.querySelector(".mm-home-macro-grid");
-    return { actionTop: action?.top, ledgerTop: ledger?.top, hasMacroGrid: Boolean(macroGrid) };
+    const macroPlan = element.querySelector(".mm-home-macro-plan");
+    return { actionTop: action?.top, ledgerTop: ledger?.top, hasMacroPlan: Boolean(macroPlan) };
   });
-  assert.ok(onboardingActivation.actionTop < onboardingActivation.ledgerTop && !onboardingActivation.hasMacroGrid,
-    "First-run Today should show a logging action before dense nutrition data");
+  assert.ok(onboardingActivation.ledgerTop < onboardingActivation.actionTop && onboardingActivation.hasMacroPlan,
+    "First-run Today should show real targets then one logging action");
   // A compact phone is narrower than our usual 390px screen audit.
   await page.setViewportSize({ width: 320, height: 740 });
   await page.screenshot({ path: "mobile-audit/screens/today-320.png", fullPage: true });
@@ -178,7 +178,7 @@ try {
         await page.waitForFunction(() => {
           const today = document.querySelector(".ref-live-today");
           const calories = today?.querySelector(".mm-home-calories");
-          const emptyTarget = today?.querySelector(".mm-home-empty-target-line");
+          const emptyTarget = today?.querySelector(".mm-home-day-facts");
           const summary = today?.querySelector(".mm-home-overview");
           return Boolean(today && summary && (
             (calories && calories.textContent?.trim() !== "—") ||
@@ -282,6 +282,8 @@ try {
   await page.getByText("Nothing logged yet").waitFor();
   assert.equal(await page.locator(".mm-journey-ledger").count(), 0,
     "An empty diary should not show a second empty calorie dashboard");
+  assert.equal(await page.locator(".mm6-page-diary .mm-journey-meal-section").count(), 4,
+    "Diary must keep all four meal entry points for an empty day");
   await screenshotEverySize("diary");
   await screenshotCompact("diary");
 
@@ -294,6 +296,7 @@ try {
   await page.getByText("Scan a photo", { exact: true }).waitFor();
   await page.locator(".mm-journey-food-options").waitFor();
   await screenshotEverySize("foods");
+  await page.getByRole("heading", { name: "Recently logged" }).waitFor();
   await screenshotCompact("foods");
 
   await nav.getByRole("link", { name: "Progress" }).click();

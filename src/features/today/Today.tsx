@@ -13,6 +13,8 @@ import { useFoodLog } from "@/features/foods/FoodLogProvider";
 import { TodayOverview } from "./TodayOverview";
 import { TodayMeals } from "./TodayMeals";
 import { TodayUtilities } from "./TodayUtilities";
+import { TodayNextStep } from "./TodayNextStep";
+import { recentEntryToLoggable } from "@/features/foods/recent-food";
 import { toast } from "sonner";
 import "./today.css";
 
@@ -27,9 +29,11 @@ export function Today() {
 
   const diary = useAsyncData(() => backend.getDiary(date), [date], "diary:day");
   const water = useAsyncData(() => backend.getWater(date), [date], "water:day");
+  const recent = useAsyncData(() => backend.getRecentEntries(8), [], "recent:8");
   const entries = diary.data ?? [];
   const totals = dailyTotals(entries);
   const suggestedMeal = suggestedMealNow();
+  const lastOtherDay = recent.data?.find((entry) => entry.entryDate !== date) ?? null;
 
   const openFood = (mealType: MealType = suggestedMeal) => {
     foodLog.openSearch({ entryDate: date, mealType });
@@ -45,11 +49,9 @@ export function Today() {
       toast.error("Water could not be saved. Try again.");
     }
   };
-  const intro = diary.loading && !diary.data
-    ? "Loading your food log."
-    : entries.length > 0
-      ? `${entries.length} ${entries.length === 1 ? "food" : "foods"} logged`
-      : "Your food and nutrition for today.";
+  const intro = entries.length > 0
+    ? `${entries.length} ${entries.length === 1 ? "food" : "foods"} logged today`
+    : null;
 
   return (
     <div className="mm-home mm-live-page ref-live-today">
@@ -57,23 +59,9 @@ export function Today() {
         <div className="mm-home-heading">
           <time dateTime={date}>{formatDateLong(date)}</time>
           <h1 className="mm-home-title">Today</h1>
-          <p>{intro}</p>
+          {intro && <p>{intro}</p>}
         </div>
       </header>
-
-      <section aria-label="Add food" className="mm-home-actions">
-        <Button type="button" onClick={() => openFood()}
-          className="mm-home-action-primary">
-          <Plus className="h-5 w-5" aria-hidden="true" />
-          Add food
-          <span className="mm-home-action-mark" aria-hidden="true">↗</span>
-        </Button>
-        <Button type="button" variant="outline" onClick={openScan}
-          className="mm-home-action-secondary">
-          <Camera className="h-5 w-5" aria-hidden="true" />
-          Scan photo
-        </Button>
-      </section>
 
       <TodayOverview
         totals={totals}
@@ -91,7 +79,19 @@ export function Today() {
         }}
       />
 
-
+      <section aria-label="Add food" className="mm-home-actions">
+        <Button type="button" onClick={() => openFood()}
+          className="mm-home-action-primary">
+          <Plus className="h-5 w-5" aria-hidden="true" />
+          Add food
+          <span className="mm-home-action-mark" aria-hidden="true">↗</span>
+        </Button>
+        <Button type="button" variant="outline" onClick={openScan}
+          className="mm-home-action-secondary">
+          <Camera className="h-5 w-5" aria-hidden="true" />
+          Scan photo
+        </Button>
+      </section>
 
       {(entries.length > 0 || diary.loading || Boolean(diary.error)) && <TodayMeals entries={entries}
         loading={diary.loading && !diary.data}
@@ -100,6 +100,10 @@ export function Today() {
         onAddMeal={openFood}
         suggestedMeal={suggestedMeal}
       />}
+      {!diary.loading && !diary.error && entries.length === 0 && (
+        <TodayNextStep previous={lastOtherDay}
+          onRepeat={(entry) => foodLog.open({ entryDate: date, mealType: suggestedMeal, initialFood: recentEntryToLoggable(entry) })} />
+      )}
 
       <TodayUtilities
         waterMl={(water.data ?? []).reduce((sum, item) => sum + item.amountMl, 0)}

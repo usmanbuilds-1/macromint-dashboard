@@ -22,7 +22,7 @@ describe("Today: clear hierarchy and contextual entry", () => {
         loading={false} hasEntries
       />,
     );
-    expect(screen.getByRole("heading", { name: "The daily ledger" })).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: "Today’s nutrition" })).toBeInTheDocument();
     expect(screen.getByText("1,420")).toBeInTheDocument();
     expect(screen.getByText(/780 kcal to your daily target/)).toBeInTheDocument();
     const meter = screen.getByRole("progressbar", { name: "Daily calorie progress" });
@@ -31,7 +31,7 @@ describe("Today: clear hierarchy and contextual entry", () => {
     expect(container.querySelector("svg, .mm-today-arc")).toBeNull();
   });
 
-  it("puts a compact honest target on a brand-new day", () => {
+  it("shows genuine empty-day calorie and macro targets without invented intake", () => {
     const { container } = render(
       <TodayOverview totals={{}} target={2100} proteinTarget={130} carbsTarget={250}
         fatTarget={70} hasEntries={false} loading={false} />,
@@ -40,6 +40,8 @@ describe("Today: clear hierarchy and contextual entry", () => {
     expect(screen.getByText("2,100")).toBeInTheDocument();
     expect(container.querySelector(".mm-home-calories")).toBeNull();
     expect(container.querySelector(".mm-home-macro-grid")).toBeNull();
+    expect(screen.getByRole("progressbar", { name: "Daily calorie progress" })).toHaveAttribute("aria-valuenow", "0");
+    expect(container.querySelector(".mm-home-macro-plan")).toBeInTheDocument();
   });
 
   it("shows that nutrition is unknown rather than inventing zero calories", () => {

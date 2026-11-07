@@ -5,7 +5,7 @@ import type { ReactNode } from "react";
 export function JourneyIntro({
   eyebrow, title, description, action, supporting,
 }: {
-  eyebrow: string;
+  eyebrow?: string;
   title: string;
   description: string;
   action?: ReactNode;
@@ -14,7 +14,7 @@ export function JourneyIntro({
   return (
     <header className="mm-journey-intro">
       <div className="mm-journey-intro-copy">
-        <p className="mm-journey-eyebrow">{eyebrow}</p>
+        {eyebrow && <p className="mm-journey-eyebrow">{eyebrow}</p>}
         <h1>{title}</h1>
         <p className="mm-journey-description">{description}</p>
         {supporting}

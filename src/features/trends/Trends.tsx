@@ -28,7 +28,7 @@ import { lastNWeeks, weekDates, formatDateShort, todayStr } from "@/lib/nutritio
 import { formatNumber } from "@/lib/utils";
 import { cn } from "@/lib/utils";
 import { JourneyIntro } from "@/components/app/JourneyIntro";
-import { JourneyEmpty } from "@/components/app/JourneyEmpty";
+import { ProgressStart } from "./ProgressStart";
 
 const RANGE_OPTIONS = [
   { value: 7, label: "7 days" },
@@ -134,9 +134,8 @@ export function Trends() {
   return (
     <div className="mm6-subpage mm6-page-trends ref-live-progress flex flex-col gap-6">
       <JourneyIntro
-        eyebrow="THE LONGER VIEW"
         title="Progress"
-        description="See calorie and weight patterns as you log. Days without food entries are not counted as zero."
+        description="See what your food and weight records actually tell you."
         action={diaryData.data?.all.length ? (
           <Tabs value={String(range)} onValueChange={(value) => setRange(Number(value))}>
             <TabsList aria-label="Progress period">
@@ -163,18 +162,7 @@ export function Trends() {
           <Button variant="outline" size="sm" onClick={weight.reload}>Retry</Button>
         </div>
       )}
-      {noHistory && (
-        <JourneyEmpty
-          title="Your progress starts with a log"
-          description="Log a meal or record your weight. As you add entries, the charts will show what changes."
-          supporting={(
-            <div className="mm-journey-empty-links">
-              <Link to="/diary" className="mm-progress-log-action">Log food</Link>
-              <Link to="/weight" className="inline-flex min-h-11 items-center text-sm font-semibold text-primary underline underline-offset-4">Record weight</Link>
-            </div>
-          )}
-        />
-      )}
+      {noHistory && <ProgressStart />}
 
       {!noHistory && (
         <>
