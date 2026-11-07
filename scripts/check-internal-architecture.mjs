@@ -70,7 +70,7 @@ const todayScreen = readFileSync("src/features/today/Today.tsx", "utf8");
 const todayWarmup = readFileSync("src/hooks/useTodayWarmup.ts", "utf8");
 assert.doesNotMatch(todayScreen, /useAnimatedNumber|useEntered|mm-live-enter|animationDelay/,
   "Today must display cached values directly without entrance/count-up animations");
-assert.doesNotMatch(todayScreen, /backend\\.getWater\\(/,
+assert.doesNotMatch(todayScreen, /backend\.getWater\(/,
   "Optional water data must not block the main Today view");
 assert.match(todayWarmup, /warmTodayQueries/,
   "Today data must be warmed while the authenticated shell is mounted");
