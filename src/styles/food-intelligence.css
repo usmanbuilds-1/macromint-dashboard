@@ -89,3 +89,15 @@
 .mm-recipe-secondary-actions button { min-height:44px; font-size:12px; color:var(--journey-action); font-weight:650; text-decoration:underline; text-underline-offset:3px; }
 .mm-recipe-secondary-actions span { display:flex; flex-wrap:wrap; align-items:center; gap:12px; }
 @media(max-width:420px) { .mm-recipe-meta { grid-template-columns:1fr; } .mm-recipe-ingredient input{width:68px;} }
+
+/* Four library categories share a bounded, horizontally scrollable strip on
+ * compact phones. Never stretch the entire document beyond the viewport. */
+.mm-app-shell .mm6-page-foods [role="tablist"] {
+  display:flex; width:100%; max-width:100%; min-width:0;
+  overflow-x:auto; overflow-y:hidden; white-space:nowrap; gap:2px;
+  scrollbar-width:none;
+}
+.mm-app-shell .mm6-page-foods [role="tablist"]::-webkit-scrollbar {display:none;}
+.mm-app-shell .mm6-page-foods [role="tab"] { flex:0 0 auto; padding-inline:10px; font-size:12px; }
+.mm-app-shell .mm6-page-foods .mm-journey-search-form { min-width:0; }
+.mm-app-shell .mm6-page-foods .mm-journey-search-form >div { min-width:0; }
