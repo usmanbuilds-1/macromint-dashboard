@@ -122,6 +122,8 @@ try {
   await page.getByRole("button", { name: /Start tracking/ }).click();
   await page.getByRole("heading", { name: "Today", exact: true }).waitFor({ timeout: 20000 });
   await screenshotEverySize("today");
+  assert.equal(await page.locator(".mm-home-overview--empty .mm-home-macro-plan").count(), 1,
+    "Today should keep true macro targets without decorative rings");
   const onboardingActivation = await page.locator(".ref-live-today").evaluate((element) => {
     const action = element.querySelector(".mm-home-action-primary")?.getBoundingClientRect();
     const ledger = element.querySelector(".mm-home-overview")?.getBoundingClientRect();
@@ -284,6 +286,12 @@ try {
     "An empty diary should not show a second empty calorie dashboard");
   assert.equal(await page.locator(".mm6-page-diary .mm-journey-meal-section").count(), 4,
     "Diary must keep all four meal entry points for an empty day");
+  assert.equal(await page.locator(".mm6-page-diary .mm-diary-meal-add").count(), 4,
+    "Every empty meal needs a visible labeled Add control");
+  const copyTop = (await page.locator(".mm-diary-copy").boundingBox())?.y;
+  const firstMealTop = (await page.locator(".mm-journey-meal-section").first().boundingBox())?.y;
+  assert.ok(copyTop !== undefined && firstMealTop !== undefined && copyTop < firstMealTop,
+    "Copying meals should be reachable before scrolling through the day");
   await screenshotEverySize("diary");
   await screenshotCompact("diary");
 
@@ -295,6 +303,15 @@ try {
   await page.getByRole("tab", { name: "Search", exact: true }).click();
   await page.getByText("Scan a photo", { exact: true }).waitFor();
   await page.locator(".mm-journey-food-options").waitFor();
+  const toolRects = await page.locator(".mm-foods-tools > button").evaluateAll((nodes) =>
+    nodes.map((node) => {
+      const rect = node.getBoundingClientRect();
+      return { y: rect.y, width: rect.width, height: rect.height };
+    }),
+  );
+  assert.equal(toolRects.length, 2, "Scan and custom food must remain available");
+  assert.ok(toolRects[1].y > toolRects[0].y && toolRects[0].height >= 44,
+    "Secondary food actions should be plain stacked rows, not competing tiles");
   await screenshotEverySize("foods");
   await page.getByRole("heading", { name: "Recently logged" }).waitFor();
   await screenshotCompact("foods");
@@ -308,6 +325,9 @@ try {
     assert.equal(color, "rgb(255, 255, 255)",
       "Progress primary button must have legible white text on dark green");
   }
+  assert.equal(await page.locator(".mm-progress-week-days li").count(), 7,
+    "Progress must explain real seven-day diary activity, not fake charts");
+  await page.getByText("0 of 7 logged").waitFor();
   await screenshotEverySize("progress");
   await screenshotCompact("progress");
 
@@ -326,6 +346,7 @@ try {
     const energy = document.querySelector(".ref-live-today .mm-home-calories")?.textContent?.trim();
     return Boolean(energy && energy !== "—" && energy !== "0");
   }, null, { timeout: 10000 });
+  await page.locator(".ref-live-today .mm-home-entry-name").getByText("Banana", { exact: false }).first().waitFor();
   await screenshotEverySize("today-after-first-log");
   await nav.getByRole("link", { name: "Diary" }).click();
   await page.getByText("Banana", { exact: true }).waitFor();
@@ -338,6 +359,7 @@ try {
   await screenshotEverySize("foods-with-recent");
   await nav.getByRole("link", { name: "Progress" }).click();
   await page.getByText("1 of 2 days logged").waitFor({ timeout: 10000 });
+  await page.getByText("1 of 7 logged").waitFor();
   assert.equal(await page.locator("#ref-calorie-trend").count(), 0,
     "One partial food-logging day cannot establish a calorie trend");
   await screenshotEverySize("progress-with-food");

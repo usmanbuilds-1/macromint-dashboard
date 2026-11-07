@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { suggestedMealNow } from "@/lib/nutrition/meal-slot";
 import { toast } from "sonner";
-import { Search, Star } from "lucide-react";
+import { Camera, ChevronRight, PenLine, Search, Star } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { JourneyIntro } from "@/components/app/JourneyIntro";
@@ -124,12 +124,16 @@ export function Foods() {
             </div>
             <Button type="submit" disabled={searching}>{searching ? "Searching…" : "Search"}</Button>
           </form>
-          <div className="mm-journey-food-options" aria-label="Other ways to log food">
+          <div className="mm-journey-food-options mm-foods-tools" aria-label="Other ways to log food">
             <button type="button" onClick={() => foodLog.openScan({ entryDate: today, mealType: suggestedMealNow() })}>
-              <span>Scan a photo</span><small>Camera or existing image</small>
+              <Camera className="mm-foods-tool-icon h-4 w-4" aria-hidden="true" />
+              <span><strong>Scan a photo</strong><small>Use your camera or gallery</small></span>
+              <ChevronRight className="mm-foods-tool-chevron h-4 w-4" aria-hidden="true" />
             </button>
             <button type="button" onClick={() => setCustomOpen(true)}>
-              <span>Create a food</span><small>Enter nutrition from a label</small>
+              <PenLine className="mm-foods-tool-icon h-4 w-4" aria-hidden="true" />
+              <span><strong>Create a food</strong><small>Add nutrition from a label</small></span>
+              <ChevronRight className="mm-foods-tool-chevron h-4 w-4" aria-hidden="true" />
             </button>
           </div>
 
