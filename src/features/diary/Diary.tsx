@@ -1,4 +1,5 @@
 import { useMemo, useState } from "react";
+import { suggestedMealNow } from "@/lib/nutrition/meal-slot";
 import { Camera, ChevronDown, ChevronLeft, ChevronRight, Copy, Pencil, Plus, Star, BookMarked, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
@@ -18,11 +19,6 @@ import { JourneyIntro } from "@/components/app/JourneyIntro";
 import { JourneyEmpty } from "@/components/app/JourneyEmpty";
 import { DiarySummary } from "./DiarySummary";
 import { favoriteCandidateFromEntry, toggleFavoriteCandidate } from "@/features/foods/favorite-actions";
-
-function preferredMeal(): MealType {
-  const hour = new Date().getHours();
-  return hour < 11 ? "breakfast" : hour < 15 ? "lunch" : hour < 21 ? "dinner" : "snacks";
-}
 
 export function Diary() {
   const { goals } = useSession();
@@ -123,7 +119,7 @@ export function Diary() {
       <JourneyIntro
         eyebrow="YOUR FOOD JOURNAL"
         title="Diary"
-        description={formatDateLong(date)}
+        description={`Food entries for ${formatDateLong(date)}.`}
         action={(
           <div className="mm-journey-date-switch" aria-label="Change diary day">
             <Button variant="ghost" size="icon" aria-label="Previous day"
@@ -138,7 +134,7 @@ export function Diary() {
           </div>
         )}
       />
-      {(!diary.error || diary.data) && <DiarySummary totals={totals}
+      {(!diary.error || diary.data) && (entries.length > 0 || diary.loading) && <DiarySummary totals={totals}
         calorieTarget={goals?.calorieTarget ?? null}
         proteinTarget={goals?.proteinG ?? null}
         hasEntries={entries.length > 0}
@@ -152,11 +148,11 @@ export function Diary() {
       />}
 
       <div className="mm-journey-actions">
-        <Button className="mm-journey-primary" onClick={() => foodLog.open({ entryDate: date, mealType: preferredMeal() })}>
+        <Button className="mm-journey-primary" onClick={() => foodLog.openSearch({ entryDate: date, mealType: suggestedMealNow() })}>
           <Plus className="h-4 w-4" /> Add food
         </Button>
         <Button variant="outline" className="mm-journey-secondary"
-          onClick={() => foodLog.openScan({ entryDate: date, mealType: preferredMeal() })}>
+          onClick={() => foodLog.openScan({ entryDate: date, mealType: suggestedMealNow() })}>
           <Camera className="h-4 w-4" aria-hidden="true" /> Scan photo
         </Button>
         <details className="group relative">
@@ -182,16 +178,14 @@ export function Diary() {
       )}
       {!diary.loading && !diary.error && entries.length === 0 && (
         <JourneyEmpty
-          title={date === todayStr() ? "What have you eaten today?" : "Nothing recorded for this day."}
+          title={date === todayStr() ? "Nothing logged yet" : "Nothing logged for this day"}
           description={date === todayStr()
             ? "Start with a meal or snack. You'll be able to edit portions and foods afterwards."
             : "You can add a meal for this date or copy foods from another day."}
-          actionLabel="Add your first food"
-          onAction={() => foodLog.open({ entryDate: date, mealType: preferredMeal() })}
         />
       )}
 
-      {entries.length > 0 && MEAL_TYPES.map((meal) => {
+      {entries.length > 0 && MEAL_TYPES.filter((meal) => (byMeal.get(meal)?.length ?? 0) > 0).map((meal) => {
         const mealEntries = byMeal.get(meal) ?? [];
         return (
           <section key={meal} aria-label={MEAL_LABELS[meal]} className="mm-journey-meal-section overflow-hidden border-b">

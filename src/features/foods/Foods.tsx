@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { suggestedMealNow } from "@/lib/nutrition/meal-slot";
 import { toast } from "sonner";
 import { Search, Star } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -84,7 +85,7 @@ export function Foods() {
   };
 
   const log = (food: LoggableFood) => {
-    foodLog.open({ entryDate: today, mealType: "snacks", initialFood: food });
+    foodLog.open({ entryDate: today, mealType: suggestedMealNow(), initialFood: food });
   };
 
   return (
@@ -92,7 +93,7 @@ export function Foods() {
       <JourneyIntro
         eyebrow="FOOD LIBRARY"
         title="Foods"
-        description="Find something you ate, choose a portion and add it to your day."
+        description="Search or save foods you eat often. Tap Log to choose a portion for today."
       />
 
       <Tabs value={activeTab} onValueChange={setActiveTab}>
@@ -123,7 +124,7 @@ export function Foods() {
             <Button type="submit" disabled={searching}>{searching ? "Searching…" : "Search"}</Button>
           </form>
           <div className="mm-journey-food-options" aria-label="Other ways to log food">
-            <button type="button" onClick={() => foodLog.openScan({ entryDate: today, mealType: "snacks" })}>
+            <button type="button" onClick={() => foodLog.openScan({ entryDate: today, mealType: suggestedMealNow() })}>
               <span>Scan a photo</span><small>Camera or existing image</small>
             </button>
             <button type="button" onClick={() => setCustomOpen(true)}>
@@ -159,11 +160,6 @@ export function Foods() {
               {hit.attribution && <p className="border-t px-4 py-2 text-[11px] text-muted-foreground/70">{hit.attribution}</p>}
             </div>
           )}
-          {!hit && (
-            <div className="mm-journey-food-hint">
-              Search by food or brand above. You'll choose the portion before adding it to your diary.
-            </div>
-          )}
         </TabsContent>
 
         <TabsContent value="favorites" className="mt-4">
@@ -180,8 +176,8 @@ export function Foods() {
               ))
             ) : (
               <JourneyEmpty
-                title="Your go-to foods, together."
-                description="Tap the star beside any database food to save it here. You can log favorites again in one tap."
+                title="No favorites yet"
+                description="Star a food while searching. It will appear here for faster logging next time."
                 actionLabel="Find a food"
                 onAction={() => setActiveTab("search")}
               />

@@ -31,6 +31,17 @@ describe("Today: clear hierarchy and contextual entry", () => {
     expect(container.querySelector("svg, .mm-today-arc")).toBeNull();
   });
 
+  it("puts a compact honest target on a brand-new day", () => {
+    const { container } = render(
+      <TodayOverview totals={{}} target={2100} proteinTarget={130} carbsTarget={250}
+        fatTarget={70} hasEntries={false} loading={false} />,
+    );
+    expect(screen.getByRole("heading", { name: "Daily target" })).toBeInTheDocument();
+    expect(screen.getByText("2,100")).toBeInTheDocument();
+    expect(container.querySelector(".mm-home-calories")).toBeNull();
+    expect(container.querySelector(".mm-home-macro-grid")).toBeNull();
+  });
+
   it("shows that nutrition is unknown rather than inventing zero calories", () => {
     const { container } = render(
       <TodayOverview totals={{ protein: null }} target={1800} proteinTarget={100}
@@ -46,10 +57,9 @@ describe("Today: clear hierarchy and contextual entry", () => {
       <TodayMeals entries={[]} error={null} loading={false}
         onRetry={onRetry} onAddMeal={onAddMeal} suggestedMeal="lunch" />,
     );
-    expect(screen.getByText("What’s on the menu?")).toBeInTheDocument();
+    expect(screen.getByText("Nothing logged yet")).toBeInTheDocument();
     expect(container.querySelectorAll(".mm-home-meal")).toHaveLength(0);
-    fireEvent.click(screen.getByRole("button", { name: "Add lunch" }));
-    expect(onAddMeal).toHaveBeenCalledWith("lunch");
+    expect(screen.queryByRole("button", { name: "Add lunch" })).toBeNull();
   });
 
   it("keeps meal-specific logging and honest calorie values available", () => {

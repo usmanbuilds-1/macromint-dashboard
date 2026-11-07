@@ -1,13 +1,12 @@
-import { Copy, Droplets, Plus } from "lucide-react";
+import { Droplets, Plus } from "lucide-react";
 
 export function TodayUtilities({
-  waterMl, waterTarget, loading, onAddWater, onCopyYesterday,
+  waterMl, waterTarget, loading, onAddWater,
 }: {
   waterMl: number;
   waterTarget: number | null;
   loading: boolean;
   onAddWater: () => void;
-  onCopyYesterday: () => void;
 }) {
   return (
     <section className="mm-home-utilities" aria-label="Water and everyday actions">
@@ -24,10 +23,6 @@ export function TodayUtilities({
           <Plus className="h-4 w-4" aria-hidden="true" /> 250 ml
         </button>
       </div>
-      <button type="button" className="mm-home-copy-action" onClick={onCopyYesterday}>
-        <Copy className="h-4 w-4" aria-hidden="true" />
-        Copy yesterday’s meals
-      </button>
     </section>
   );
 }
