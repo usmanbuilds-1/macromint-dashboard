@@ -17,6 +17,7 @@ import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
 import { useSession } from "@/context/Session";
+import { visibleDailyGoals } from "@/lib/nutrition/visible-goals";
 import { backend } from "@/lib/backend";
 import { useAsyncData } from "@/hooks/useData";
 import { WeeklyArchive } from "./WeeklyArchive";
@@ -37,6 +38,7 @@ const RANGE_OPTIONS = [
 
 export function Trends() {
   const { goals } = useSession();
+  const activeGoals = visibleDailyGoals(goals);
   const [range, setRange] = useState<number>(14);
   const today = todayStr();
 
@@ -77,7 +79,7 @@ export function Trends() {
   }, [diaryData.data]);
 
   const adherence = useMemo(
-    () => adherenceStats(kcalByDay.map((d) => ({ date: d.date, kcal: d.kcal })), goals?.calorieTarget ?? 2000),
+    () => adherenceStats(kcalByDay.map((d) => ({ date: d.date, kcal: d.kcal })), activeGoals?.calorieTarget ?? 2000),
     [kcalByDay, goals],
   );
 
@@ -181,7 +183,7 @@ export function Trends() {
       {(diaryData.data?.all.length ?? 0) > 0 && <section id="ref-calorie-trend" className="border-b bg-card/0 pb-6" aria-label="Calorie trend">
         <div className="flex flex-wrap items-center justify-between gap-2">
           <h2 className="text-sm font-semibold">Daily calories</h2>
-          {goals?.calorieTarget != null && adherence.adherencePct !== null ? (
+          {activeGoals?.calorieTarget != null && adherence.adherencePct !== null ? (
             <div className="flex items-center gap-2 text-xs text-muted-foreground">
               <Badge
                 variant="outline"
@@ -214,8 +216,8 @@ export function Trends() {
                   contentStyle={{ background: "var(--popover)", border: "1px solid var(--border)", borderRadius: 8, fontSize: 12 }}
                   formatter={(value) => [`${formatNumber(Number(value))} kcal`, "Calories"]}
                 />
-                {goals?.calorieTarget != null && (
-                  <ReferenceLine y={goals.calorieTarget} stroke="var(--primary)" strokeDasharray="6 4" />
+                {activeGoals?.calorieTarget != null && (
+                  <ReferenceLine y={activeGoals!.calorieTarget} stroke="var(--primary)" strokeDasharray="6 4" />
                 )}
                 <Bar dataKey="kcal" fill="var(--chart-1)" radius={[3, 3, 0, 0]} maxBarSize={18} />
               </BarChart>
@@ -224,7 +226,7 @@ export function Trends() {
         </div>
         <p className="mt-2 text-xs text-muted-foreground">
           Food logged on {loggedDaysInRange} of the last {range} days.
-          {goals?.calorieTarget != null && ` Dashed line: ${formatNumber(goals.calorieTarget)} kcal target.`}
+          {activeGoals?.calorieTarget != null && ` Dashed line: ${formatNumber(activeGoals!.calorieTarget)} kcal target.`}
         </p>
       </section>}
 
@@ -311,7 +313,7 @@ export function Trends() {
       <WeeklyArchive
         weeks={weeks}
         entries={history.data}
-        target={goals?.calorieTarget ?? null}
+        target={activeGoals?.calorieTarget ?? null}
         loading={history.loading}
         error={history.error}
         reload={history.reload}

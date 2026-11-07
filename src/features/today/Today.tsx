@@ -1,6 +1,7 @@
 import { Camera, Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useSession } from "@/context/Session";
+import { visibleDailyGoals } from "@/lib/nutrition/visible-goals";
 import { backend, bumpData } from "@/lib/backend";
 import { useAsyncData } from "@/hooks/useData";
 import { dailyTotals } from "@/lib/nutrition/math";
@@ -20,6 +21,7 @@ import "./today.css";
  */
 export function Today() {
   const { goals } = useSession();
+  const activeGoals = visibleDailyGoals(goals);
   const foodLog = useFoodLog();
   const date = todayStr();
 
@@ -75,10 +77,10 @@ export function Today() {
 
       <TodayOverview
         totals={totals}
-        target={goals?.calorieTarget ?? null}
-        proteinTarget={goals?.proteinG ?? null}
-        carbsTarget={goals?.carbsG ?? null}
-        fatTarget={goals?.fatG ?? null}
+        target={activeGoals?.calorieTarget ?? null}
+        proteinTarget={activeGoals?.proteinG ?? null}
+        carbsTarget={activeGoals?.carbsG ?? null}
+        fatTarget={activeGoals?.fatG ?? null}
         loading={diary.loading && !diary.data}
         hasEntries={entries.length > 0}
         complete={{
@@ -101,7 +103,7 @@ export function Today() {
 
       <TodayUtilities
         waterMl={(water.data ?? []).reduce((sum, item) => sum + item.amountMl, 0)}
-        waterTarget={goals?.waterMl ?? null}
+        waterTarget={activeGoals?.waterMl ?? null}
         loading={water.loading && !water.data}
         onAddWater={() => { void addWater(); }}
       />

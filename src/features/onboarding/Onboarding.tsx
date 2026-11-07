@@ -31,6 +31,7 @@ export function Onboarding() {
   const navigate = useNavigate();
   const { profile, refresh } = useSession();
   const [step, setStep] = useState(0);
+  const [personalizing, setPersonalizing] = useState(false);
   const [busy, setBusy] = useState(false);
 
   // New username accounts use the username as a temporary server-side label.
@@ -135,20 +136,36 @@ export function Onboarding() {
     <div className="mx-auto flex min-h-dvh w-full max-w-lg flex-col px-4 pb-[calc(2rem+env(safe-area-inset-bottom))] pt-8 sm:px-5 sm:pt-12">
       <div className="flex items-center justify-between">
         <Logo />
-        <span className="text-xs font-medium tabular-nums text-muted-foreground">
+        {personalizing && <span className="text-xs font-medium tabular-nums text-muted-foreground">
           Step {step + 1} of {steps.length}
-        </span>
+        </span>}
       </div>
 
-      <p className="sr-only" role="status">Setup progress: {steps[step]}, step {step + 1} of {steps.length}</p>
-      <div className="mt-6 flex gap-1.5" aria-hidden="true">
+      {personalizing && <p className="sr-only" role="status">Setup progress: {steps[step]}, step {step + 1} of {steps.length}</p>}
+      {personalizing && <div className="mt-6 flex gap-1.5" aria-hidden="true">
         {steps.map((_, i) => (
           <div key={i} className={cn("h-1 flex-1 rounded-full", i <= step ? "bg-primary" : "bg-secondary")} />
         ))}
-      </div>
+      </div>}
 
       <div className="mt-10 flex-1">
-        {step === 0 && (
+        {!personalizing && (
+          <section className="flex flex-col gap-5" aria-labelledby="start-logging-heading">
+            <div>
+              <h1 id="start-logging-heading" className="font-serif text-3xl tracking-tight">Start with your first meal.</h1>
+              <p className="mt-3 max-w-sm text-sm leading-6 text-muted-foreground">
+                Add what you ate now. You can set personal calorie and protein targets whenever you are ready.
+              </p>
+            </div>
+            <Button className="min-h-12 w-full" onClick={() => { void skip(); }} disabled={busy}>
+              {busy ? "Opening your diary…" : "Start logging now"} <ArrowRight className="h-4 w-4" />
+            </Button>
+            <button type="button" className="min-h-11 text-sm font-semibold text-primary underline underline-offset-4"
+              onClick={() => setPersonalizing(true)}>Set up my calorie targets instead</button>
+            <p className="text-xs leading-5 text-muted-foreground">Optional setup takes a few steps and uses your age, height, weight and activity to estimate daily targets.</p>
+          </section>
+        )}
+        {personalizing && step === 0 && (
           <div className="flex flex-col gap-6">
             <header>
               <h1 className="text-2xl font-semibold tracking-tight">A few basics</h1>
@@ -201,7 +218,7 @@ export function Onboarding() {
           </div>
         )}
 
-        {step === 1 && (
+        {personalizing && step === 1 && (
           <div className="flex flex-col gap-6">
             <header>
               <h1 className="text-2xl font-semibold tracking-tight">What are you working towards?</h1>
@@ -243,7 +260,7 @@ export function Onboarding() {
           </div>
         )}
 
-        {step === 2 && (
+        {personalizing && step === 2 && (
           <div className="flex flex-col gap-6">
             <header>
               <h1 className="text-2xl font-semibold tracking-tight">How active are you?</h1>
@@ -263,7 +280,7 @@ export function Onboarding() {
           </div>
         )}
 
-        {step === 3 && computed && (
+        {personalizing && step === 3 && computed && (
           <div className="flex flex-col gap-6">
             <header>
               <h1 className="text-2xl font-semibold tracking-tight">Your starting targets</h1>
@@ -308,14 +325,14 @@ export function Onboarding() {
           </div>
         )}
 
-        {step === 3 && !computed && (
+        {personalizing && step === 3 && !computed && (
           <p className="text-sm text-muted-foreground">Go back and complete the earlier steps.</p>
         )}
       </div>
 
-      <div className="mt-10 flex items-center justify-between gap-3 border-t pt-5">
-        <Button className="min-h-11" variant="ghost" onClick={() => step === 0 ? void skip() : setStep((s) => s - 1)} disabled={busy}>
-          <ArrowLeft className="h-4 w-4" /> {step === 0 ? "Skip for now" : "Back"}
+      {personalizing && <div className="mt-10 flex items-center justify-between gap-3 border-t pt-5">
+        <Button className="min-h-11" variant="ghost" onClick={() => step === 0 ? setPersonalizing(false) : setStep((s) => s - 1)} disabled={busy}>
+          <ArrowLeft className="h-4 w-4" /> Back
         </Button>
         {step < 3 ? (
           <Button className="min-h-11" onClick={() => setStep((s) => s + 1)} disabled={(step === 0 && !personalValid) || (step === 1 && (!objective || !goalTargetValid)) || (step === 2 && !activityLevel)}>
@@ -326,7 +343,7 @@ export function Onboarding() {
             {busy ? "Saving…" : "Start tracking"} <ArrowRight className="h-4 w-4" />
           </Button>
         )}
-      </div>
+      </div>}
     </div>
   );
 }

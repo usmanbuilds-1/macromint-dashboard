@@ -86,6 +86,10 @@ try {
   await page.locator("#username").fill("internal_qa");
   await page.locator("#password").fill("internal-preview-only-not-a-secret");
   await page.getByRole("button", { name: "Create account" }).click();
+  await page.getByRole("heading", { name: "Start with your first meal." }).waitFor({ timeout: 20000 });
+  await page.getByRole("button", { name: "Start logging now" }).waitFor();
+  await screenshotEverySize("onboarding-quick-start");
+  await page.getByRole("button", { name: "Set up my calorie targets instead" }).click();
   await page.getByRole("heading", { name: "A few basics" }).waitFor({ timeout: 20000 });
 
   // Feet/inches + kg are deliberate Pakistan-localized UX.

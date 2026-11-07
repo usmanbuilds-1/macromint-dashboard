@@ -5,6 +5,7 @@ import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { useSession } from "@/context/Session";
+import { visibleDailyGoals } from "@/lib/nutrition/visible-goals";
 import { backend, bumpData } from "@/lib/backend";
 import { useAsyncData } from "@/hooks/useData";
 import { dailyTotals } from "@/lib/nutrition/math";
@@ -22,6 +23,7 @@ import { favoriteCandidateFromEntry, toggleFavoriteCandidate } from "@/features/
 
 export function Diary() {
   const { goals } = useSession();
+  const activeGoals = visibleDailyGoals(goals);
   const [date, setDate] = useState(todayStr());
   const [editEntry, setEditEntry] = useState<DiaryEntry | null>(null);
   const [openRow, setOpenRow] = useState<string | null>(null);
@@ -135,8 +137,8 @@ export function Diary() {
         )}
       />
       {(!diary.error || diary.data) && (entries.length > 0 || diary.loading) && <DiarySummary totals={totals}
-        calorieTarget={goals?.calorieTarget ?? null}
-        proteinTarget={goals?.proteinG ?? null}
+        calorieTarget={activeGoals?.calorieTarget ?? null}
+        proteinTarget={activeGoals?.proteinG ?? null}
         hasEntries={entries.length > 0}
         complete={{
           kcal: entries.length === 0 || hasCompleteNutrientData(entries, "kcal"),
