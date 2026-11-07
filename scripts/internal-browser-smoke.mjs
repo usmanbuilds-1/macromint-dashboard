@@ -279,7 +279,7 @@ try {
     "Selected tab indicator should follow navigation");
   await page.getByRole("button", { name: "Add food", exact: true }).waitFor();
   await page.getByRole("button", { name: "Scan photo", exact: true }).waitFor();
-  await page.getByText("Nothing logged yet").waitFor();
+  await page.getByText(/Choose a meal below to start/).waitFor();
   assert.equal(await page.locator(".mm-journey-ledger").count(), 0,
     "An empty diary should not show a second empty calorie dashboard");
   assert.equal(await page.locator(".mm6-page-diary .mm-journey-meal-section").count(), 4,
