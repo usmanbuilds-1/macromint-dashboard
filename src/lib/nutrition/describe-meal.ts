@@ -15,7 +15,7 @@ export function describeMeal(input: string): DescribedFood[] {
     if (!original || original.length > 100) throw new RangeError("Each food description must be under 100 characters.");
     const m = original.match(/^(\d+(?:\.\d+)?)\s*(g|grams?|kg|ml|cups?|tsp|tbsp|slices?|pieces?|pcs|medium|small|large)?\s*(.+)$/i);
     const amountText = m ? [m[1],m[2]].filter(Boolean).join(" ") : null;
-    const foodText = (m ? m[3] : original).trim();
+    const foodText = (m?.[3] ?? original).trim();
     const name = foodText.replace(/^(?:of|a|an)\s+/i,"").toLowerCase();
     return { original, amountText, searchTerm: ALIASES[name] ?? name };
   });
