@@ -111,7 +111,6 @@ export function Onboarding() {
       await backend.saveGoals(computed.goals);
       await backend.updateProfile({ onboardedAt: new Date().toISOString() });
       await refresh();
-      toast.success("Targets saved. You can adjust them any time in Goals.");
       navigate("/today", { replace: true });
     } catch {
       toast.error("Could not save your profile. Please try again.");
