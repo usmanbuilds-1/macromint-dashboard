@@ -118,6 +118,14 @@ try {
   await page.getByRole("button", { name: /Start tracking/ }).click();
   await page.getByRole("heading", { name: "Today", exact: true }).waitFor({ timeout: 20000 });
   await screenshotEverySize("today");
+  const onboardingActivation = await page.locator(".ref-live-today").evaluate((element) => {
+    const action = element.querySelector(".mm-home-action-primary")?.getBoundingClientRect();
+    const ledger = element.querySelector(".mm-home-overview")?.getBoundingClientRect();
+    const macroGrid = element.querySelector(".mm-home-macro-grid");
+    return { actionTop: action?.top, ledgerTop: ledger?.top, hasMacroGrid: Boolean(macroGrid) };
+  });
+  assert.ok(onboardingActivation.actionTop < onboardingActivation.ledgerTop && !onboardingActivation.hasMacroGrid,
+    "First-run Today should show a logging action before dense nutrition data");
   // A compact phone is narrower than our usual 390px screen audit.
   await page.setViewportSize({ width: 320, height: 740 });
   await page.screenshot({ path: "mobile-audit/screens/today-320.png", fullPage: true });
@@ -214,13 +222,11 @@ try {
     "Switching from photo to search must not pop the keyboard without a tap");
   await page.keyboard.press("Escape");
   await page.getByRole("button", { name: "Add food", exact: true }).click();
-  await page.getByRole("heading", { name: "Add food", exact: true }).waitFor();
-  await page.getByRole("button", { name: /Search or type a food/ }).waitFor();
-  await page.getByRole("button", { name: /Use a meal photo/ }).waitFor();
-  assert.notEqual(await page.evaluate(() => document.activeElement?.tagName), "INPUT",
-    "The Add food chooser must not open the keyboard");
-  await screenshotEverySize("food-entry-choices");
-  await page.getByRole("button", { name: /Search or type a food/ }).click();
+  // The first logging action leads straight to recent foods and search; the
+  // redundant chooser was slowing first activation and repeat logging.
+  assert.equal(await page.getByRole("heading", { name: "Add food", exact: true }).count(), 0,
+    "First food action should skip the extra chooser");
+  await screenshotEverySize("food-search-entry");
   await page.getByPlaceholder(/Search foods, brands/i).waitFor();
   assert.notEqual(await page.evaluate(() => document.activeElement?.tagName), "INPUT",
     "The search sheet must never autofocus on open");
@@ -253,7 +259,9 @@ try {
     "Selected tab indicator should follow navigation");
   await page.getByRole("button", { name: "Add food", exact: true }).waitFor();
   await page.getByRole("button", { name: "Scan photo", exact: true }).waitFor();
-  await page.locator(".mm-journey-ledger").waitFor();
+  await page.getByText("No food recorded yet").waitFor();
+  assert.equal(await page.locator(".mm-journey-ledger").count(), 0,
+    "An empty diary should not show a second empty calorie dashboard");
   await screenshotEverySize("diary");
   await screenshotCompact("diary");
 

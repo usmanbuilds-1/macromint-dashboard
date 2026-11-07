@@ -46,10 +46,9 @@ describe("Today: clear hierarchy and contextual entry", () => {
       <TodayMeals entries={[]} error={null} loading={false}
         onRetry={onRetry} onAddMeal={onAddMeal} suggestedMeal="lunch" />,
     );
-    expect(screen.getByText("What’s on the menu?")).toBeInTheDocument();
+    expect(screen.getByText("Nothing logged yet")).toBeInTheDocument();
     expect(container.querySelectorAll(".mm-home-meal")).toHaveLength(0);
-    fireEvent.click(screen.getByRole("button", { name: "Add lunch" }));
-    expect(onAddMeal).toHaveBeenCalledWith("lunch");
+    expect(screen.queryByRole("button", { name: "Add lunch" })).toBeNull();
   });
 
   it("keeps meal-specific logging and honest calorie values available", () => {

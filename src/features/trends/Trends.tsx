@@ -116,6 +116,8 @@ export function Trends() {
   const noHistory = !diaryData.loading && !weight.loading && !diaryData.error && !weight.error &&
     diaryData.data?.all.length === 0 && weights.length === 0;
 
+  const loggedDaysInRange = new Set((diaryData.data?.all ?? []).map((entry) => entry.entryDate)).size;
+
   const macroEnergy = macroTotals
     ? macroTotals.protein * 4 + macroTotals.carbs * 4 + macroTotals.fat * 9
     : 0;
@@ -132,7 +134,7 @@ export function Trends() {
       <JourneyIntro
         eyebrow="THE LONGER VIEW"
         title="Progress"
-        description="Patterns emerge with consistent entries. Your history stays yours to review."
+        description="See calorie and weight patterns as you log. Days without food entries are not counted as zero."
         action={diaryData.data?.all.length ? (
           <Tabs value={String(range)} onValueChange={(value) => setRange(Number(value))}>
             <TabsList aria-label="Progress period">
@@ -161,8 +163,8 @@ export function Trends() {
       )}
       {noHistory && (
         <JourneyEmpty
-          title="Your first trend begins with a single entry."
-          description="Add food to build your nutrition history, or record a weight to see how it changes over time."
+          title="Your progress starts with a log"
+          description="Log a meal or record your weight. As you add entries, the charts will show what changes."
           supporting={(
             <div className="mm-journey-empty-links">
               <Link to="/diary">Log food</Link>
@@ -176,7 +178,7 @@ export function Trends() {
         <>
 
       {/* Calorie trend */}
-      <section id="ref-calorie-trend" className="border-b bg-card/0 pb-6" aria-label="Calorie trend">
+      {(diaryData.data?.all.length ?? 0) > 0 && <section id="ref-calorie-trend" className="border-b bg-card/0 pb-6" aria-label="Calorie trend">
         <div className="flex flex-wrap items-center justify-between gap-2">
           <h2 className="text-sm font-semibold">Daily calories</h2>
           {goals?.calorieTarget != null && adherence.adherencePct !== null ? (
@@ -220,16 +222,15 @@ export function Trends() {
             </ResponsiveContainer>
           )}
         </div>
-        {goals?.calorieTarget != null && (
-          <p className="mt-2 text-[11px] text-muted-foreground">
-            Dashed line: your {formatNumber(goals.calorieTarget)} kcal target.
-          </p>
-        )}
-      </section>
+        <p className="mt-2 text-xs text-muted-foreground">
+          Food logged on {loggedDaysInRange} of the last {range} days.
+          {goals?.calorieTarget != null && ` Dashed line: ${formatNumber(goals.calorieTarget)} kcal target.`}
+        </p>
+      </section>}
 
       <div className="mm-journey-progress-secondary grid gap-6">
         {/* Weight */}
-        <section id="ref-weight-trend" className="border-b pb-6" aria-label="Weight trend">
+        {weights.length > 0 && <section id="ref-weight-trend" className="border-b pb-6" aria-label="Weight trend">
           <div className="flex items-center justify-between gap-2">
             <h2 className="text-sm font-semibold">Weight</h2>
             <Link to="/weight" className="inline-flex min-h-10 items-center text-xs font-medium text-primary underline underline-offset-4">Weight log &amp; goals</Link>
@@ -263,8 +264,10 @@ export function Trends() {
               )}
             </>
           )}
-        </section>
+        </section>}
 
+        <details className="mm-progress-detail mt-2 border-t pt-3">
+          <summary className="flex min-h-11 cursor-pointer items-center text-sm font-semibold text-primary">More insights: macros and weekly history</summary>
         {/* Macro distribution */}
         <section id="ref-macro-trend" className="border-b pb-6" aria-label="Macro distribution">
           <h2 className="text-sm font-semibold">Energy from macros</h2>
@@ -303,7 +306,6 @@ export function Trends() {
             </div>
           )}
         </section>
-      </div>
 
       {/* Weekly archive */}
       <WeeklyArchive
@@ -314,6 +316,8 @@ export function Trends() {
         error={history.error}
         reload={history.reload}
       />
+        </details>
+      </div>
       </>
       )}
     </div>

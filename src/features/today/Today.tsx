@@ -1,5 +1,4 @@
-import { Link } from "@tanstack/react-router";
-import { Camera, ChevronRight, Plus } from "lucide-react";
+import { Camera, Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useSession } from "@/context/Session";
 import { backend, bumpData } from "@/lib/backend";
@@ -7,18 +6,14 @@ import { useAsyncData } from "@/hooks/useData";
 import { dailyTotals } from "@/lib/nutrition/math";
 import { hasCompleteNutrientData } from "@/lib/nutrition/coverage";
 import { formatDateLong, todayStr, addDaysStr } from "@/lib/nutrition/datetime";
-import { MEAL_LABELS, type MealType } from "@/types";
+import type { MealType } from "@/types";
+import { suggestedMealNow } from "@/lib/nutrition/meal-slot";
 import { useFoodLog } from "@/features/foods/FoodLogProvider";
 import { TodayOverview } from "./TodayOverview";
 import { TodayMeals } from "./TodayMeals";
 import { TodayUtilities } from "./TodayUtilities";
 import { toast } from "sonner";
 import "./today.css";
-
-function mealForCurrentHour(): MealType {
-  const hour = new Date().getHours();
-  return hour < 11 ? "breakfast" : hour < 15 ? "lunch" : hour < 21 ? "dinner" : "snacks";
-}
 
 /** The daily workflow: one overview, an immediate action, then the journal.
  * All nutrition arithmetic and data fetching remain in their existing modules.
@@ -32,10 +27,10 @@ export function Today() {
   const water = useAsyncData(() => backend.getWater(date), [date], "water:day");
   const entries = diary.data ?? [];
   const totals = dailyTotals(entries);
-  const suggestedMeal = mealForCurrentHour();
+  const suggestedMeal = suggestedMealNow();
 
   const openFood = (mealType: MealType = suggestedMeal) => {
-    foodLog.open({ entryDate: date, mealType });
+    foodLog.openSearch({ entryDate: date, mealType });
   };
   const openScan = () => {
     foodLog.openScan({ entryDate: date, mealType: suggestedMeal });
@@ -61,10 +56,10 @@ export function Today() {
   };
 
   const intro = diary.loading && !diary.data
-    ? "Your day, one meal at a time."
+    ? "Loading your food log."
     : entries.length > 0
-      ? `${entries.length} ${entries.length === 1 ? "food" : "foods"} logged today. Keep your record going.`
-      : `Ready to log ${MEAL_LABELS[suggestedMeal].toLowerCase()}? Your day starts with one entry.`;
+      ? `${entries.length} ${entries.length === 1 ? "food" : "foods"} logged`
+      : "Your food and nutrition for today.";
 
   return (
     <div className="mm-home mm-live-page ref-live-today">
@@ -74,10 +69,21 @@ export function Today() {
           <h1 className="mm-home-title">Today</h1>
           <p>{intro}</p>
         </div>
-        <Link to="/diary" className="mm-home-header-link">
-          Diary <ChevronRight className="h-4 w-4" aria-hidden="true" />
-        </Link>
       </header>
+
+      <section aria-label="Add food" className="mm-home-actions">
+        <Button type="button" onClick={() => openFood()}
+          className="mm-home-action-primary">
+          <Plus className="h-5 w-5" aria-hidden="true" />
+          Add food
+          <span className="mm-home-action-mark" aria-hidden="true">↗</span>
+        </Button>
+        <Button type="button" variant="outline" onClick={openScan}
+          className="mm-home-action-secondary">
+          <Camera className="h-5 w-5" aria-hidden="true" />
+          Scan photo
+        </Button>
+      </section>
 
       <TodayOverview
         totals={totals}
@@ -95,27 +101,15 @@ export function Today() {
         }}
       />
 
-      <section aria-label="Add food" className="mm-home-actions">
-        <Button type="button" onClick={() => openFood()}
-          className="mm-home-action-primary">
-          <Plus className="h-5 w-5" aria-hidden="true" />
-          Add food
-          <span className="mm-home-action-mark" aria-hidden="true">↗</span>
-        </Button>
-        <Button type="button" variant="outline" onClick={openScan}
-          className="mm-home-action-secondary">
-          <Camera className="h-5 w-5" aria-hidden="true" />
-          Scan photo
-        </Button>
-      </section>
 
-      <TodayMeals entries={entries}
+
+      {(entries.length > 0 || diary.loading || Boolean(diary.error)) && <TodayMeals entries={entries}
         loading={diary.loading && !diary.data}
         error={diary.error}
         onRetry={diary.reload}
         onAddMeal={openFood}
         suggestedMeal={suggestedMeal}
-      />
+      />}
 
       <TodayUtilities
         waterMl={(water.data ?? []).reduce((sum, item) => sum + item.amountMl, 0)}

@@ -1,0 +1,56 @@
+/* Compact task-first spacing for Diary, Foods and Progress.
+ * Today owns its own route stylesheet; no app-wide spacing changes. */
+.mm-app-shell .mm6-page-diary,
+.mm-app-shell .mm6-page-foods,
+.mm-app-shell .mm6-page-trends {
+  gap: clamp(12px, 1.8vw, 20px);
+}
+.mm-app-shell :is(.mm6-page-diary,.mm6-page-foods,.mm6-page-trends) .mm-journey-intro {
+  padding-bottom: 13px;
+}
+.mm-app-shell :is(.mm6-page-diary,.mm6-page-foods,.mm6-page-trends) .mm-journey-description {
+  margin-top: 5px;
+  line-height: 1.45;
+}
+.mm-app-shell .mm6-page-diary .mm-journey-ledger {
+  padding: clamp(12px, 2vw, 19px);
+}
+.mm-app-shell .mm6-page-diary .mm-journey-ledger-note,
+.mm-app-shell .mm6-page-diary .mm-journey-ledger-foot { margin-top: 5px; }
+.mm-app-shell .mm6-page-diary .mm-journey-ledger-track { margin-top: 10px; }
+.mm-app-shell .mm6-page-diary .mm-journey-actions > button {
+  min-height: 46px;
+}
+.mm-app-shell .mm6-page-diary .mm-journey-empty { padding-block: 15px; }
+.mm-app-shell .mm6-page-diary .mm-journey-meal-section > div:first-child { min-height: 49px; }
+.mm-app-shell .mm6-page-foods [role="tablist"] { gap: clamp(12px, 3vw, 22px); }
+.mm-app-shell .mm6-page-foods [role="tab"] { min-height: 44px; }
+.mm-app-shell .mm6-page-foods .mm-journey-food-search { margin-top: 11px; gap: 11px; }
+.mm-app-shell .mm6-page-foods .mm-journey-search-form input,
+.mm-app-shell .mm6-page-foods .mm-journey-search-form button { min-height: 46px; }
+.mm-app-shell .mm6-page-foods .mm-journey-food-options button {
+  min-height: 57px;
+  gap: 2px;
+  padding-block: 8px;
+}
+.mm-app-shell .mm6-page-foods .mm-journey-food-hint {
+  font-size: 12px;
+  line-height: 1.4;
+}
+.mm-app-shell .mm6-page-trends section[aria-label] {
+  padding-block: 8px 17px;
+}
+.mm-app-shell .mm6-page-trends .mm-journey-progress-secondary { gap: 14px; }
+.mm-app-shell .mm6-page-trends #ref-calorie-trend .h-56 { height: 190px; }
+.mm-app-shell .mm6-page-trends #ref-weight-trend .h-48 { height: 160px; }
+.mm-app-shell .mm6-page-trends .mm-progress-detail > summary {
+  min-height: 44px;
+  padding-block: 8px;
+  list-style: revert;
+}
+.mm-app-shell .mm6-page-trends .mm-progress-detail[open] > summary { margin-bottom: 9px; }
+@media (max-width: 640px) {
+  .mm-app-shell :is(.mm6-page-diary,.mm6-page-foods,.mm6-page-trends) { gap: 14px; }
+  .mm-app-shell .mm6-page-trends #ref-calorie-trend .h-56 { height: 165px; }
+  .mm-app-shell .mm6-page-trends #ref-weight-trend .h-48 { height: 145px; }
+}

@@ -67,7 +67,7 @@ export function TodayOverview({
   const context = loading
     ? "Reading today's food log."
     : !hasEntries
-      ? "A fresh page. Start with whatever you've eaten."
+      ? "No food logged yet. Add a meal to begin."
       : energy === null
         ? "Calories aren't available for the foods entered yet."
         : !complete.kcal
@@ -127,11 +127,11 @@ export function TodayOverview({
         </div>
       )}
 
-      <dl className="mm-home-macro-grid" aria-label="Daily macronutrients">
+      {hasEntries && <dl className="mm-home-macro-grid" aria-label="Daily macronutrients">
         <MacroMeasure name="Protein" value={nutrient("protein")} target={proteinTarget} emphasis loading={loading} complete={complete.protein} />
         <MacroMeasure name="Carbs" value={nutrient("carbs")} target={carbsTarget} loading={loading} complete={complete.carbs} />
         <MacroMeasure name="Fat" value={nutrient("fat")} target={fatTarget} loading={loading} complete={complete.fat} />
-      </dl>
+      </dl>}
     </section>
   );
 }

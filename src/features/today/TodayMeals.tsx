@@ -53,21 +53,12 @@ export function TodayMeals({
         </div>
       ) : error ? null : entries.length === 0 ? (
         <div className="mm-home-first-meal">
-          <span className="mm-home-overline">A PLACE TO BEGIN</span>
-          <h3>What’s on the menu?</h3>
-          <p>
-            Have something to log? Start with {MEAL_LABELS[suggestedMeal].toLowerCase()},
-            or use the photo option above. Your meals will appear here as you add them.
-          </p>
-          <button type="button" className="mm-home-inline-action"
-            onClick={() => onAddMeal(suggestedMeal)}>
-            Add {MEAL_LABELS[suggestedMeal].toLowerCase()}
-            <Plus className="h-4 w-4" aria-hidden="true" />
-          </button>
+          <h3>Nothing logged yet</h3>
+          <p>Your meals will appear here as you add them.</p>
         </div>
       ) : (
         <div className="mm-home-meal-list">
-          {MEAL_TYPES.map((meal) => {
+          {MEAL_TYPES.filter((meal) => (byMeal.get(meal)?.length ?? 0) > 0).map((meal) => {
             const mealEntries = byMeal.get(meal) ?? [];
             const mealKcal = sumNutrients(mealEntries.map((entry) => entry.nutrients)).kcal;
             const expanded = expandedMeal === meal;

@@ -157,6 +157,9 @@ export function FoodSearchDialog({
   };
 
   const showRecents = q.trim().length < 2;
+  const recentFoods = (recents.data ?? []).filter((entry, index, list) =>
+    list.findIndex((other) => other.name.trim().toLowerCase() === entry.name.trim().toLowerCase() && other.brand === entry.brand) === index,
+  ).slice(0, 5);
 
   return (
     <CommandDialog open={open} onOpenChange={(o) => (!o ? onClose() : undefined)}
@@ -169,7 +172,7 @@ export function FoodSearchDialog({
           <>
             {favorites.data && favorites.data.length > 0 && (
               <CommandGroup heading="Favourites">
-                {favorites.data.map((fav) => (
+                {favorites.data.slice(0, 5).map((fav) => (
                   <ResultRow key={fav.id} food={foodToLoggable(fav.food)} onSelect={onPicked}
                     isFavorite onToggleFavorite={() => { void toggleFavorite(foodToLoggable(fav.food)); }} />
                 ))}
@@ -177,7 +180,7 @@ export function FoodSearchDialog({
             )}
             {savedMeals.data && savedMeals.data.length > 0 && (
               <CommandGroup heading="Saved meals · tap to log again">
-                {savedMeals.data.map((meal) => (
+                {savedMeals.data.slice(0, 4).map((meal) => (
                   <CommandItem key={meal.id} value={"saved-meal-" + meal.id}
                     disabled={savingMeal}
                     onSelect={() => { void reuseMeal(meal.id, meal.name); }}
@@ -189,9 +192,9 @@ export function FoodSearchDialog({
                 ))}
               </CommandGroup>
             )}
-            {recents.data && recents.data.length > 0 && (
-              <CommandGroup heading="Recent">
-                {recents.data.map((entry) => (
+            {recentFoods.length > 0 && (
+              <CommandGroup heading="Recently logged · tap to repeat">
+                {recentFoods.map((entry) => (
                   <CommandItem
                     key={entry.id}
                     value={`recent-${entry.id}-${entry.name}`}
@@ -252,11 +255,11 @@ export function FoodSearchDialog({
             {hit.attribution && <p className="px-4 pb-3 pt-1 text-[11px] text-muted-foreground/70">{hit.attribution}</p>}
           </>
         )}
-        <CommandSeparator />
+        {!showRecents && <><CommandSeparator />
         <CommandGroup>
-          <CommandItem onSelect={barcodeLookup} className="gap-2 text-muted-foreground">
+          {/^[0-9]{6,}$/.test(q.trim()) && <CommandItem onSelect={barcodeLookup} className="gap-2 text-muted-foreground">
             <Barcode className="h-4 w-4" /> Look up "{q.trim()}" as a barcode
-          </CommandItem>
+          </CommandItem>}
           <CommandItem
             onSelect={() => {
               const term = q.trim();
@@ -277,7 +280,7 @@ export function FoodSearchDialog({
           >
             <Plus className="h-4 w-4" /> Quick add "{q.trim() || "custom item"}" (nutrition unknown until entered)
           </CommandItem>
-        </CommandGroup>
+        </CommandGroup></>}
       </CommandList>
     </CommandDialog>
   );
