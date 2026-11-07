@@ -11,6 +11,9 @@ import { SavedMealsTab } from "./SavedMealsTab";
 import { FoodsRecent } from "./FoodsRecent";
 import { BarcodeImageLookup } from "./BarcodeImageLookup";
 import { RecipeLibrary } from "./RecipeLibrary";
+import { AssistedMealEntry } from "./AssistedMealEntry";
+import { SavedMealShopping } from "./SavedMealShopping";
+import "@/styles/assisted-logging.css";
 import { FoodRow } from "./FoodRow";
 import "@/styles/food-intelligence.css";
 import { recentEntryToLoggable } from "./recent-food";
@@ -184,6 +187,7 @@ export function Foods() {
         </TabsContent>
         <TabsContent value="meals" className="mt-4">
           <SavedMealsTab active={activeTab === "meals"} />
+          <SavedMealShopping active={activeTab === "meals"} />
         </TabsContent>
         <TabsContent value="recipes" className="mt-4">
           <RecipeLibrary active={activeTab === "recipes"} />
