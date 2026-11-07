@@ -1,0 +1,197 @@
+
+/* Impeccable follow-through: fewer competing surfaces, stronger task hierarchy.
+   Preserve all logged-data, meal editing, scan and saved-meal behaviors. */
+.mm-app-shell :is(.mm6-page-diary, .mm6-page-foods, .mm6-page-trends) .mm-journey-intro h1,
+.mm-app-shell .mm-home h1.mm-home-title {
+  font-size: clamp(34px, 4.4vw, 45px);
+  line-height: 1.07;
+  letter-spacing: -.04em;
+}
+.mm-app-shell :is(.mm6-page-diary, .mm6-page-foods, .mm6-page-trends) .mm-journey-description {
+  font-size: 14px;
+  line-height: 1.5;
+  color: var(--journey-muted);
+}
+.mm-app-shell .mm-home-overview--empty {
+  border: 0;
+  border-radius: 8px;
+  background: #edf2e9;
+  padding: 16px 18px;
+}
+.mm-app-shell .mm-home .mm-home-overview--empty {
+  background: #edf2e9;
+  padding: 16px 18px;
+}
+.mm-app-shell .mm-home-overview:not(.mm-home-overview--empty) {
+  border: 1px solid #dfe6dc;
+  border-radius: 8px;
+  background: #edf2e9;
+}
+.mm-app-shell .mm-home-macro-plan { border-color: #d2dfd1; }
+.mm-app-shell .mm-home-macro-plan > div { border-color: #d2dfd1; }
+.mm-app-shell .mm-home-next { padding-block: 13px; }
+.mm-app-shell .mm-home-next-name {
+  font-family: "Instrument Sans", Arial, sans-serif;
+  font-size: 16px;
+  font-weight: 725;
+  letter-spacing: -.01em;
+}
+.mm-app-shell .mm-home-next-description { font-size: 13px; line-height: 1.5; }
+.mm-app-shell .mm-home-meal-details {
+  padding-top: 6px;
+  padding-bottom: 12px;
+  gap: 8px;
+}
+.mm-app-shell .mm-home-entry {
+  min-height: 38px;
+  padding-block: 6px;
+}
+.mm-app-shell .mm-home-water-summary { font-size: 13px; }
+.mm-app-shell .mm-home-water-error { font-size: 13px; margin-bottom: 8px; }
+.mm-app-shell .mm-home-water-error button { text-decoration: underline; }
+
+/* Diary: actions at the moment of intent, with tap-sized, labeled meal controls. */
+.mm-app-shell .mm6-page-diary .mm-diary-copy { margin-top: -4px; }
+.mm-app-shell .mm6-page-diary .mm-journey-meal-section { border-color: var(--journey-rule); }
+.mm-app-shell .mm6-page-diary .mm-journey-meal-section > div:first-child { padding-block: 5px; min-height: 56px; }
+.mm-app-shell .mm6-page-diary .mm-diary-meal-add {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 67px;
+  min-height: 44px;
+  gap: 4px;
+  padding-inline: 10px;
+  font-size: 13px;
+  font-weight: 680;
+  color: var(--journey-green);
+  border-radius: 5px;
+}
+.mm-app-shell .mm6-page-diary .mm-diary-meal-add:hover,
+.mm-app-shell .mm6-page-diary .mm-diary-meal-add:focus-visible { background: #e8f0e6; }
+.mm-app-shell .mm6-page-diary .mm-journey-meal-section li {
+  padding-block: 9px;
+  padding-inline: 0;
+}
+.mm-app-shell .mm6-page-diary .mm-journey-meal-section li button:focus-visible {
+  outline: 2px solid var(--journey-focus);
+  outline-offset: 2px;
+}
+
+/* Foods: flatten two decorative option tiles into familiar action rows. */
+.mm-app-shell .mm6-page-foods .mm-foods-tools {
+  display: flex;
+  flex-direction: column;
+  border-top: 1px solid var(--journey-rule);
+  border-bottom: 1px solid var(--journey-rule);
+}
+.mm-app-shell .mm6-page-foods .mm-foods-tools button,
+.mm-app-shell .mm6-page-foods .mm-foods-tools button:first-child,
+.mm-app-shell .mm6-page-foods .mm-foods-tools button:last-child {
+  display: grid;
+  grid-template-columns: 22px minmax(0, 1fr) 18px;
+  align-items: center;
+  justify-content: start;
+  gap: 10px;
+  width: 100%;
+  min-height: 59px;
+  padding: 8px 2px;
+  border: 0;
+  text-align: left;
+}
+.mm-app-shell .mm6-page-foods .mm-foods-tools button + button {
+  border-top: 1px solid var(--journey-rule);
+}
+.mm-app-shell .mm6-page-foods .mm-foods-tools button > span {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  gap: 2px;
+}
+.mm-app-shell .mm6-page-foods .mm-foods-tools button strong {
+  color: var(--journey-ink);
+  font-size: 14px;
+  font-weight: 690;
+}
+.mm-app-shell .mm6-page-foods .mm-foods-tools button small {
+  color: var(--journey-muted);
+  font-size: 12px;
+  font-weight: 400;
+  line-height: 1.35;
+}
+.mm-app-shell .mm6-page-foods .mm-foods-tool-icon { color: var(--journey-ink); }
+.mm-app-shell .mm6-page-foods .mm-foods-tool-chevron { justify-self: end; color: var(--journey-muted); }
+
+/* Progress: one honest seven-day activity line, not a pretend filled chart. */
+.mm-app-shell .mm-progress-first { padding-top: 15px; }
+.mm-app-shell .mm-progress-first h2 {
+  font-size: clamp(24px, 3.1vw, 29px);
+  letter-spacing: -.035em;
+}
+.mm-app-shell .mm-progress-first-heading > p {
+  max-width: 52ch;
+  margin-top: 7px;
+  color: var(--journey-muted);
+  font-size: 14px;
+  line-height: 1.5;
+}
+.mm-app-shell .mm-progress-week {
+  margin-top: 19px;
+  padding-block: 14px 17px;
+  border-top: 1px solid var(--journey-rule);
+}
+.mm-app-shell .mm-progress-week-heading {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+  color: var(--journey-ink);
+}
+.mm-app-shell .mm-progress-week-heading h3 { font-size: 14px; font-weight: 690; }
+.mm-app-shell .mm-progress-week-heading > span { font-size: 12px; color: var(--journey-muted); }
+.mm-app-shell .mm-progress-week-days {
+  display: grid;
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+  gap: 8px;
+  margin-top: 12px;
+}
+.mm-app-shell .mm-progress-week-days > li {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+}
+.mm-app-shell .mm-progress-week-name,
+.mm-app-shell .mm-progress-week-day {
+  font-size: 12px;
+  line-height: 1;
+  color: var(--journey-muted);
+}
+.mm-app-shell .mm-progress-week-indicator {
+  display: grid;
+  place-items: center;
+  width: 28px;
+  height: 28px;
+  border: 1px solid #cfd8ce;
+  border-radius: 50%;
+}
+.mm-app-shell .mm-progress-week-days .is-logged .mm-progress-week-indicator {
+  color: white;
+  border-color: var(--journey-green);
+  background: var(--journey-green);
+}
+.mm-app-shell .mm-progress-first-steps { margin-top: 0; }
+@media (max-width: 640px) {
+  .mm-app-shell .mm-home h1.mm-home-title,
+  .mm-app-shell :is(.mm6-page-diary,.mm6-page-foods,.mm6-page-trends) .mm-journey-intro h1 {
+    font-size: 38px;
+  }
+  .mm-app-shell .mm-home .mm-home-overview--empty { padding: 14px 14px; }
+  .mm-app-shell .mm6-page-diary .mm-journey-meal-section > div:first-child { min-height: 53px; }
+  .mm-app-shell .mm-progress-week-days { gap: 5px; }
+}
+@media (max-width: 365px) {
+  .mm-app-shell .mm-progress-week-indicator { width: 25px; height: 25px; }
+  .mm-app-shell .mm-home h1.mm-home-title { font-size: 35px; }
+}

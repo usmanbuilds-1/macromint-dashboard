@@ -159,7 +159,8 @@ export function Trends() {
           <Button variant="outline" size="sm" onClick={weight.reload}>Retry</Button>
         </div>
       )}
-      {noTrendYet && <ProgressStart foodDays={loggedDaysInRange} weighIns={weights.length} />}
+      {noTrendYet && <ProgressStart foodDays={loggedDaysInRange} weighIns={weights.length} today={today}
+        loggedDates={(history.data ?? []).map((entry) => entry.entryDate)} />}
 
       {!noTrendYet && (
         <>

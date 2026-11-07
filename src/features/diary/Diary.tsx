@@ -1,6 +1,6 @@
 import { useMemo, useState } from "react";
 import { suggestedMealNow } from "@/lib/nutrition/meal-slot";
-import { Camera, ChevronDown, ChevronLeft, ChevronRight, Copy, Pencil, Plus, Star, BookMarked, Trash2 } from "lucide-react";
+import { Camera, ChevronLeft, ChevronRight, Copy, MoreHorizontal, Plus, Star, BookMarked, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -158,6 +158,17 @@ export function Diary() {
 
       </div>
 
+      <div className="mm-diary-copy">
+        <details className="group relative">
+          <summary className="flex min-h-11 cursor-pointer list-none items-center px-3 text-sm font-medium text-muted-foreground underline underline-offset-4">
+            Copy meals from another day
+          </summary>
+          <div className="absolute right-0 top-full z-10 mt-1 flex min-w-48 flex-col gap-1 rounded-md border bg-card p-2 shadow-sm">
+            <button type="button" className="min-h-11 rounded-md px-3 text-left text-sm hover:bg-accent" onClick={() => void copyDay(addDaysStr(date, -1), date)}>Copy previous day's meals here</button>
+            {date < todayStr() && <button type="button" className="min-h-11 rounded-md px-3 text-left text-sm hover:bg-accent" onClick={() => void copyDay(date, addDaysStr(date, 1))}>Copy this day forward</button>}
+          </div>
+        </details></div>
+
       {diary.loading && !diary.data && <div className="space-y-2" aria-label="Loading diary">
         <div className="h-12 animate-pulse rounded-md bg-secondary" />
         <div className="h-12 animate-pulse rounded-md bg-secondary" />
@@ -179,9 +190,9 @@ export function Diary() {
             <div className="flex min-h-14 items-center justify-between gap-2 py-2.5">
               <div className="flex items-baseline gap-2.5">
                 <h2 className="text-sm font-semibold">{MEAL_LABELS[meal]}</h2>
-                <span className="text-xs tabular-nums text-muted-foreground">
-                  {mealEntries.length ? `${mealEntries.some((e) => e.nutrients.kcal == null) ? "≥ " : ""}${formatNumber((mealEntries.reduce((s, e) => s + (e.nutrients.kcal ?? 0), 0)))} kcal${mealEntries.some((e) => e.nutrients.kcal == null) ? " known" : ""}` : "Not logged"}
-                </span>
+                {mealEntries.length > 0 && <span className="text-xs tabular-nums text-muted-foreground">
+                  {`${mealEntries.some((e) => e.nutrients.kcal == null) ? "≥ " : ""}${formatNumber((mealEntries.reduce((s, e) => s + (e.nutrients.kcal ?? 0), 0)))} kcal${mealEntries.some((e) => e.nutrients.kcal == null) ? " known" : ""}`}
+                </span>}
               </div>
               <div className="flex items-center gap-1">
                 {mealEntries.length > 1 && (
@@ -189,8 +200,8 @@ export function Diary() {
                     <BookMarked className="h-3.5 w-3.5" /> Save as meal
                   </Button>
                 )}
-                <Button variant="ghost" size="icon" aria-label={`Add to ${MEAL_LABELS[meal]}`} onClick={() => foodLog.openSearch({ entryDate: date, mealType: meal })}>
-                  <Plus className="h-4 w-4" />
+                <Button variant="ghost" size="sm" className="mm-diary-meal-add" aria-label={`Add to ${MEAL_LABELS[meal]}`} onClick={() => foodLog.openSearch({ entryDate: date, mealType: meal })}>
+                  <Plus className="h-4 w-4" aria-hidden="true" /><span>Add</span>
                 </Button>
               </div>
             </div>
@@ -219,9 +230,6 @@ export function Diary() {
                       </button>
                       <div className="flex shrink-0 items-center gap-1">
                         <span className="text-sm font-semibold tabular-nums">{entry.nutrients.kcal == null ? "—" : formatNumber(entry.nutrients.kcal)} <span className="text-xs font-normal text-muted-foreground">kcal</span></span>
-                        <Button variant="ghost" size="icon" aria-label={`Edit ${entry.name}`} onClick={() => setEditEntry(entry)}>
-                          <Pencil className="h-4 w-4" />
-                        </Button>
                         <Button
                           variant="ghost"
                           size="icon"
@@ -229,7 +237,7 @@ export function Diary() {
                           aria-expanded={openRow === entry.id}
                           onClick={() => setOpenRow((cur) => (cur === entry.id ? null : entry.id))}
                         >
-                          <ChevronDown className={cn("h-4 w-4 transition-transform", openRow === entry.id && "rotate-180")} />
+                          <MoreHorizontal className="h-4 w-4" aria-hidden="true" />
                         </Button>
                       </div>
                     </div>
@@ -254,16 +262,7 @@ export function Diary() {
         );
       })}
 
-      <div className="mm-diary-copy">
-        <details className="group relative">
-          <summary className="flex min-h-11 cursor-pointer list-none items-center px-3 text-sm font-medium text-muted-foreground underline underline-offset-4">
-            Copy meals from another day
-          </summary>
-          <div className="absolute right-0 top-full z-10 mt-1 flex min-w-48 flex-col gap-1 rounded-md border bg-card p-2 shadow-sm">
-            <button type="button" className="min-h-11 rounded-md px-3 text-left text-sm hover:bg-accent" onClick={() => void copyDay(addDaysStr(date, -1), date)}>Copy previous day's meals here</button>
-            {date < todayStr() && <button type="button" className="min-h-11 rounded-md px-3 text-left text-sm hover:bg-accent" onClick={() => void copyDay(date, addDaysStr(date, 1))}>Copy this day forward</button>}
-          </div>
-        </details></div>
+
 
       {editEntry && (
         <ServingConfigDialog

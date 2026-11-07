@@ -20,7 +20,7 @@ export function TodayMeals({
   onAddMeal: (meal: MealType) => void;
   suggestedMeal: MealType;
 }) {
-  const [expandedMeal, setExpandedMeal] = useState<MealType | null>(null);
+  const [expandedMeal, setExpandedMeal] = useState<MealType | "none" | null>(null);
   const byMeal = useMemo(() => {
     const map = new Map<MealType, DiaryEntry[]>(
       MEAL_TYPES.map((meal): [MealType, DiaryEntry[]] => [meal, []]),
@@ -28,6 +28,8 @@ export function TodayMeals({
     entries.forEach((entry) => map.get(entry.mealType)?.push(entry));
     return map;
   }, [entries]);
+
+  const firstLoggedMeal = MEAL_TYPES.find((meal) => (byMeal.get(meal)?.length ?? 0) > 0);
 
   return (
     <section aria-labelledby="meals-heading" className="mm-home-meals">
@@ -61,14 +63,14 @@ export function TodayMeals({
           {MEAL_TYPES.filter((meal) => (byMeal.get(meal)?.length ?? 0) > 0).map((meal) => {
             const mealEntries = byMeal.get(meal) ?? [];
             const mealKcal = sumNutrients(mealEntries.map((entry) => entry.nutrients)).kcal;
-            const expanded = expandedMeal === meal;
+            const expanded = expandedMeal === null ? firstLoggedMeal === meal : expandedMeal === meal;
             return (
               <div key={meal} className="mm-home-meal">
                 <div className="mm-home-meal-main">
                   <button type="button" className="mm-home-meal-toggle"
                     aria-expanded={expanded}
                     aria-controls={`today-meal-${meal}`}
-                    onClick={() => setExpandedMeal(expanded ? null : meal)}>
+                    onClick={() => setExpandedMeal(expanded ? "none" : meal)}>
                     <span className="mm-home-meal-title">
                       <strong>{MEAL_LABELS[meal]}</strong>
                       <small>{mealEntries.length

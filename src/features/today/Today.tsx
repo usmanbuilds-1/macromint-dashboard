@@ -28,7 +28,6 @@ export function Today() {
   const date = todayStr();
 
   const diary = useAsyncData(() => backend.getDiary(date), [date], "diary:day");
-  const water = useAsyncData(() => backend.getWater(date), [date], "water:day");
   const recent = useAsyncData(() => backend.getRecentEntries(8), [], "recent:8");
   const entries = diary.data ?? [];
   const totals = dailyTotals(entries);
@@ -106,9 +105,8 @@ export function Today() {
       )}
 
       <TodayUtilities
-        waterMl={(water.data ?? []).reduce((sum, item) => sum + item.amountMl, 0)}
+        date={date}
         waterTarget={activeGoals?.waterMl ?? null}
-        loading={water.loading && !water.data}
         onAddWater={() => { void addWater(); }}
       />
     </div>

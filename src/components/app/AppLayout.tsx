@@ -5,6 +5,7 @@ import "@/styles/journey-tracking.css";
 import "@/styles/journey-density.css";
 import "@/styles/journey-task-first.css";
 import "@/styles/journey-account.css";
+import "@/styles/journey-impeccable.css";
 import { Logo } from "./BrandMark";
 export { Logo } from "./BrandMark";
 import { publicAccountLabel } from "@/lib/auth/username";
