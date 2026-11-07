@@ -9,44 +9,17 @@ import { JourneyEmpty } from "@/components/app/JourneyEmpty";
 import { CustomFoodDialog } from "./CustomFoodDialog";
 import { SavedMealsTab } from "./SavedMealsTab";
 import { FoodsRecent } from "./FoodsRecent";
+import { BarcodeImageLookup } from "./BarcodeImageLookup";
+import { RecipeLibrary } from "./RecipeLibrary";
+import { FoodRow } from "./FoodRow";
+import "@/styles/food-intelligence.css";
 import { recentEntryToLoggable } from "./recent-food";
 import { matchingFavorite, toggleFavoriteCandidate } from "./favorite-actions";
-import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { backend, bumpData } from "@/lib/backend";
 import { useAsyncData } from "@/hooks/useData";
 import { todayStr } from "@/lib/nutrition/datetime";
 import { foodToLoggable, offToLoggable, useFoodLog, type LoggableFood } from "./FoodLogProvider";
-import { formatNumber } from "@/lib/utils";
-import { cn } from "@/lib/utils";
-
-function FoodRow({ food, onLog, favActive, onFav }: { food: LoggableFood; onLog: (f: LoggableFood) => void; favActive?: boolean; onFav?: () => void }) {
-  return (
-    <div className={cn("flex items-center justify-between gap-3 px-4 py-3", "border-t first:border-t-0")}>
-      <button type="button" className="min-w-0 flex-1 text-left" onClick={() => onLog(food)}>
-        <p className="truncate text-sm font-medium">
-          {food.name}
-          {food.brand && <span className="font-normal text-muted-foreground"> · {food.brand}</span>}
-        </p>
-        <p className="mt-0.5 flex items-center gap-2 text-xs text-muted-foreground">
-          <span>{food.servingLabel}</span>
-          <span className="tabular-nums">{food.per100g.kcal == null ? "Calories unknown" : `${formatNumber(food.per100g.kcal)} kcal per 100 g`}</span>
-        </p>
-      </button>
-      <div className="flex shrink-0 items-center gap-1">
-        <Badge variant={food.verified ? "outline" : "secondary"} className={cn("hidden text-[10px] sm:inline-flex", food.verified && "border-primary/40 text-primary")}>
-          {food.sourceLabel}
-        </Badge>
-        {onFav && (
-          <Button variant="ghost" size="icon" aria-label={favActive ? `Remove ${food.name} from favorites` : `Add ${food.name} to favorites`} aria-pressed={Boolean(favActive)} onClick={onFav}>
-            <Star className={cn("h-4 w-4", favActive && "fill-primary text-primary")} />
-          </Button>
-        )}
-        <Button variant="outline" size="sm" onClick={() => onLog(food)}>Log</Button>
-      </div>
-    </div>
-  );
-}
 
 export function Foods() {
   const foodLog = useFoodLog();
@@ -68,6 +41,20 @@ export function Foods() {
       toast.success(added ? "Added to favorites" : "Removed from favorites");
     } catch {
       toast.error("Couldn't change favorites. Try again.");
+    }
+  };
+
+  const scanBarcode = async (code: string) => {
+    setQ(code);
+    setSearching(true);
+    try {
+      const results = await backend.lookupBarcode(code);
+      setHit(results);
+      if (!results.local.length && !results.remote.length) toast.info("No product found for this barcode");
+    } catch {
+      toast.error("Could not look up this barcode. Enter the product manually.");
+    } finally {
+      setSearching(false);
     }
   };
 
@@ -102,6 +89,7 @@ export function Foods() {
           <TabsTrigger value="search">Search</TabsTrigger>
           <TabsTrigger value="favorites">Favorites</TabsTrigger>
           <TabsTrigger value="meals">Saved meals</TabsTrigger>
+          <TabsTrigger value="recipes">Recipes</TabsTrigger>
         </TabsList>
 
         <TabsContent value="search" className="mm-journey-food-search mt-4 flex flex-col gap-4">
@@ -196,6 +184,9 @@ export function Foods() {
         </TabsContent>
         <TabsContent value="meals" className="mt-4">
           <SavedMealsTab active={activeTab === "meals"} />
+        </TabsContent>
+        <TabsContent value="recipes" className="mt-4">
+          <RecipeLibrary active={activeTab === "recipes"} />
         </TabsContent>
       </Tabs>
 

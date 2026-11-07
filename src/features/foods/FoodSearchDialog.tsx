@@ -20,6 +20,8 @@ import { formatNumber } from "@/lib/utils";
 import { cn } from "@/lib/utils";
 import { useMobileDialogViewport } from "@/hooks/useMobileDialogViewport";
 import { matchingFavorite, toggleFavoriteCandidate } from "./favorite-actions";
+import { BarcodeImageLookup } from "./BarcodeImageLookup";
+import "@/styles/food-intelligence.css";
 
 function ResultRow({ food, onSelect, isFavorite, onToggleFavorite }: {
   food: LoggableFood;
@@ -66,6 +68,7 @@ export function FoodSearchDialog({
 }) {
   const [q, setQ] = useState("");
   const [hit, setHit] = useState<FoodSearchHit | null>(null);
+  const [barcodeMode, setBarcodeMode] = useState(false);
   const [searching, setSearching] = useState(false);
   const reqId = useRef(0);
   const recents = useAsyncData(() => backend.getRecentEntries(8), [], "recent:8", open);
@@ -73,7 +76,7 @@ export function FoodSearchDialog({
   const savedMeals = useAsyncData(() => backend.getSavedMeals(), [], "saved-meals", open);
   const priorCount = (recents.data?.length ?? 0) + (favorites.data?.length ?? 0) + (savedMeals.data?.length ?? 0);
   const matchesCount = (hit?.local.length ?? 0) + (hit?.remote.length ?? 0);
-  const compactHeight = q.trim().length < 2 ? (priorCount > 0 ? 420 : 185) : searching ? 215 : matchesCount > 0 ? 480 : 250;
+  const compactHeight = q.trim().length < 2 && !barcodeMode ? (priorCount > 0 ? 460 : 275) : searching ? 240 : matchesCount > 0 ? 500 : 285;
   const sheetStyle = useMobileDialogViewport(open, "bottom", compactHeight);
   const [savingMeal, setSavingMeal] = useState(false);
   const [favoriteBusy, setFavoriteBusy] = useState<string | null>(null);
@@ -113,6 +116,7 @@ export function FoodSearchDialog({
     if (!open) {
       setQ("");
       setHit(null);
+      setBarcodeMode(false);
     }
   }, [open]);
 
@@ -141,6 +145,19 @@ export function FoodSearchDialog({
     return () => clearTimeout(t);
   }, [q]);
 
+  const fromBarcodeImage = async (code: string) => {
+    ++reqId.current;
+    setBarcodeMode(true);
+    setSearching(true);
+    try {
+      const res = await backend.lookupBarcode(code);
+      setHit(res);
+      if (!res.local.length && !res.remote.length) toast.info("No product found for this barcode");
+    } catch {
+      toast.error("Barcode lookup failed. Enter the numbers below the barcode.");
+    } finally { setSearching(false); }
+  };
+
   const barcodeLookup = async () => {
     const code = q.trim();
     if (!/^\d{6,}$/.test(code)) {
@@ -159,7 +176,7 @@ export function FoodSearchDialog({
     }
   };
 
-  const showRecents = q.trim().length < 2;
+  const showRecents = q.trim().length < 2 && !barcodeMode;
   const recentFoods = (recents.data ?? []).filter((entry, index, list) =>
     list.findIndex((other) => other.name.trim().toLowerCase() === entry.name.trim().toLowerCase() && other.brand === entry.brand) === index,
   ).slice(0, 5);
@@ -168,7 +185,8 @@ export function FoodSearchDialog({
     <CommandDialog open={open} onOpenChange={(o) => (!o ? onClose() : undefined)}
       preventInputAutoFocus contentStyle={sheetStyle ? { ...sheetStyle, height: sheetStyle.maxHeight } : undefined}
       className="!animate-none !translate-y-0 bottom-0 min-h-0 max-h-[88dvh] w-full !max-w-none overflow-hidden rounded-t-xl rounded-b-none sm:!top-1/2 sm:!bottom-auto sm:!-translate-y-1/2 sm:!max-w-lg sm:rounded-lg">
-      <CommandInput autoFocus={false} placeholder="Search foods, brands, or barcodes…" value={q} onValueChange={setQ} />
+      <CommandInput autoFocus={false} placeholder="Search foods, brands, or barcodes…" value={q} onValueChange={(v) => { setBarcodeMode(false); setQ(v); }} />
+      <div className="mm-foods-barcode-line"><BarcodeImageLookup onCode={fromBarcodeImage} /></div>
       <CommandList className="min-h-0 flex-1 !max-h-none">
         {searching && <p className="px-4 py-3 text-sm text-muted-foreground">Searching…</p>}
         {!searching && showRecents && (
