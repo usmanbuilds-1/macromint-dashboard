@@ -15,6 +15,7 @@ import { TodayMeals } from "./TodayMeals";
 import { TodayUtilities } from "./TodayUtilities";
 import { TodayNextStep } from "./TodayNextStep";
 import { recentEntryToLoggable } from "@/features/foods/recent-food";
+import { rankRecentForMeal } from "./rank-recent";
 import { toast } from "sonner";
 import "./today.css";
 
@@ -32,7 +33,7 @@ export function Today() {
   const entries = diary.data ?? [];
   const totals = dailyTotals(entries);
   const suggestedMeal = suggestedMealNow();
-  const lastOtherDay = recent.data?.find((entry) => entry.entryDate !== date) ?? null;
+  const lastOtherDay = rankRecentForMeal(recent.data ?? [], date, suggestedMeal);
 
   const openFood = (mealType: MealType = suggestedMeal) => {
     foodLog.openSearch({ entryDate: date, mealType });
