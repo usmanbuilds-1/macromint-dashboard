@@ -149,7 +149,7 @@ export function ScanDialog({
         <DialogHeader>
           <DialogTitle>Add food from a photo</DialogTitle>
           <DialogDescription>
-            Take a photo or upload one you already have. Estimates aren't exact; review the foods and portions before logging.
+            Take or upload a photo. Check estimated foods before saving.
           </DialogDescription>
         </DialogHeader>
 
@@ -185,16 +185,12 @@ export function ScanDialog({
             setItems={setItems} originalItems={originalItems} />
         )}
 
-        <DialogFooter className="mt-1 gap-2 sm:justify-between">
-          {phase !== "scanning" && (
-            <Button variant="ghost" onClick={phase === "review" ? reset : onClose}>
-              {phase === "review" ? "Try another photo" : "Close"}
-            </Button>
-          )}
+        {phase === "review" && <DialogFooter className="mt-1 gap-2 sm:justify-between">
+          <Button variant="ghost" onClick={reset}>Try another photo</Button>
           {phase === "review" && items.length > 0 && (
             <Button onClick={addAll} disabled={invalidGramDraft}>Add {items.length} item{items.length === 1 ? "" : "s"} to diary</Button>
           )}
-        </DialogFooter>
+        </DialogFooter>}
       </DialogContent>
     </Dialog>
   );

@@ -19,6 +19,7 @@ import { ACCESS_STATES, type AccessState, type AdminUserRow } from "@/types";
 import { formatDateShort, todayStr } from "@/lib/nutrition/datetime";
 import { cn } from "@/lib/utils";
 import { JourneyIntro } from "@/components/app/JourneyIntro";
+import { summarizeEngagement } from "./engagement";
 
 const STATE_STYLES: Record<AccessState, string> = {
   trial_active: "border-primary/40 text-primary",
@@ -235,6 +236,7 @@ function AdminUsers() {
   const [saving, setSaving] = useState(false);
 
   const users = useAsyncData(() => backend.adminListUsers(search), [search], "admin:users");
+  const engagement = users.data && !search.trim() ? summarizeEngagement(users.data) : null;
 
   const act = async (action: string, row: AdminUserRow, extra?: Record<string, unknown>): Promise<boolean> => {
     try {
@@ -279,6 +281,19 @@ function AdminUsers() {
         />
       </div>
 
+      {engagement && (
+        <details className="border-b pb-3" aria-label="Tester engagement snapshot">
+          <summary className="flex min-h-11 cursor-pointer items-center text-sm font-semibold text-foreground">Tester engagement snapshot</summary>
+          <p className="mt-2 text-sm text-muted-foreground">
+            {engagement.testersWithDatedEntries30d} of {engagement.testers} testers have food entries dated within the last 30 days.
+            {engagement.testersWithoutDatedEntries30d > 0 && ` ${engagement.testersWithoutDatedEntries30d} have none in that window.`}
+          </p>
+          <p className="mt-1 text-xs text-muted-foreground">
+            Across {engagement.accounts} returned accounts: {engagement.accountsWithDatedEntries30d} have dated entries within 30 days; {engagement.recentSignups7d} joined in the past 7 days.
+            Based on at most 200 returned accounts. This is not first-log activation, app-open activity or D1/D7 retention.
+          </p>
+        </details>
+      )}
       <div className="overflow-hidden rounded-xl border">
         {users.loading && <p className="px-4 py-4 text-sm text-muted-foreground">Loading users…</p>}
         {users.data?.map((row, idx) => (
