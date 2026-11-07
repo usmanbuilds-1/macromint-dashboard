@@ -29,6 +29,9 @@ const budgets = {
   "src/features/trends/EmptyChart.tsx": 25,
   "src/styles/journey-foundations.css": 200,
   "src/styles/journey-tracking.css": 305,
+  "src/styles/journey-impeccable.css": 220,
+  "src/features/today/TodayUtilities.tsx": 70,
+  "src/features/trends/ProgressStart.tsx": 85,
   "src/styles/journey-account.css": 230,
   "src/features/trends/WeeklyArchive.tsx": 135,
   "src/features/trends/Trends.tsx": 330,
@@ -67,6 +70,8 @@ const todayScreen = readFileSync("src/features/today/Today.tsx", "utf8");
 const todayWarmup = readFileSync("src/hooks/useTodayWarmup.ts", "utf8");
 assert.doesNotMatch(todayScreen, /useAnimatedNumber|useEntered|mm-live-enter|animationDelay/,
   "Today must display cached values directly without entrance/count-up animations");
+assert.doesNotMatch(todayScreen, /backend\.getWater\(/,
+  "Optional water data must not block the main Today view");
 assert.match(todayWarmup, /warmTodayQueries/,
   "Today data must be warmed while the authenticated shell is mounted");
 const diaryPage = readFileSync("src/features/diary/Diary.tsx", "utf8");

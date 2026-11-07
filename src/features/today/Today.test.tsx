@@ -74,6 +74,9 @@ describe("Today: clear hierarchy and contextual entry", () => {
       <TodayMeals entries={[meal]} error={null} loading={false}
         onRetry={onRetry} onAddMeal={onAddMeal} suggestedMeal="dinner" />,
     );
+    expect(screen.getByText("Chapati")).toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: /Dinner.*1 item/ }));
+    expect(screen.queryByText("Chapati")).toBeNull();
     fireEvent.click(screen.getByRole("button", { name: /Dinner.*1 item/ }));
     expect(screen.getByText("Chapati")).toBeInTheDocument();
     fireEvent.click(screen.getByRole("button", { name: "Add food to Dinner" }));
