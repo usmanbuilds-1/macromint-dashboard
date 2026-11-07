@@ -341,7 +341,19 @@ try {
   const bananaItem = page.getByRole("option").filter({ has: page.getByText("Banana", { exact: true }) }).first();
   await bananaItem.waitFor({ timeout: 10000 });
   await bananaItem.click();
-  await page.getByRole("button", { name: "Add to diary" }).click();
+  const portionAction = page.getByRole("button", { name: "Add to diary" });
+  try {
+    await portionAction.waitFor({ timeout: 8000 });
+  } catch (err) {
+    await page.screenshot({ path: "mobile-audit/screens/portion-review-debug.png", fullPage: true });
+    console.log("PORTION REVIEW DIAGNOSTIC", JSON.stringify({
+      dialogs: await page.locator('[role="dialog"]').allTextContents(),
+      alerts: await page.locator('[role="alert"]').allTextContents(),
+      buttonLabels: (await page.getByRole("button").allTextContents()).slice(-25),
+    }));
+    throw err;
+  }
+  await portionAction.click();
   await page.waitForFunction(() => {
     const energy = document.querySelector(".ref-live-today .mm-home-calories")?.textContent?.trim();
     return Boolean(energy && energy !== "—" && energy !== "0");
