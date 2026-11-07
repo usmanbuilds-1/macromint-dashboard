@@ -337,7 +337,9 @@ try {
   await page.getByRole("button", { name: "Log Banana again" }).waitFor({ timeout: 10000 });
   await screenshotEverySize("foods-with-recent");
   await nav.getByRole("link", { name: "Progress" }).click();
-  await page.locator("#ref-calorie-trend").waitFor({ timeout: 10000 });
+  await page.getByText("1 of 2 days logged").waitFor({ timeout: 10000 });
+  assert.equal(await page.locator("#ref-calorie-trend").count(), 0,
+    "One partial food-logging day cannot establish a calorie trend");
   await screenshotEverySize("progress-with-food");
 
   await page.goto(url + "/settings", { waitUntil: "domcontentloaded" });
