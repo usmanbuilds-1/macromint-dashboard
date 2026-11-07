@@ -311,6 +311,35 @@ try {
   await screenshotEverySize("progress");
   await screenshotCompact("progress");
 
+  // Complete the first real user loop using a seeded, verified demo food.
+  // Do not fabricate diary state: this exercises search -> portion review ->
+  // persist -> Today totals -> Diary meal row -> Foods reusable history.
+  await nav.getByRole("link", { name: "Today" }).click();
+  await page.getByRole("button", { name: "Add food", exact: true }).click();
+  const firstFoodSearch = page.getByPlaceholder(/Search foods, brands/i);
+  await firstFoodSearch.fill("Banana");
+  const bananaItem = page.getByRole("option").filter({ hasText: "Banana" }).first();
+  await bananaItem.waitFor({ timeout: 10000 });
+  await bananaItem.click();
+  await page.getByRole("button", { name: "Add to diary" }).click();
+  await page.waitForFunction(() => {
+    const energy = document.querySelector(".ref-live-today .mm-home-calories")?.textContent?.trim();
+    return Boolean(energy && energy !== "—" && energy !== "0");
+  }, null, { timeout: 10000 });
+  await screenshotEverySize("today-after-first-log");
+  await nav.getByRole("link", { name: "Diary" }).click();
+  await page.getByText("Banana", { exact: true }).waitFor();
+  assert.equal(await page.locator(".mm6-page-diary .mm-journey-meal-section").count(), 4,
+    "Meal rows should remain available after logging");
+  await screenshotEverySize("diary-with-food");
+  await nav.getByRole("link", { name: "Foods" }).click();
+  await page.getByRole("tab", { name: "Search", exact: true }).click();
+  await page.getByRole("button", { name: "Log Banana again" }).waitFor({ timeout: 10000 });
+  await screenshotEverySize("foods-with-recent");
+  await nav.getByRole("link", { name: "Progress" }).click();
+  await page.locator("#ref-calorie-trend").waitFor({ timeout: 10000 });
+  await screenshotEverySize("progress-with-food");
+
   await page.goto(url + "/settings", { waitUntil: "domcontentloaded" });
   await page.getByRole("heading", { name: "Settings", exact: true }).waitFor();
   assert.equal(await page.getByText("Measurement system").count(), 0);
