@@ -83,6 +83,20 @@ export function TodayOverview({
   const nutrient = (key: "protein" | "carbs" | "fat") =>
     !hasEntries ? 0 : totals[key] ?? null;
 
+  if (!hasEntries && !loading) {
+    return (
+      <section aria-labelledby="daily-intake-heading" className="mm-home-overview mm-home-overview--empty">
+        <div className="mm-home-empty-target-line">
+          <h2 id="daily-intake-heading">Daily target</h2>
+          {targetReady
+            ? <strong className="tabular-nums">{formatNumber(target!)} <span>kcal</span></strong>
+            : <Link to="/goals" className="mm-home-overview-link">Set your target</Link>}
+        </div>
+        <p className="mm-home-empty-help">Your calorie and macro totals appear after you log a food.</p>
+      </section>
+    );
+  }
+
   return (
     <section aria-labelledby="daily-intake-heading" className="mm-home-overview">
       <div className="mm-home-overview-heading">

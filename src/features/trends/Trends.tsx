@@ -167,8 +167,8 @@ export function Trends() {
           description="Log a meal or record your weight. As you add entries, the charts will show what changes."
           supporting={(
             <div className="mm-journey-empty-links">
-              <Link to="/diary">Log food</Link>
-              <Link to="/weight">Record weight</Link>
+              <Link to="/diary" className="inline-flex min-h-11 items-center rounded bg-primary px-4 text-sm font-semibold text-primary-foreground">Log food</Link>
+              <Link to="/weight" className="inline-flex min-h-11 items-center text-sm font-semibold text-primary underline underline-offset-4">Record weight</Link>
             </div>
           )}
         />

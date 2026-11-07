@@ -5,7 +5,7 @@ import { backend, bumpData } from "@/lib/backend";
 import { useAsyncData } from "@/hooks/useData";
 import { dailyTotals } from "@/lib/nutrition/math";
 import { hasCompleteNutrientData } from "@/lib/nutrition/coverage";
-import { formatDateLong, todayStr, addDaysStr } from "@/lib/nutrition/datetime";
+import { formatDateLong, todayStr } from "@/lib/nutrition/datetime";
 import type { MealType } from "@/types";
 import { suggestedMealNow } from "@/lib/nutrition/meal-slot";
 import { useFoodLog } from "@/features/foods/FoodLogProvider";
@@ -43,18 +43,6 @@ export function Today() {
       toast.error("Water could not be saved. Try again.");
     }
   };
-  const copyYesterday = async () => {
-    try {
-      const count = await backend.copyDay(addDaysStr(date, -1), date);
-      bumpData();
-      toast[count ? "success" : "info"](
-        count ? `Copied ${count} items from yesterday` : "Nothing was logged yesterday",
-      );
-    } catch {
-      toast.error("Could not copy your meals. Please try again.");
-    }
-  };
-
   const intro = diary.loading && !diary.data
     ? "Loading your food log."
     : entries.length > 0
@@ -116,7 +104,6 @@ export function Today() {
         waterTarget={goals?.waterMl ?? null}
         loading={water.loading && !water.data}
         onAddWater={() => { void addWater(); }}
-        onCopyYesterday={() => { void copyYesterday(); }}
       />
     </div>
   );

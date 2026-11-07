@@ -54,3 +54,21 @@
   .mm-app-shell .mm6-page-trends #ref-calorie-trend .h-56 { height: 165px; }
   .mm-app-shell .mm6-page-trends #ref-weight-trend .h-48 { height: 145px; }
 }
+
+@media (max-width: 640px) {
+  /* Date arrows sit next to the diary heading, not on their own tall row. */
+  .mm-app-shell .mm6-page-diary .mm-journey-intro {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    align-items: end;
+    column-gap: 10px;
+  }
+  .mm-app-shell .mm6-page-diary .mm-journey-intro-action {
+    align-self: end;
+    padding-bottom: 3px;
+  }
+  .mm-app-shell .mm6-page-diary .mm-journey-date-switch button {
+    width: 36px;
+    height: 40px;
+  }
+}
