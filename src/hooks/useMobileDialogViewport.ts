@@ -5,7 +5,7 @@ import { useEffect, useState, type CSSProperties } from "react";
  * Keep dialogs inside the *visual* viewport, including after keyboard
  * open/close, orientation changes and browser chrome movement.
  */
-export function useMobileDialogViewport(open: boolean, placement: "bottom" | "center" = "center"): CSSProperties | undefined {
+export function useMobileDialogViewport(open: boolean, placement: "bottom" | "center" = "center", preferredHeight = 520): CSSProperties | undefined {
   const [size, setSize] = useState<{ height: number; top: number; mobile: boolean } | null>(null);
 
   useEffect(() => {
@@ -34,7 +34,7 @@ export function useMobileDialogViewport(open: boolean, placement: "bottom" | "ce
 
   if (!size?.mobile) return undefined;
   const available = Math.max(100, size.height - 16);
-  const height = Math.min(520, available);
+  const height = Math.min(520, Math.max(120, preferredHeight), available);
   if (placement === "bottom") {
     return {
       top: `${Math.max(0, size.top + size.height - height - 8)}px`,

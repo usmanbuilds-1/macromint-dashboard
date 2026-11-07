@@ -1,7 +1,6 @@
 import { createContext, useCallback, useContext, useMemo, useState } from "react";
 import type { Food, MealType, NutrientRecord } from "@/types";
 import type { OffFoodHit } from "@/lib/backend/types";
-import { FoodEntryChooser } from "./FoodEntryChooser";
 
 /** A loggable item: a database food, an Open Food Facts product, or a
  *  custom food, normalised to one shape. */
@@ -72,7 +71,6 @@ interface ProviderProps {
 }
 
 export function FoodLogProvider({ children, renderSearch, renderServing, renderScan }: ProviderProps) {
-  const [chooserOpen, setChooserOpen] = useState(false);
   const [searchOpen, setSearchOpen] = useState(false);
   const [target, setTarget] = useState<FoodLogTarget | null>(null);
   const [picked, setPicked] = useState<LoggableFood | null>(null);
@@ -82,20 +80,17 @@ export function FoodLogProvider({ children, renderSearch, renderServing, renderS
   const open = useCallback((t: FoodLogTarget) => {
     setTarget(t);
     setPicked(t.initialFood ?? null);
-    // Edits and picked foods already know the item; skip the chooser.
-    setChooserOpen(!t.initialFood && !t.editEntryId);
-    setSearchOpen(false);
+    // A separate Scan photo action exists; skip the redundant chooser.
+    setSearchOpen(!t.initialFood && !t.editEntryId);
   }, []);
 
   const openSearch = useCallback((t: FoodLogTarget) => {
     setTarget(t);
     setPicked(null);
-    setChooserOpen(false);
     setSearchOpen(true);
   }, []);
 
   const openScan = useCallback((t: { entryDate: string; mealType: MealType }) => {
-    setChooserOpen(false);
     setScanTarget(t);
     setScanOpen(true);
   }, []);
@@ -105,12 +100,6 @@ export function FoodLogProvider({ children, renderSearch, renderServing, renderS
   return (
     <FoodLogContext.Provider value={value}>
       {children}
-      <FoodEntryChooser
-        open={chooserOpen}
-        onClose={() => setChooserOpen(false)}
-        onSearch={() => { if (target) openSearch(target); }}
-        onScan={() => { if (target) openScan({ entryDate: target.entryDate, mealType: target.mealType }); }}
-      />
       {renderSearch({
         open: searchOpen,
         onClose: () => setSearchOpen(false),

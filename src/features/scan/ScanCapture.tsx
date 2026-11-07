@@ -20,13 +20,13 @@ export function ScanCapture({
   const galleryRef = useRef<HTMLInputElement>(null);
   const [showNotes, setShowNotes] = useState(false);
   return (
-    <div className="grid gap-4">
+    <div className="grid gap-2.5">
       <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
-        <Button ref={cameraButtonRef} type="button" className="min-h-14 justify-center gap-2"
+        <Button ref={cameraButtonRef} type="button" className="min-h-12 justify-center gap-2"
           onClick={() => cameraRef.current?.click()}>
           <Camera className="h-5 w-5" aria-hidden="true" /> Take photo
         </Button>
-        <Button type="button" variant="outline" className="min-h-14 justify-center gap-2"
+        <Button type="button" variant="outline" className="min-h-12 justify-center gap-2"
           onClick={() => galleryRef.current?.click()}>
           <ImagePlus className="h-5 w-5" aria-hidden="true" /> Choose from gallery
         </Button>
@@ -49,21 +49,18 @@ export function ScanCapture({
           event.target.value = "";
         }}
       />
-      <p className="text-xs leading-5 text-muted-foreground">
-        Pick a clear image, then check the estimated foods and portions before saving.
-      </p>
-      <div className="border-t pt-3">
+      <div className="pt-2">
         <button type="button" onClick={onSearchText}
           className="inline-flex min-h-11 items-center gap-2 text-sm font-medium text-primary underline-offset-4 hover:underline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary">
           <Search className="h-4 w-4" aria-hidden="true" />
           Search or enter a meal instead
         </button>
       </div>
-      <div className="border-t pt-3">
+      <div className="pt-1">
         <button type="button" onClick={() => setShowNotes((shown) => !shown)}
           aria-expanded={showNotes} aria-controls="scan-notes"
           className="inline-flex min-h-11 items-center text-sm text-muted-foreground underline-offset-4 hover:text-foreground hover:underline">
-          {showNotes ? "Hide photo notes" : "Add a note about the meal (optional)"}
+          {showNotes ? "Hide details" : "Add details (optional)"}
         </button>
         {showNotes && (
           <div id="scan-notes" className="mt-2 grid gap-1.5">
