@@ -4,8 +4,8 @@ import assert from "node:assert/strict";
 /** Architectural guardrail: keep new UX and data fetching out of legacy
  * monoliths. Pre-existing larger files are capped, not treated as models. */
 const budgets = {
-  "src/features/foods/FoodEntryChooser.tsx": 120,
   "src/features/scan/ScanCapture.tsx": 145,
+  "src/features/admin/engagement.ts": 80,
   "src/features/scan/ScanReview.tsx": 165,
   "src/features/scan/ScanDialog.tsx": 250,
   "src/features/foods/FoodLogProvider.tsx": 165,
@@ -48,6 +48,8 @@ const shell = readFileSync("src/components/app/AppLayout.tsx", "utf8");
 for (const name of ["FoodSearchDialog", "ServingConfigHost", "ScanDialog"]) {
   assert.match(shell, new RegExp(`lazy\\(\\(\\) =>[\\s\\S]*?import\\("@/features/[^"]+/${name}"\\)`));
 }
+const foodLogProvider = readFileSync("src/features/foods/FoodLogProvider.tsx", "utf8");
+assert.doesNotMatch(foodLogProvider, /FoodEntryChooser|setChooserOpen/, "Add food should open search directly");
 const progress = readFileSync("src/features/trends/Trends.tsx", "utf8");
 assert.match(progress, /backend\.getDiaryRange\(/);
 assert.doesNotMatch(progress, /Promise\.all\(rangeDates\.map/);

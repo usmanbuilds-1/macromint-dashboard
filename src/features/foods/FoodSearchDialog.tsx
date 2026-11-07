@@ -68,13 +68,16 @@ export function FoodSearchDialog({
   const [hit, setHit] = useState<FoodSearchHit | null>(null);
   const [searching, setSearching] = useState(false);
   const reqId = useRef(0);
-  const sheetStyle = useMobileDialogViewport(open, "bottom");
-  const [savingMeal, setSavingMeal] = useState(false);
-  const [favoriteBusy, setFavoriteBusy] = useState<string | null>(null);
-
   const recents = useAsyncData(() => backend.getRecentEntries(8), [], "recent:8", open);
   const favorites = useAsyncData(() => backend.getFavorites(), [], "favorites", open);
   const savedMeals = useAsyncData(() => backend.getSavedMeals(), [], "saved-meals", open);
+  const priorCount = (recents.data?.length ?? 0) + (favorites.data?.length ?? 0) + (savedMeals.data?.length ?? 0);
+  const matchesCount = (hit?.local.length ?? 0) + (hit?.remote.length ?? 0);
+  const compactHeight = q.trim().length < 2 ? (priorCount > 0 ? 420 : 185) : searching ? 215 : matchesCount > 0 ? 480 : 250;
+  const sheetStyle = useMobileDialogViewport(open, "bottom", compactHeight);
+  const [savingMeal, setSavingMeal] = useState(false);
+  const [favoriteBusy, setFavoriteBusy] = useState<string | null>(null);
+
   const favoriteIds = useMemo(() => new Set((favorites.data ?? []).map((fav) => fav.foodId)), [favorites.data]);
 
   const toggleFavorite = async (food: LoggableFood) => {
@@ -165,7 +168,7 @@ export function FoodSearchDialog({
     <CommandDialog open={open} onOpenChange={(o) => (!o ? onClose() : undefined)}
       preventInputAutoFocus contentStyle={sheetStyle ? { ...sheetStyle, height: sheetStyle.maxHeight } : undefined}
       className="!animate-none !translate-y-0 bottom-0 min-h-0 max-h-[88dvh] w-full !max-w-none overflow-hidden rounded-t-xl rounded-b-none sm:!top-1/2 sm:!bottom-auto sm:!-translate-y-1/2 sm:!max-w-lg sm:rounded-lg">
-      <CommandInput autoFocus={false} placeholder="Tap to search foods, brands, or barcodes…" value={q} onValueChange={setQ} />
+      <CommandInput autoFocus={false} placeholder="Search foods, brands, or barcodes…" value={q} onValueChange={setQ} />
       <CommandList className="min-h-0 flex-1 !max-h-none">
         {searching && <p className="px-4 py-3 text-sm text-muted-foreground">Searching…</p>}
         {!searching && showRecents && (
@@ -224,7 +227,7 @@ export function FoodSearchDialog({
             )}
             {!recents.loading && (recents.data?.length ?? 0) === 0 && (favorites.data?.length ?? 0) === 0 && (savedMeals.data?.length ?? 0) === 0 && (
               <p className="px-4 py-6 text-center text-sm text-muted-foreground">
-                Search the food database to log your first item.
+                Search for what you ate to choose a portion.
               </p>
             )}
           </>
@@ -278,7 +281,7 @@ export function FoodSearchDialog({
             }}
             className="gap-2 text-muted-foreground"
           >
-            <Plus className="h-4 w-4" /> Quick add "{q.trim() || "custom item"}" (nutrition unknown until entered)
+            <Plus className="h-4 w-4" /> Enter "{q.trim()}" manually (add nutrition)
           </CommandItem>
         </CommandGroup></>}
       </CommandList>

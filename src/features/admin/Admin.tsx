@@ -19,6 +19,7 @@ import { ACCESS_STATES, type AccessState, type AdminUserRow } from "@/types";
 import { formatDateShort, todayStr } from "@/lib/nutrition/datetime";
 import { cn } from "@/lib/utils";
 import { JourneyIntro } from "@/components/app/JourneyIntro";
+import { EngagementSummary } from "./EngagementSummary";
 
 const STATE_STYLES: Record<AccessState, string> = {
   trial_active: "border-primary/40 text-primary",
@@ -279,6 +280,7 @@ function AdminUsers() {
         />
       </div>
 
+      {users.data && !search.trim() && <EngagementSummary users={users.data} />}
       <div className="overflow-hidden rounded-xl border">
         {users.loading && <p className="px-4 py-4 text-sm text-muted-foreground">Loading users…</p>}
         {users.data?.map((row, idx) => (
