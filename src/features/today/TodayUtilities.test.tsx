@@ -19,7 +19,8 @@ describe("Today secondary water utility", () => {
     expect(screen.getByText("Optional")).toBeInTheDocument();
     const details = screen.getByText("Water").closest("details");
     expect(details).not.toBeNull();
-    fireEvent.toggle(details!, { target: { open: true } });
+    details!.open = true;
+    fireEvent(details!, new Event("toggle", { bubbles: true }));
     await waitFor(() => expect(spy.enabled).toBe(true));
     fireEvent.click(screen.getByRole("button", { name: "Add 250 ml" }));
     expect(spy.add).toHaveBeenCalledTimes(1);
