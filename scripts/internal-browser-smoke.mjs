@@ -207,6 +207,9 @@ try {
   await page.getByRole("button", { name: "Take photo" }).waitFor();
   await page.getByRole("button", { name: "Choose from gallery" }).waitFor();
   await page.getByRole("button", { name: "Search or enter a meal instead" }).waitFor();
+  await page.getByRole("button", { name: "Add details (optional)" }).waitFor();
+  assert.equal(await page.getByRole("dialog").getByRole("button", { name: "Close", exact: true }).count(), 1,
+    "Photo capture should have one close affordance, not duplicate footer and X");
   assert.equal(await page.locator("#scan-hints").count(), 0,
     "Notes should remain collapsed until the user asks to type");
   assert.equal(await page.evaluate(() => document.activeElement?.tagName), "BUTTON",
@@ -230,6 +233,10 @@ try {
   assert.equal(await page.getByRole("heading", { name: "Add food", exact: true }).count(), 0,
     "First food action should skip the extra chooser");
   await screenshotEverySize("food-search-entry");
+  await page.setViewportSize({ width: 390, height: 844 });
+  const compactSearchRect = await page.getByRole("dialog").boundingBox();
+  assert.ok(compactSearchRect && compactSearchRect.height <= 310,
+    "An empty food search must not occupy most of the phone screen");
   await page.getByPlaceholder(/Search foods, brands/i).waitFor();
   assert.notEqual(await page.evaluate(() => document.activeElement?.tagName), "INPUT",
     "The search sheet must never autofocus on open");
