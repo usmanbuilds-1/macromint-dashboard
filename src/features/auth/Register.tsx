@@ -183,7 +183,7 @@ export function Register() {
             Already have an account? You can still sign in. New registrations will reopen after security checks.
           </p>
           <Link className="inline-flex min-h-12 items-center justify-center rounded-md bg-primary px-4 text-sm font-semibold text-primary-foreground" to="/">
-            Back to Macromint
+            Back to home
           </Link>
           <Link to="/login" className="inline-flex min-h-11 items-center justify-center text-sm font-medium underline underline-offset-4">
             Existing member? Sign in

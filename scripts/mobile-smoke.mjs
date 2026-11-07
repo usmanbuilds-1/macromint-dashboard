@@ -35,6 +35,13 @@ for (const [width, height] of sizes) {
       getComputedStyle(document.body).fontFamily.includes("Instrument Sans")
     );
     if (!stylesheetLoaded) throw new Error("Design system stylesheet failed to load");
+    const brandVisible = await page.locator(".ref-header .mm-logo-leaves, .ref-device-brand .mm-logo-leaves, .ref-footer-brand .mm-logo-leaves").evaluateAll((nodes) =>
+      nodes.length === 3 && nodes.every((node) => {
+        const rect = node.getBoundingClientRect();
+        return getComputedStyle(node).display !== "none" && rect.width >= 10 && rect.height >= 10;
+      }),
+    );
+    if (!brandVisible) throw new Error("Macro Mint mark missing from public brand surfaces");
     const dims = await page.evaluate(() => ({
       viewport: window.innerWidth,
       document: document.documentElement.scrollWidth,

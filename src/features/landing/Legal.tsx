@@ -1,5 +1,5 @@
 import { Link } from "react-router-dom";
-import { Logo } from "@/components/app/AppLayout";
+import { Logo } from "@/components/app/BrandMark";
 
 export function LegalShell({ title, updated, children }: { title: string; updated: string; children: React.ReactNode }) {
   return (
@@ -24,7 +24,7 @@ export function Privacy() {
   return (
     <LegalShell title="Privacy policy" updated="November 2026">
       <p>
-        Macromint processes the information needed for nutrition tracking: your username or existing
+        Macro Mint processes the information needed for nutrition tracking: your username or existing
         account email, measurements, foods and meals you enter, and minimal usage records.
         Username accounts use an internal sign-in identifier rather than a contact email.
       </p>
@@ -70,7 +70,7 @@ export function Terms() {
     <LegalShell title="Terms of service" updated="November 2026">
       <h2>The service</h2>
       <p>
-        Macromint is a nutrition tracking tool. It provides estimates, not medical advice. Calorie
+        Macro Mint is a nutrition tracking tool. It provides estimates, not medical advice. Calorie
         and nutrient targets are derived from standard equations and your own inputs; consult a
         qualified professional for medical or dietary decisions.
       </p>

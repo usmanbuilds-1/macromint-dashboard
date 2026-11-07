@@ -7,6 +7,7 @@ import { backend } from "@/lib/backend";
 import type { ReactivationRequest } from "@/lib/backend/types";
 import { toast } from "sonner";
 import "./upgrade.css";
+import { Logo } from "@/components/app/BrandMark";
 
 function downloadJson(value: Record<string, unknown>): void {
   const blob = new Blob([JSON.stringify(value, null, 2)], { type: "application/json" });
@@ -96,7 +97,7 @@ export function Upgrade() {
   return (
     <main className="mm-restricted min-h-screen bg-background px-5 py-12">
       <div className="mm-restricted-inner mx-auto max-w-lg">
-        <p className="mm-restricted-eyebrow">MACRO MINT / ACCOUNT</p>
+        <div className="mm-restricted-eyebrow"><Logo miniature /><span aria-hidden="true">/</span><span>ACCOUNT</span></div>
         <h1 className="mm-restricted-title mt-5 text-3xl font-semibold tracking-tight">{hasAccess ? "Your account is active" : heading}</h1>
         <p className="mm-restricted-description mt-3 text-sm leading-6 text-muted-foreground">
           {hasAccess
