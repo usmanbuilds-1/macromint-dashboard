@@ -234,6 +234,12 @@ try {
     "First food action should skip the extra chooser");
   await screenshotEverySize("food-search-entry");
   await page.setViewportSize({ width: 390, height: 844 });
+  // visualViewport resize and React layout settle asynchronously after the
+  // cross-device screenshot sweep. The final geometry must still be compact.
+  await page.waitForFunction(() => {
+    const dialog = document.querySelector('[role="dialog"]');
+    return dialog && dialog.getBoundingClientRect().height <= 310;
+  }, null, { timeout: 3500 });
   const compactSearchRect = await page.getByRole("dialog").boundingBox();
   assert.ok(compactSearchRect && compactSearchRect.height <= 310,
     "An empty food search must not occupy most of the phone screen");
