@@ -27,6 +27,9 @@ import { lastNWeeks, weekDates, formatDateShort, todayStr } from "@/lib/nutritio
 import { formatNumber } from "@/lib/utils";
 import { JourneyIntro } from "@/components/app/JourneyIntro";
 import { ProgressStart } from "./ProgressStart";
+import { WeeklySignals } from "./WeeklySignals";
+import { MicronutrientExplorer } from "./MicronutrientExplorer";
+import "@/styles/food-intelligence.css";
 
 const RANGE_OPTIONS = [
   { value: 7, label: "7 days" },
@@ -159,6 +162,8 @@ export function Trends() {
           <Button variant="outline" size="sm" onClick={weight.reload}>Retry</Button>
         </div>
       )}
+      {!diaryData.loading && diaryData.data && diaryData.data.all.length > 0 &&
+        <WeeklySignals entries={history.data ?? []} today={today} />}
       {noTrendYet && <ProgressStart foodDays={loggedDaysInRange} weighIns={weights.length} today={today}
         loggedDates={(history.data ?? []).map((entry) => entry.entryDate)} />}
 
@@ -293,6 +298,7 @@ export function Trends() {
       </div>
       </>
       )}
+      <MicronutrientExplorer entries={diaryData.data?.all ?? []} loading={diaryData.loading} />
     </div>
   );
 }

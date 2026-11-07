@@ -9,6 +9,9 @@ import { JourneyEmpty } from "@/components/app/JourneyEmpty";
 import { CustomFoodDialog } from "./CustomFoodDialog";
 import { SavedMealsTab } from "./SavedMealsTab";
 import { FoodsRecent } from "./FoodsRecent";
+import { BarcodeImageLookup } from "./BarcodeImageLookup";
+import { RecipeLibrary } from "./RecipeLibrary";
+import "@/styles/food-intelligence.css";
 import { recentEntryToLoggable } from "./recent-food";
 import { matchingFavorite, toggleFavoriteCandidate } from "./favorite-actions";
 import { Badge } from "@/components/ui/badge";
@@ -71,6 +74,20 @@ export function Foods() {
     }
   };
 
+  const scanBarcode = async (code: string) => {
+    setQ(code);
+    setSearching(true);
+    try {
+      const results = await backend.lookupBarcode(code);
+      setHit(results);
+      if (!results.local.length && !results.remote.length) toast.info("No product found for this barcode");
+    } catch {
+      toast.error("Could not look up this barcode. Enter the product manually.");
+    } finally {
+      setSearching(false);
+    }
+  };
+
   const runSearch = async (term: string) => {
     if (term.trim().length < 2) {
       setHit(null);
@@ -102,6 +119,7 @@ export function Foods() {
           <TabsTrigger value="search">Search</TabsTrigger>
           <TabsTrigger value="favorites">Favorites</TabsTrigger>
           <TabsTrigger value="meals">Saved meals</TabsTrigger>
+          <TabsTrigger value="recipes">Recipes</TabsTrigger>
         </TabsList>
 
         <TabsContent value="search" className="mm-journey-food-search mt-4 flex flex-col gap-4">
@@ -196,6 +214,9 @@ export function Foods() {
         </TabsContent>
         <TabsContent value="meals" className="mt-4">
           <SavedMealsTab active={activeTab === "meals"} />
+        </TabsContent>
+        <TabsContent value="recipes" className="mt-4">
+          <RecipeLibrary active={activeTab === "recipes"} />
         </TabsContent>
       </Tabs>
 

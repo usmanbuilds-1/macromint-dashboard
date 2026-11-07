@@ -37,6 +37,8 @@ import { LIMITS } from "@/lib/validation/limits";
 import { useMobileDialogViewport } from "@/hooks/useMobileDialogViewport";
 import { useAsyncData } from "@/hooks/useData";
 import { matchingFavorite, toggleFavoriteCandidate } from "./favorite-actions";
+import { ServingInsights } from "./ServingInsights";
+import "@/styles/food-intelligence.css";
 
 const PORTION_PRESETS = [25, 50, 75, 100];
 
@@ -337,6 +339,11 @@ export function ServingConfigDialog({
               </Button>
             </div>
           </div>
+
+          <ServingInsights food={{ ...view, per100g }} onApplyEstimate={(estimate) => {
+            setUnit("g");
+            setGrams(String(estimate));
+          }} />
 
           <div className="grid gap-2">
             <div className="flex items-baseline justify-between">
