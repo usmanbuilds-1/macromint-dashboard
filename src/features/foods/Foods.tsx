@@ -160,11 +160,6 @@ export function Foods() {
               {hit.attribution && <p className="border-t px-4 py-2 text-[11px] text-muted-foreground/70">{hit.attribution}</p>}
             </div>
           )}
-          {!hit && (
-            <div className="mm-journey-food-hint">
-              Search by food or brand above. You'll choose the portion before adding it to your diary.
-            </div>
-          )}
         </TabsContent>
 
         <TabsContent value="favorites" className="mt-4">

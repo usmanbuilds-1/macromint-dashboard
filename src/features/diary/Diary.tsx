@@ -178,7 +178,7 @@ export function Diary() {
       )}
       {!diary.loading && !diary.error && entries.length === 0 && (
         <JourneyEmpty
-          title={date === todayStr() ? "No food recorded yet" : "No food recorded for this day"}
+          title={date === todayStr() ? "Nothing logged yet" : "Nothing logged for this day"}
           description={date === todayStr()
             ? "Start with a meal or snack. You'll be able to edit portions and foods afterwards."
             : "You can add a meal for this date or copy foods from another day."}

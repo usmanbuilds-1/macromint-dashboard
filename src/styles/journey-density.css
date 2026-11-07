@@ -72,3 +72,24 @@
     height: 40px;
   }
 }
+
+/* The empty state heading itself carries the guidance; no duplicate eyebrow. */
+.mm-app-shell :is(.mm6-page-diary,.mm6-page-trends) .mm-journey-empty > .mm-journey-eyebrow {
+  display: none;
+}
+.mm-app-shell .mm6-page-trends .mm-progress-log-action {
+  display: inline-flex;
+  min-height: 44px;
+  align-items: center;
+  margin-top: 0;
+  padding-inline: 16px;
+  border-radius: 4px;
+  background: #1b5136;
+  color: #fff;
+  font-size: 14px;
+  font-weight: 680;
+  text-decoration: none;
+}
+.mm-app-shell .mm6-page-trends .mm-progress-log-action:hover {
+  background: #113a28;
+}

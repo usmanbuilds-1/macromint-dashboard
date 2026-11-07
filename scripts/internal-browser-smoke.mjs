@@ -262,7 +262,7 @@ try {
     "Selected tab indicator should follow navigation");
   await page.getByRole("button", { name: "Add food", exact: true }).waitFor();
   await page.getByRole("button", { name: "Scan photo", exact: true }).waitFor();
-  await page.getByText("No food recorded yet").waitFor();
+  await page.getByText("Nothing logged yet").waitFor();
   assert.equal(await page.locator(".mm-journey-ledger").count(), 0,
     "An empty diary should not show a second empty calorie dashboard");
   await screenshotEverySize("diary");
@@ -282,6 +282,12 @@ try {
   await nav.getByRole("link", { name: "Progress" }).click();
   await page.getByRole("heading", { name: "Progress", exact: true }).waitFor();
   await page.locator(".mm-journey-intro").waitFor();
+  const firstProgressAction = page.locator(".mm-progress-log-action");
+  if (await firstProgressAction.count()) {
+    const color = await firstProgressAction.evaluate((button) => getComputedStyle(button).color);
+    assert.equal(color, "rgb(255, 255, 255)",
+      "Progress primary button must have legible white text on dark green");
+  }
   await screenshotEverySize("progress");
   await screenshotCompact("progress");
 
