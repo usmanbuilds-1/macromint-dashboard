@@ -1,5 +1,5 @@
 import { Link } from "react-router-dom";
-import { Logo } from "@/components/app/AppLayout";
+import { Logo } from "@/components/app/BrandMark";
 
 const heroMeal = "https://images.unsplash.com/photo-1547592180-85f173990554?auto=format&fit=crop&w=1500&q=85";
 const breakfastMeal = "https://images.unsplash.com/photo-1760533535534-c69f637df2e6?auto=format&fit=crop&w=900&q=85";
@@ -102,7 +102,7 @@ export function Landing() {
             </div>
             <div className="ref-device" aria-label="Illustrative Macro Mint mobile diary screenshot">
               <div className="ref-device-bezel"><div className="ref-device-island" aria-hidden="true" />
-                <div className="ref-device-brand">Macro Mint</div>
+                <div className="ref-device-brand"><Logo miniature /></div>
                 <ExampleNutrition small />
                 <div className="ref-device-nav" aria-hidden="true"><span>Today</span><span>Food</span><span>Progress</span><span>More</span></div>
               </div>
@@ -152,7 +152,7 @@ export function Landing() {
       </main>
 
       <footer className="ref-footer">
-        <Link to="/" className="ref-footer-brand">Macro Mint</Link>
+        <Link to="/" className="ref-footer-brand" aria-label="Macro Mint home"><Logo /></Link>
         <p>Photo-based food suggestions and targets are estimates. Review values before saving.</p>
         <nav aria-label="Footer"><Link to="/privacy">Privacy</Link><Link to="/terms">Terms</Link><Link to="/login">Log in</Link></nav>
       </footer>

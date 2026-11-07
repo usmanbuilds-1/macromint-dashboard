@@ -19,6 +19,14 @@ async function screenshotEverySize(name) {
   await page.evaluate(() => window.scrollTo(0, 0));
   for (const [width, height] of [[390, 844], [768, 1024], [1440, 900]]) {
     await page.setViewportSize({ width, height });
+    if (name === "today") {
+      const selector = width >= 768 ? ".mm-app-shell aside .mm-logo-leaves" : ".mm-app-shell header .mm-logo-leaves";
+      const logoVisible = await page.locator(selector).first().evaluate((element) => {
+        const rect = element.getBoundingClientRect();
+        return getComputedStyle(element).display !== "none" && rect.width >= 15 && rect.height >= 15;
+      });
+      assert.ok(logoVisible, `Brand mark missing from app navigation at ${width}px`);
+    }
     await page.screenshot({
       path: `mobile-audit/screens/${name}-${width}.png`,
       fullPage: true, animations: "disabled",

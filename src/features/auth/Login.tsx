@@ -51,7 +51,7 @@ export function Login() {
   };
 
   return (
-    <AuthShell title="Sign in" subtitle="Continue tracking with Macromint.">
+    <AuthShell title="Sign in" subtitle="Pick up where you left off.">
       <form onSubmit={submit} className="flex flex-col gap-4">
         <div className="grid gap-1.5">
           <Label htmlFor="identifier">{USERNAME_AUTH_ENABLED ? "Username or existing account email" : "Email"}</Label>

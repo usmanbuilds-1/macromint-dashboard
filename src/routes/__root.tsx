@@ -11,6 +11,7 @@ import {
 import { useEffect, type ReactNode } from "react";
 
 import appCss from "../styles.css?url";
+import brandCss from "../styles/brand.css?url";
 import { reportLovableError } from "../lib/lovable-error-reporting";
 import { SessionProvider } from "@/context/Session";
 import { Toaster } from "@/components/ui/sonner";
@@ -80,11 +81,12 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
     meta: [
       { charSet: "utf-8" },
       { name: "viewport", content: "width=device-width, initial-scale=1, viewport-fit=cover" },
-      { title: "Macromint — Precision macro & nutrition tracking" },
-      { name: "description", content: "Macromint tracks macros, calories, micronutrients and weight with AI food scanning, a fast diary and weekly trends." },
-      { property: "og:title", content: "Macromint — Precision macro & nutrition tracking" },
+      { title: "Macro Mint — Precision macro & nutrition tracking" },
+      { name: "description", content: "Macro Mint tracks macros, calories, micronutrients and weight with AI food scanning, a fast diary and weekly trends." },
+      { property: "og:title", content: "Macro Mint — Precision macro & nutrition tracking" },
       { property: "og:description", content: "Track macros, calories and micronutrients with AI food scanning, a fast diary and weekly trends." },
       { property: "og:type", content: "website" },
+      { name: "theme-color", content: "#faf9f4" },
       { name: "twitter:card", content: "summary_large_image" },
     ],
     links: [
@@ -92,7 +94,9 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
         rel: "stylesheet",
         href: appCss,
       },
+      { rel: "stylesheet", href: brandCss },
       { rel: "icon", href: "/favicon.ico", type: "image/x-icon" },
+      { rel: "icon", href: "/favicon.svg", type: "image/svg+xml" },
     ],
   }),
   shellComponent: RootShell,

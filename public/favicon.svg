@@ -1,0 +1,5 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" role="img" aria-label="Macro Mint">
+  <rect x="2" y="2" width="60" height="60" rx="16" fill="#faf9f4"/>
+  <path d="M14 43C12 29 23 16 39 14C40 33 29 44 14 43Z" fill="#126543"/>
+  <path d="M31 44C25 28 35 15 50 12C52 31 44 43 31 44Z" fill="#67c99c"/>
+</svg>
