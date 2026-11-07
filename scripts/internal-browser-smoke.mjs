@@ -125,11 +125,11 @@ try {
   const onboardingActivation = await page.locator(".ref-live-today").evaluate((element) => {
     const action = element.querySelector(".mm-home-action-primary")?.getBoundingClientRect();
     const ledger = element.querySelector(".mm-home-overview")?.getBoundingClientRect();
-    const macroGrid = element.querySelector(".mm-home-macro-grid");
-    return { actionTop: action?.top, ledgerTop: ledger?.top, hasMacroGrid: Boolean(macroGrid) };
+    const macroPlan = element.querySelector(".mm-home-macro-plan");
+    return { actionTop: action?.top, ledgerTop: ledger?.top, hasMacroPlan: Boolean(macroPlan) };
   });
-  assert.ok(onboardingActivation.actionTop < onboardingActivation.ledgerTop && !onboardingActivation.hasMacroGrid,
-    "First-run Today should show a logging action before dense nutrition data");
+  assert.ok(onboardingActivation.ledgerTop < onboardingActivation.actionTop && onboardingActivation.hasMacroPlan,
+    "First-run Today should show real targets then one logging action");
   // A compact phone is narrower than our usual 390px screen audit.
   await page.setViewportSize({ width: 320, height: 740 });
   await page.screenshot({ path: "mobile-audit/screens/today-320.png", fullPage: true });
@@ -178,7 +178,7 @@ try {
         await page.waitForFunction(() => {
           const today = document.querySelector(".ref-live-today");
           const calories = today?.querySelector(".mm-home-calories");
-          const emptyTarget = today?.querySelector(".mm-home-empty-target-line");
+          const emptyTarget = today?.querySelector(".mm-home-day-facts");
           const summary = today?.querySelector(".mm-home-overview");
           return Boolean(today && summary && (
             (calories && calories.textContent?.trim() !== "—") ||
@@ -279,9 +279,11 @@ try {
     "Selected tab indicator should follow navigation");
   await page.getByRole("button", { name: "Add food", exact: true }).waitFor();
   await page.getByRole("button", { name: "Scan photo", exact: true }).waitFor();
-  await page.getByText("Nothing logged yet").waitFor();
+  await page.getByText(/Choose a meal below to start/).waitFor();
   assert.equal(await page.locator(".mm-journey-ledger").count(), 0,
     "An empty diary should not show a second empty calorie dashboard");
+  assert.equal(await page.locator(".mm6-page-diary .mm-journey-meal-section").count(), 4,
+    "Diary must keep all four meal entry points for an empty day");
   await screenshotEverySize("diary");
   await screenshotCompact("diary");
 
@@ -294,6 +296,7 @@ try {
   await page.getByText("Scan a photo", { exact: true }).waitFor();
   await page.locator(".mm-journey-food-options").waitFor();
   await screenshotEverySize("foods");
+  await page.getByRole("heading", { name: "Recently logged" }).waitFor();
   await screenshotCompact("foods");
 
   await nav.getByRole("link", { name: "Progress" }).click();
@@ -307,6 +310,37 @@ try {
   }
   await screenshotEverySize("progress");
   await screenshotCompact("progress");
+
+  // Complete the first real user loop using a seeded, verified demo food.
+  // Do not fabricate diary state: this exercises search -> portion review ->
+  // persist -> Today totals -> Diary meal row -> Foods reusable history.
+  await nav.getByRole("link", { name: "Today" }).click();
+  await page.getByRole("button", { name: "Add food", exact: true }).click();
+  const firstFoodSearch = page.getByPlaceholder(/Search foods, brands/i);
+  await firstFoodSearch.fill("Banana");
+  const bananaItem = page.getByRole("option").filter({ has: page.getByText("Banana", { exact: true }) }).first();
+  await bananaItem.waitFor({ timeout: 10000 });
+  await bananaItem.click();
+  await page.getByRole("button", { name: "Add to diary" }).click();
+  await page.waitForFunction(() => {
+    const energy = document.querySelector(".ref-live-today .mm-home-calories")?.textContent?.trim();
+    return Boolean(energy && energy !== "—" && energy !== "0");
+  }, null, { timeout: 10000 });
+  await screenshotEverySize("today-after-first-log");
+  await nav.getByRole("link", { name: "Diary" }).click();
+  await page.getByText("Banana", { exact: true }).waitFor();
+  assert.equal(await page.locator(".mm6-page-diary .mm-journey-meal-section").count(), 4,
+    "Meal rows should remain available after logging");
+  await screenshotEverySize("diary-with-food");
+  await nav.getByRole("link", { name: "Foods" }).click();
+  await page.getByRole("tab", { name: "Search", exact: true }).click();
+  await page.getByRole("button", { name: "Log Banana again" }).waitFor({ timeout: 10000 });
+  await screenshotEverySize("foods-with-recent");
+  await nav.getByRole("link", { name: "Progress" }).click();
+  await page.getByText("1 of 2 days logged").waitFor({ timeout: 10000 });
+  assert.equal(await page.locator("#ref-calorie-trend").count(), 0,
+    "One partial food-logging day cannot establish a calorie trend");
+  await screenshotEverySize("progress-with-food");
 
   await page.goto(url + "/settings", { waitUntil: "domcontentloaded" });
   await page.getByRole("heading", { name: "Settings", exact: true }).waitFor();

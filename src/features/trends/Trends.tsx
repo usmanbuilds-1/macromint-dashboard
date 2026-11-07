@@ -15,7 +15,6 @@ import {
 } from "recharts";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Badge } from "@/components/ui/badge";
 import { useSession } from "@/context/Session";
 import { visibleDailyGoals } from "@/lib/nutrition/visible-goals";
 import { backend } from "@/lib/backend";
@@ -26,9 +25,8 @@ import { adherenceStats, daysToKcal } from "@/lib/nutrition/math";
 import { summarizeNutrientCoverage } from "@/lib/nutrition/coverage";
 import { lastNWeeks, weekDates, formatDateShort, todayStr } from "@/lib/nutrition/datetime";
 import { formatNumber } from "@/lib/utils";
-import { cn } from "@/lib/utils";
 import { JourneyIntro } from "@/components/app/JourneyIntro";
-import { JourneyEmpty } from "@/components/app/JourneyEmpty";
+import { ProgressStart } from "./ProgressStart";
 
 const RANGE_OPTIONS = [
   { value: 7, label: "7 days" },
@@ -115,10 +113,9 @@ export function Trends() {
     return { protein, carbs, fat };
   }, [diaryData.data]);
 
-  const noHistory = !diaryData.loading && !weight.loading && !diaryData.error && !weight.error &&
-    diaryData.data?.all.length === 0 && weights.length === 0;
-
   const loggedDaysInRange = new Set((diaryData.data?.all ?? []).map((entry) => entry.entryDate)).size;
+  const noTrendYet = !diaryData.loading && !weight.loading && !diaryData.error && !weight.error &&
+    loggedDaysInRange < 2 && weights.length < 2;
 
   const macroEnergy = macroTotals
     ? macroTotals.protein * 4 + macroTotals.carbs * 4 + macroTotals.fat * 9
@@ -134,9 +131,8 @@ export function Trends() {
   return (
     <div className="mm6-subpage mm6-page-trends ref-live-progress flex flex-col gap-6">
       <JourneyIntro
-        eyebrow="THE LONGER VIEW"
         title="Progress"
-        description="See calorie and weight patterns as you log. Days without food entries are not counted as zero."
+        description="See what your food and weight records actually tell you."
         action={diaryData.data?.all.length ? (
           <Tabs value={String(range)} onValueChange={(value) => setRange(Number(value))}>
             <TabsList aria-label="Progress period">
@@ -163,45 +159,19 @@ export function Trends() {
           <Button variant="outline" size="sm" onClick={weight.reload}>Retry</Button>
         </div>
       )}
-      {noHistory && (
-        <JourneyEmpty
-          title="Your progress starts with a log"
-          description="Log a meal or record your weight. As you add entries, the charts will show what changes."
-          supporting={(
-            <div className="mm-journey-empty-links">
-              <Link to="/diary" className="mm-progress-log-action">Log food</Link>
-              <Link to="/weight" className="inline-flex min-h-11 items-center text-sm font-semibold text-primary underline underline-offset-4">Record weight</Link>
-            </div>
-          )}
-        />
-      )}
+      {noTrendYet && <ProgressStart foodDays={loggedDaysInRange} weighIns={weights.length} />}
 
-      {!noHistory && (
+      {!noTrendYet && (
         <>
 
       {/* Calorie trend */}
       {(diaryData.data?.all.length ?? 0) > 0 && <section id="ref-calorie-trend" className="border-b bg-card/0 pb-6" aria-label="Calorie trend">
         <div className="flex flex-wrap items-center justify-between gap-2">
           <h2 className="text-sm font-semibold">Daily calories</h2>
-          {activeGoals?.calorieTarget != null && adherence.adherencePct !== null ? (
-            <div className="flex items-center gap-2 text-xs text-muted-foreground">
-              <Badge
-                variant="outline"
-                className={cn(
-                  adherence.label === "consistent" && "border-primary/40 text-primary",
-                  adherence.label === "over" && "border-macro-fat/40 text-macro-fat",
-                  adherence.label === "under" && "border-warning/40 text-warning",
-                )}
-              >
-                {adherence.label === "consistent" ? "Consistent" : adherence.label === "under" ? "Under target" : "Over target"}
-              </Badge>
-              <span className="tabular-nums">
-                {adherence.onTargetDays}/{adherence.loggedDays} logged days on target · avg {formatNumber(adherence.averageKcalLogged ?? 0)} kcal
-              </span>
-            </div>
-          ) : (
-            <span className="text-xs text-muted-foreground">Log meals to see your pattern</span>
-          )}
+          <span className="text-xs text-muted-foreground">
+            {loggedDaysInRange} days logged
+            {adherence.averageKcalLogged !== null && ` · average recorded ${formatNumber(adherence.averageKcalLogged)} kcal`}
+          </span>
         </div>
         <div className="mt-4 h-56">
           {kcalByDay.every((d) => d.kcal === null) ? (
