@@ -318,7 +318,7 @@ try {
   await page.getByRole("button", { name: "Add food", exact: true }).click();
   const firstFoodSearch = page.getByPlaceholder(/Search foods, brands/i);
   await firstFoodSearch.fill("Banana");
-  const bananaItem = page.getByRole("option").filter({ hasText: "Banana" }).first();
+  const bananaItem = page.getByRole("option").filter({ has: page.getByText("Banana", { exact: true }) }).first();
   await bananaItem.waitFor({ timeout: 10000 });
   await bananaItem.click();
   await page.getByRole("button", { name: "Add to diary" }).click();
