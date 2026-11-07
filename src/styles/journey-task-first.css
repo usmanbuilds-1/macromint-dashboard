@@ -48,6 +48,13 @@
 }
 .mm-home-day-facts > div { min-width: 0; }
 .mm-home-day-target { text-align: right; }
+.mm-app-shell .mm-home .mm-home-overview--empty h2.mm-home-fact-label {
+  font-family: "Instrument Sans", Arial, sans-serif;
+  font-size: 12px;
+  font-weight: 620;
+  line-height: 1.4;
+  letter-spacing: .01em;
+}
 .mm-home-fact-label {
   margin-bottom: 3px;
   color: var(--home-muted);
