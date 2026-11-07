@@ -42,7 +42,7 @@ export function RecipeBuilder({ template, onSaved, onCancel }: {
     try {
       await backend.createRecipe({
         name:draft.name.trim(), servings:draft.servings, notes:draft.notes.trim() || null,
-        ingredients:draft.ingredients.map(({foodId,name,grams,per100g}) => ({foodId,name,grams,per100g})),
+        ingredients:draft.ingredients.map(({foodId,name,grams,per100g}) => ({foodId:foodId ?? null,name,grams,per100g})),
       });
       bumpData(); toast.success("Recipe saved"); onSaved();
     } catch { toast.error("Could not save recipe. No existing recipe was changed."); }

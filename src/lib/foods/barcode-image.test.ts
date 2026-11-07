@@ -13,7 +13,7 @@ describe("barcode image decoding", () => {
   });
   it("returns unsupported instead of misreporting a barcode match", async () => {
     const file = new File(["img"], "x.png", { type: "image/png" });
-    expect(await decodeBarcodeImage(file, { detector: undefined, createBitmap: undefined })).toEqual({ kind:"unsupported" });
+    expect(await decodeBarcodeImage(file)).toEqual({ kind:"unsupported" });
   });
   it("closes decoded bitmap even on detector errors", async () => {
     const close = vi.fn();
