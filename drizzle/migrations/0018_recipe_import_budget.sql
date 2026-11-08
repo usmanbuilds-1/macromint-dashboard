@@ -14,7 +14,7 @@ GRANT SELECT,INSERT,UPDATE,DELETE ON TABLE public.recipe_import_budgets TO servi
 
 CREATE OR REPLACE FUNCTION public.consume_recipe_import_budget(p_user uuid)
 RETURNS boolean LANGUAGE plpgsql VOLATILE SECURITY DEFINER
-SET search_path=public,pg_catalog AS $$
+SET search_path=pg_catalog,public AS $$
 DECLARE n integer;
 BEGIN
   IF p_user IS NULL THEN RETURN false; END IF;
