@@ -28,6 +28,7 @@ describe("safe, local ingredient text import", () => {
       '<script>alert("hi")</script>',
       "3 g rice\u0000",
       "10001 g flour",
+      "1,500 g flour",
       Array.from({length:31},(_,i)=>"food "+i).join("\n"),
       " "
     ]) expect(() => parsePastedIngredients(unsafe)).toThrow();
