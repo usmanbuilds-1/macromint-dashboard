@@ -1,7 +1,7 @@
 BEGIN;
 
 -- 0017: owner-scoped planned meals and day-specific goals.
--- Apply after 0016. All functions are explicit invoker-RLS transactions.
+-- Apply after 0016. Plan/consume are guarded SECURITY DEFINER RPC transactions; recipe editing runs as invoker.
 -- Deployment and two-account RLS tests are independent release gates.
 
 CREATE OR REPLACE FUNCTION public.valid_goal_day_targets(p jsonb)
