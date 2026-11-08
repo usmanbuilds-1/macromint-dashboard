@@ -40,6 +40,7 @@ const RANGE_OPTIONS = [
 export function Trends() {
   const { goals } = useSession();
   const activeGoals = visibleDailyGoals(goals);
+  const variableDailyTargets = Object.keys(activeGoals?.dayTargets ?? {}).length > 0;
   const [range, setRange] = useState<number>(14);
   const today = todayStr();
 
@@ -192,7 +193,7 @@ export function Trends() {
                   contentStyle={{ background: "var(--popover)", border: "1px solid var(--border)", borderRadius: 8, fontSize: 12 }}
                   formatter={(value) => [`${formatNumber(Number(value))} kcal`, "Calories"]}
                 />
-                {activeGoals?.calorieTarget != null && (
+                {activeGoals?.calorieTarget != null && !variableDailyTargets && (
                   <ReferenceLine y={activeGoals!.calorieTarget} stroke="var(--primary)" strokeDasharray="6 4" />
                 )}
                 <Bar dataKey="kcal" fill="var(--chart-1)" radius={[3, 3, 0, 0]} maxBarSize={18} />
@@ -202,7 +203,8 @@ export function Trends() {
         </div>
         <p className="mt-2 text-xs text-muted-foreground">
           Food logged on {loggedDaysInRange} of the last {range} days.
-          {activeGoals?.calorieTarget != null && ` Dashed line: ${formatNumber(activeGoals!.calorieTarget)} kcal target.`}
+          {variableDailyTargets ? " Daily targets vary by weekday; no single target line is shown." :
+            activeGoals?.calorieTarget != null ? ` Dashed line: ${formatNumber(activeGoals.calorieTarget)} kcal target.` : ""}
         </p>
       </section>}
 
@@ -289,7 +291,7 @@ export function Trends() {
       <WeeklyArchive
         weeks={weeks}
         entries={history.data}
-        target={activeGoals?.calorieTarget ?? null}
+        target={variableDailyTargets ? null : activeGoals?.calorieTarget ?? null}
         loading={history.loading}
         error={history.error}
         reload={history.reload}

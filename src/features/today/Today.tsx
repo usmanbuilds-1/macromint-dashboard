@@ -2,6 +2,7 @@ import { Camera, Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useSession } from "@/context/Session";
 import { visibleDailyGoals } from "@/lib/nutrition/visible-goals";
+import { goalForLocalDate } from "@/lib/nutrition/day-targets";
 import { backend, bumpData } from "@/lib/backend";
 import { useAsyncData } from "@/hooks/useData";
 import { dailyTotals } from "@/lib/nutrition/math";
@@ -24,9 +25,9 @@ import "./today.css";
  */
 export function Today() {
   const { goals } = useSession();
-  const activeGoals = visibleDailyGoals(goals);
   const foodLog = useFoodLog();
   const date = todayStr();
+  const activeGoals = goalForLocalDate(visibleDailyGoals(goals), date);
 
   const diary = useAsyncData(() => backend.getDiary(date), [date], "diary:day");
   const recent = useAsyncData(() => backend.getRecentEntries(8), [], "recent:8");

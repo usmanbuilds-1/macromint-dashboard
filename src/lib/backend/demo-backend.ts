@@ -26,6 +26,7 @@ import type {
   Profile,
   Recipe,
   RecipeIngredient,
+  PlannedMeal,
   SavedMeal,
   UserPreferences,
   WaterEntry,
@@ -49,6 +50,7 @@ interface DemoStore {
   diary: DiaryEntry[];
   recipes: Recipe[];
   recipeIngredients: RecipeIngredient[];
+  plannedMeals?: PlannedMeal[];
   weights: WeightEntry[];
   water: WaterEntry[];
   scanCorrections: Array<{ id: string; userId: string; scanId: string; label: string; original: unknown; corrected: unknown; createdAt: string }>;
@@ -204,6 +206,7 @@ function defaultStore(): DemoStore {
     diary: [],
     recipes: [],
     recipeIngredients: [],
+    plannedMeals: [],
     weights: [],
     water: [],
     scanCorrections: [],
@@ -364,6 +367,7 @@ export const demoBackend: Backend & DemoExtras = {
     st.water = st.water.filter((entry) => entry.userId !== id);
     st.favorites = st.favorites.filter((fav) => fav.userId !== id && !ownFoodIds.has(fav.foodId));
     st.savedMeals = st.savedMeals.filter((meal) => meal.userId !== id);
+    st.plannedMeals = (st.plannedMeals ?? []).filter((meal) => meal.userId !== id);
     st.recipes = st.recipes.filter((recipe) => recipe.userId !== id);
     st.recipeIngredients = st.recipeIngredients.filter((ingredient) => !ownRecipeIds.has(ingredient.recipeId));
     st.foods = st.foods.filter((food) => food.ownerId !== id);
@@ -401,6 +405,16 @@ export const demoBackend: Backend & DemoExtras = {
     const id = requireUser();
     const previous = st.goals[id];
     if (!previous) throw new BackendError("NOT_FOUND", "Account data missing");
+    if (goals.dayTargets !== undefined &&
+      Object.entries(goals.dayTargets).some(([day,values]) =>
+        !/^[0-6]$/.test(day) || !values ||
+        ![values.calorieTarget,values.proteinG,values.carbsG,values.fatG].every(Number.isInteger) ||
+        values.calorieTarget < 800 || values.calorieTarget > 10000 ||
+        values.proteinG < 10 || values.proteinG > 500 ||
+        values.carbsG < 0 || values.carbsG > 1200 ||
+        values.fatG < 10 || values.fatG > 400)) {
+      throw new BackendError("VALIDATION", "Invalid weekday target");
+    }
     st.goals[id] = { ...previous, ...goals, userId: id };
     save(st);
     return st.goals[id];
@@ -589,6 +603,63 @@ export const demoBackend: Backend & DemoExtras = {
     }
   },
 
+  // ── Plans remain outside the consumed diary until committed ──────────────
+  async getPlannedMeals(startDate, endDate) {
+    const st = s(), userId = requireUser();
+    if (startDate > endDate) throw new BackendError("VALIDATION", "Invalid plan dates");
+    return (st.plannedMeals ?? []).filter((p) => p.userId === userId &&
+      p.entryDate >= startDate && p.entryDate <= endDate)
+      .sort((a,b) => a.entryDate.localeCompare(b.entryDate) || a.createdAt.localeCompare(b.createdAt)).slice(0,100);
+  },
+  async planSavedMeal(id, entryDate, mealType) {
+    const st = s(), userId = requireUser();
+    if (!hasAccess(st,userId)) throw new BackendError("NO_ACCESS","Active access required");
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(entryDate) ||
+       !["breakfast","lunch","dinner","snacks"].includes(mealType)) throw new BackendError("VALIDATION","Invalid planning date");
+    const template = st.savedMeals.find((meal) => meal.id === id && meal.userId === userId);
+    if (!template || template.items.length < 1 || template.items.length > 30)
+      throw new BackendError("NOT_FOUND","Saved meal unavailable");
+    const plan: PlannedMeal = {
+      id:uid("plan"),userId,entryDate,mealType,savedMealId:template.id,name:template.name,
+      items:template.items.map((item)=>({...item,per100g:{...item.per100g}})),
+      state:"planned",loggedEntryIds:[],eatenAt:null,createdAt:new Date().toISOString(),
+    };
+    (st.plannedMeals ??= []).push(plan);save(st);return plan;
+  },
+  async markPlannedMealEaten(id) {
+    const st = s(), userId = requireUser();
+    if (!hasAccess(st,userId)) throw new BackendError("NO_ACCESS","Active access required");
+    const plan = (st.plannedMeals ?? []).find((p) => p.id === id && p.userId === userId);
+    if (!plan) throw new BackendError("NOT_FOUND","Plan unavailable");
+    if (plan.state === "eaten") return { alreadyLogged: true, entryIds: plan.loggedEntryIds };
+    if (plan.entryDate > todayStr()) throw new BackendError("VALIDATION","This meal is scheduled for a future date");
+    if (plan.items.length < 1 || plan.items.length > 30 || plan.items.some((x) =>
+      !x.name.trim() || !Number.isFinite(x.grams) || x.grams < .1 || x.grams > 10000 ||
+      Object.values(x.per100g).some((v) => v != null && (!Number.isFinite(v) || v < 0))
+    )) throw new BackendError("VALIDATION","Invalid planned meal");
+    const loggedAt = new Date().toISOString();
+    const entries: DiaryEntry[] = plan.items.map((item)=>{
+      const nutrients = scaleNutrients(item.per100g,item.grams);
+      return {
+        id:uid("diary"),userId,entryDate:plan.entryDate,mealType:plan.mealType,
+        foodId:null,recipeId:null,name:item.name,brand:item.brand,grams:item.grams,
+        portionPercent:100,baseNutrients:nutrients,nutrients,
+        source:"favorite",loggedAt,
+      };
+    });
+    // Single in-memory transaction; one localStorage write.
+    st.diary.push(...entries);
+    plan.state="eaten";plan.eatenAt=loggedAt;plan.loggedEntryIds=entries.map((x)=>x.id);
+    save(st);
+    return { alreadyLogged:false,entryIds:plan.loggedEntryIds };
+  },
+  async removePlannedMeal(id) {
+    const st=s(), userId=requireUser();
+    if (!(st.plannedMeals ?? []).some((p)=>p.id===id&&p.userId===userId&&p.state==="planned"))
+      throw new BackendError("NOT_FOUND","Plan not found or already eaten");
+    st.plannedMeals=(st.plannedMeals??[]).filter((p)=>!(p.id===id&&p.userId===userId));save(st);
+  },
+
   // ── Diary ───────────────────────────────────────────────────────────────
   async getDiary(entryDate) {
     const st = s();
@@ -697,6 +768,26 @@ export const demoBackend: Backend & DemoExtras = {
     });
     save(st);
     return recipe;
+  },
+
+  async updateRecipe(id, input) {
+    const st = s(), userId = requireUser();
+    const recipe = st.recipes.find((r) => r.id === id && r.userId === userId);
+    if (!recipe) throw new BackendError("NOT_FOUND", "Recipe unavailable");
+    if (!input.name.trim() || input.name.length > 100 || !Number.isInteger(input.servings) ||
+      input.servings < 1 || input.servings > 50 || input.ingredients.length < 1 ||
+      input.ingredients.length > 30 || input.ingredients.some((i) =>
+      !i.name.trim() || !Number.isFinite(i.grams) || i.grams < .1 || i.grams > 10000 ||
+      Object.values(i.per100g).some((v) => v != null && (!Number.isFinite(v) || v<0 || v>1_000_000)))) {
+      throw new BackendError("VALIDATION", "Invalid recipe");
+    }
+    const ingredients: RecipeIngredient[] = input.ingredients.map((item,position) => ({
+      id:uid("ring"),recipeId:id,foodId:item.foodId??null,name:item.name,
+      grams:item.grams,per100g:item.per100g,position,
+    }));
+    recipe.name=input.name.trim();recipe.servings=input.servings;recipe.notes=input.notes??null;
+    st.recipeIngredients=st.recipeIngredients.filter((i)=>i.recipeId!==id).concat(ingredients);
+    save(st);
   },
 
   async deleteRecipe(id) {
@@ -931,6 +1022,7 @@ export const demoBackend: Backend & DemoExtras = {
       diary: st.diary.filter((d) => d.userId === userId),
       savedMeals: st.savedMeals.filter((meal) => meal.userId === userId),
       recipes,
+      plannedMeals: (st.plannedMeals ?? []).filter((p)=>p.userId===userId),
       recipeIngredients: st.recipeIngredients.filter((item) => recipeIds.has(item.recipeId)),
       weightEntries: st.weights.filter((w) => w.userId === userId),
       waterEntries: st.water.filter((w) => w.userId === userId),

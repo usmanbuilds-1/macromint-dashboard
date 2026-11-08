@@ -6,8 +6,8 @@ import { recipeDraftNutrition, validateRecipeDraft, type RecipeDraft, type Recip
 import { formatNumber } from "@/lib/utils";
 import type { PastedIngredient } from "@/lib/nutrition/paste-ingredients";
 
-export function RecipeBuilder({ template, sourceIngredients, onSaved, onCancel }: {
-  template?: RecipeDraft | null; sourceIngredients?: PastedIngredient[]; onSaved: () => void; onCancel: () => void;
+export function RecipeBuilder({ template, sourceIngredients, editId, onSaved, onCancel }: {
+  template?: RecipeDraft | null; sourceIngredients?: PastedIngredient[]; editId?: string | null; onSaved: () => void; onCancel: () => void;
 }) {
   const [draft, setDraft] = useState<RecipeDraft>(template ?? { name:"", servings:2, notes:"", ingredients:[] });
   const [query, setQuery] = useState("");
@@ -54,17 +54,19 @@ export function RecipeBuilder({ template, sourceIngredients, onSaved, onCancel }
     if (error || saving) { if (error) toast.error(error); return; }
     setSaving(true);
     try {
-      await backend.createRecipe({
+      const input = {
         name:draft.name.trim(), servings:draft.servings, notes:draft.notes.trim() || null,
         ingredients:draft.ingredients.map(({foodId,name,grams,per100g}) => ({foodId:foodId ?? null,name,grams,per100g})),
-      });
-      bumpData(); toast.success("Recipe saved"); onSaved();
+      };
+      if (editId) await backend.updateRecipe(editId, input);
+      else await backend.createRecipe(input);
+      bumpData(); toast.success(editId ? "Recipe updated" : "Recipe saved"); onSaved();
     } catch { toast.error("Could not save recipe. No existing recipe was changed."); }
     finally { setSaving(false); }
   };
   return (
     <section className="mm-recipe-builder" aria-label="Recipe builder">
-      <div className="mm-recipe-heading"><h3>Build a recipe</h3><button type="button" onClick={onCancel}>Cancel</button></div>
+      <div className="mm-recipe-heading"><h3>{editId ? "Edit recipe" : "Build a recipe"}</h3><button type="button" onClick={onCancel}>Cancel</button></div>
       <label className="mm-feature-field">Recipe name
         <input maxLength={100} value={draft.name} onChange={(event) => setDraft({...draft,name:event.target.value})} placeholder="e.g. Home daal" />
       </label>
@@ -144,7 +146,7 @@ export function RecipeBuilder({ template, sourceIngredients, onSaved, onCancel }
         {!info.completeEnergy && draft.ingredients.length>0 && <p>Incomplete energy data. This is a known minimum, not the full recipe calories.</p>}
       </div>
       <button type="button" className="mm-recipe-save" onClick={()=>{void submit();}} disabled={saving||remaining>0||Boolean(validateRecipeDraft(draft))}>
-        {saving?"Saving recipe…":"Save recipe"}
+        {saving?"Saving recipe…":editId?"Save changes":"Save recipe"}
       </button>
     </section>
   );

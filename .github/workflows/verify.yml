@@ -80,3 +80,8 @@ jobs:
           psql -X -v ON_ERROR_STOP=1 -f drizzle/migrations/0013_private_settings_read.sql
       - name: Exercise quota, audit, rollback and privileges
         run: psql -X -v ON_ERROR_STOP=1 -f scripts/sql-release-contracts.sql
+      - name: Apply and exercise planner SQL on disposable PostgreSQL
+        run: |
+          psql -X -v ON_ERROR_STOP=1 -f scripts/sql-planner-fixtures.sql
+          psql -X -v ON_ERROR_STOP=1 -f drizzle/migrations/0017_planned_meals_goal_days_recipe_edits.sql
+          psql -X -v ON_ERROR_STOP=1 -f scripts/sql-planner-contracts.sql

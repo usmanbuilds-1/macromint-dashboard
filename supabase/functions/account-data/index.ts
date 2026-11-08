@@ -12,6 +12,7 @@ const OWNED_TABLES: Spec[] = [
   { key:"customFoods",table:"foods",ownerColumn:"owner_id",order:"id" },
   { key:"diary",table:"diary_entries",ownerColumn:"user_id",order:"id" },
   { key:"savedMeals",table:"saved_meals",ownerColumn:"user_id",order:"id" },
+  { key:"plannedMeals",table:"planned_meals",ownerColumn:"user_id",order:"id" },
   { key:"recipes",table:"recipes",ownerColumn:"user_id",order:"id" },
   { key:"weightEntries",table:"weight_entries",ownerColumn:"user_id",order:"id" },
   { key:"waterEntries",table:"water_entries",ownerColumn:"user_id",order:"id" },

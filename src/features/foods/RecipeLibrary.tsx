@@ -14,6 +14,7 @@ export function RecipeLibrary({ active }: { active: boolean }) {
   const list = useAsyncData(() => backend.getRecipes(), [], "recipes", active);
   const [creating, setCreating] = useState(false);
   const [template, setTemplate] = useState<RecipeDraft | null>(null);
+  const [editingId, setEditingId] = useState<string | null>(null);
   const [sourceIngredients,setSourceIngredients] = useState<PastedIngredient[]>([]);
   const [expanded, setExpanded] = useState<string | null>(null);
   const [amount, setAmount] = useState(1);
@@ -44,21 +45,32 @@ export function RecipeLibrary({ active }: { active: boolean }) {
       ingredients:ingredients.data.map((item) => ({
         key:crypto.randomUUID(), foodId:item.foodId, name:item.name,grams:item.grams,per100g:item.per100g,
       })),
-    });setSourceIngredients([]);setCreating(true);setRevising(false);
+    });setSourceIngredients([]);setEditingId(null);setCreating(true);setRevising(false);
   };
-  if (creating) return <RecipeBuilder template={template} sourceIngredients={sourceIngredients}
-    onCancel={()=>{setCreating(false);setTemplate(null);setSourceIngredients([]);}}
+  const editCurrent = () => {
+    if (!recipe || !ingredients.data?.length) return;
+    setTemplate({
+      name:recipe.name,servings:recipe.servings,notes:recipe.notes??"",
+      ingredients:ingredients.data.map((item)=>({
+        key:crypto.randomUUID(),foodId:item.foodId,name:item.name,
+        grams:item.grams,per100g:item.per100g,
+      })),
+    });
+    setSourceIngredients([]);setEditingId(recipe.id);setCreating(true);setRevising(false);
+  };
+  if (creating) return <RecipeBuilder template={template} sourceIngredients={sourceIngredients} editId={editingId}
+    onCancel={()=>{setCreating(false);setTemplate(null);setSourceIngredients([]);setEditingId(null);}}
     onSaved={()=>{setCreating(false);setTemplate(null);setSourceIngredients([]);list.reload();}}/>;
   return (
     <section className="mm-recipe-library" aria-label="Your recipes">
       <div className="mm-recipe-heading">
         <div><h2>Recipes</h2><p>Build once. Log the same home-cooked meal again.</p></div>
-        <button type="button" className="mm-recipe-add" onClick={()=>{setTemplate(null);setSourceIngredients([]);setCreating(true);}}>New recipe</button>
+        <button type="button" className="mm-recipe-add" onClick={()=>{setTemplate(null);setSourceIngredients([]);setEditingId(null);setCreating(true);}}>New recipe</button>
       </div>
       <RecipeTextImport onImported={(ingredients) => {
         setTemplate({name:"",servings:2,notes:"",ingredients:[]});
         setSourceIngredients(ingredients);
-        setCreating(true);
+        setEditingId(null);setCreating(true);
       }} />
       {list.error && <p role="alert">Could not load recipes. <button type="button" onClick={list.reload}>Retry</button></p>}
       {list.loading&&!list.data&&<p role="status">Loading recipes…</p>}
@@ -76,7 +88,8 @@ export function RecipeLibrary({ active }: { active: boolean }) {
             <button type="button" className="mm-recipe-save" disabled={busy===item.id||!ingredients.data?.length} onClick={()=>{void log(item);}}>Log recipe</button>
           </div>
           <div className="mm-recipe-secondary-actions">
-            <button type="button" disabled={!ingredients.data?.length} onClick={duplicate}>Copy and edit</button>
+            <button type="button" disabled={!ingredients.data?.length} onClick={editCurrent}>Edit recipe</button>
+            <button type="button" disabled={!ingredients.data?.length} onClick={duplicate}>Duplicate</button>
             {!revising?<button type="button" onClick={()=>setRevising(true)}>Delete recipe</button>:(
               <span>Delete this recipe? <button type="button" disabled={!!busy} onClick={()=>void remove(item.id)}>Confirm</button> <button type="button" onClick={()=>setRevising(false)}>Cancel</button></span>
             )}

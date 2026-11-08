@@ -140,6 +140,29 @@ export interface SavedMeal {
   createdAt: string;
 }
 
+/** A future meal never contributes to consumed nutrition until marked eaten. */
+export interface PlannedMeal {
+  id: string;
+  userId: string;
+  entryDate: string;
+  mealType: MealType;
+  savedMealId: string | null;
+  name: string;
+  items: SavedMealItem[];
+  state: "planned" | "eaten";
+  loggedEntryIds: string[];
+  eatenAt: string | null;
+  createdAt: string;
+}
+
+export interface DayGoalTargets {
+  calorieTarget: number;
+  proteinG: number;
+  carbsG: number;
+  fatG: number;
+}
+export type WeeklyGoalTargets = Partial<Record<"0"|"1"|"2"|"3"|"4"|"5"|"6", DayGoalTargets>>;
+
 export interface SavedMealItem {
   foodId: string | null;
   name: string;
@@ -253,6 +276,7 @@ export interface Profile {
 
 export interface GoalSet {
   userId: string;
+  dayTargets?: WeeklyGoalTargets;
   calorieTarget: number;
   proteinG: number;
   carbsG: number;

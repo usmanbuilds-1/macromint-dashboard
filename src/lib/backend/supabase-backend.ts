@@ -5,6 +5,9 @@ import type { TablesUpdate, Json } from "@/integrations/supabase/types";
 
 import { BackendError } from "./types";
 import { selectDiaryRange } from "./supabase/diary-range";
+import { listRecipes, recipeIngredients, createRecipeAtomic, replaceRecipeAtomic, removeRecipe, logRecipeEntry } from "./supabase/recipes";
+import { listPlannedMeals, addPlannedSavedMeal, commitPlannedMeal, deletePlannedMeal } from "./supabase/planned-meals";
+import { parseWeekTargets } from "@/lib/nutrition/day-targets";
 import { logSavedMealBatch } from "./supabase/saved-meal-log";
 import { renameSavedMealForUser, deleteSavedMealForUser } from "./supabase/saved-meal-manage";
 import { toSavedMealItem } from "@/lib/nutrition/saved-meal";
@@ -24,10 +27,9 @@ import type {
   AdminReactivationRequest,
   CustomFoodInput,
   FoodSearchHit,
-  RecipeInput,
 } from "./types";
 import { getSupabase, mapFoodRow } from "@/lib/supabase";
-import { applyPortionPercent, sumNutrients } from "@/lib/nutrition/math";
+import { applyPortionPercent } from "@/lib/nutrition/math";
 import type {
   AdminUserRow,
   AppSettings,
@@ -41,8 +43,6 @@ import type {
   NotificationItem,
   NutrientRecord,
   Profile,
-  Recipe,
-  RecipeIngredient,
   SavedMeal,
   UserPreferences,
   WaterEntry,
@@ -265,6 +265,7 @@ export const supabaseBackend: Backend = {
       waterMl: n(data.water_ml),
       method: String(data.method ?? "manual"),
       manuallyAdjusted: Boolean(data.manually_adjusted),
+      dayTargets: parseWeekTargets(data.day_targets),
     };
   },
 
@@ -278,6 +279,7 @@ export const supabaseBackend: Backend = {
     if (goals.waterMl !== undefined) patch.water_ml = goals.waterMl;
     if (goals.method !== undefined) patch.method = goals.method;
     if (goals.manuallyAdjusted !== undefined) patch.manually_adjusted = goals.manuallyAdjusted;
+    if (goals.dayTargets !== undefined) patch.day_targets = goals.dayTargets as unknown as Json;
     const { error } = await getSupabase()
       .from("nutritional_goals")
       .update(patch)
@@ -476,6 +478,12 @@ export const supabaseBackend: Backend = {
     return logSavedMealBatch(id, entryDate, mealType, await currentUserId());
   },
 
+  // ── Future plans (separate from consumed diary rows) ──────────────────────
+  getPlannedMeals: listPlannedMeals,
+  planSavedMeal: addPlannedSavedMeal,
+  markPlannedMealEaten: commitPlannedMeal,
+  removePlannedMeal: deletePlannedMeal,
+
   // ── Diary ───────────────────────────────────────────────────────────────
   async getDiary(entryDate) {
     const { data, error } = await getSupabase()
@@ -574,105 +582,13 @@ export const supabaseBackend: Backend = {
   },
 
   // ── Recipes ─────────────────────────────────────────────────────────────
-  async getRecipes() {
-    const { data, error } = await getSupabase()
-      .from("recipes")
-      .select("*")
-      .order("created_at", { ascending: false });
-    if (error) throw new BackendError("DB", error.message);
-    return (data ?? []).map((r) => {
-      const row = r as Record<string, unknown>;
-      return {
-        id: String(row["id"]),
-        userId: String(row["user_id"]),
-        name: String(row["name"]),
-        servings: n(row["servings"]) || 1,
-        notes: (row["notes"] as string | null) ?? null,
-        createdAt: String(row["created_at"]),
-      };
-    });
-  },
-
-  async getRecipeIngredients(recipeId) {
-    const { data, error } = await getSupabase()
-      .from("recipe_ingredients")
-      .select("*")
-      .eq("recipe_id", recipeId)
-      .order("position", { ascending: true });
-    if (error) throw new BackendError("DB", error.message);
-    return (data ?? []).map((i) => {
-      const row = i as Record<string, unknown>;
-      return {
-        id: String(row["id"]),
-        recipeId: String(row["recipe_id"]),
-        foodId: (row["food_id"] as string | null) ?? null,
-        name: String(row["name"]),
-        grams: n(row["grams"]),
-        per100g: (row["per100g"] ?? {}) as NutrientRecord,
-      };
-    });
-  },
-
-  async createRecipe(input: RecipeInput) {
-    const { data: recipe, error } = await getSupabase()
-      .from("recipes")
-      .insert({
-        user_id: await currentUserId(),
-        name: input.name,
-        servings: input.servings,
-        notes: input.notes ?? null,
-      })
-      .select()
-      .single();
-    if (error) throw new BackendError("DB", error.message);
-    const recipeId = String(recipe.id);
-    const rows = input.ingredients.map((ing, idx) => ({
-      recipe_id: recipeId,
-      food_id: ing.foodId ?? null,
-      name: ing.name,
-      grams: ing.grams,
-      per100g: ing.per100g,
-      position: idx,
-    }));
-    const { error: ingError } = await getSupabase().from("recipe_ingredients").insert(rows);
-    if (ingError) {
-      await getSupabase().from("recipes").delete().eq("id", recipeId);
-      throw new BackendError("DB", ingError.message);
-    }
-    return {
-      id: recipeId,
-      userId: String(recipe.user_id),
-      name: input.name,
-      servings: input.servings,
-      notes: input.notes ?? null,
-      createdAt: String(recipe.created_at),
-    };
-  },
-
-  async deleteRecipe(id) {
-    const { error } = await getSupabase().from("recipes").delete().eq("id", id);
-    if (error) throw new BackendError("DB", error.message);
-  },
-
-  async logRecipe(recipeId, entryDate, mealType, servings) {
-    const recipes = await supabaseBackend.getRecipes();
-    const recipe = recipes.find((r) => r.id === recipeId);
-    if (!recipe) throw new BackendError("NOT_FOUND", "Recipe not found");
-    const ingredients = await supabaseBackend.getRecipeIngredients(recipeId);
-    const total = sumNutrients(
-      ingredients.map((i) => applyPortionPercent(scaleToBase(i.per100g, i.grams), 100)),
-    );
-    const perServing = applyPortionPercent(total, (servings / recipe.servings) * 100);
-    return supabaseBackend.addEntry({
-      entryDate,
-      mealType,
-      recipeId,
-      name: recipe.name,
-      grams: 100 * servings,
-      portionPercent: 100,
-      baseNutrients: perServing,
-      source: "recipe",
-    });
+  getRecipes: listRecipes,
+  getRecipeIngredients: recipeIngredients,
+  createRecipe: createRecipeAtomic,
+  updateRecipe: replaceRecipeAtomic,
+  deleteRecipe: removeRecipe,
+  async logRecipe(id, date, meal, servings) {
+    return logRecipeEntry(id, date, meal, servings, supabaseBackend.addEntry);
   },
 
   // ── Body measurements ───────────────────────────────────────────────────
@@ -965,11 +881,3 @@ function scaleBackToPer100g(base: NutrientRecord, grams: number): NutrientRecord
   return out;
 }
 
-function scaleToBase(per100g: NutrientRecord, grams: number): NutrientRecord {
-  const f = grams / 100;
-  const out: NutrientRecord = {};
-  for (const [k, v] of Object.entries(per100g) as [string, number | null][]) {
-    out[k as keyof NutrientRecord] = v == null ? null : Math.round(v * f * 10) / 10;
-  }
-  return out;
-}

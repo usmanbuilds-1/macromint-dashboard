@@ -427,6 +427,7 @@ export type Database = {
           fiber_g: number
           manually_adjusted: boolean
           method: string
+          day_targets: Json
           micro_targets: Json
           protein_g: number
           updated_at: string
@@ -440,6 +441,7 @@ export type Database = {
           fiber_g?: number
           manually_adjusted?: boolean
           method?: string
+          day_targets?: Json
           micro_targets?: Json
           protein_g: number
           updated_at?: string
@@ -453,6 +455,7 @@ export type Database = {
           fiber_g?: number
           manually_adjusted?: boolean
           method?: string
+          day_targets?: Json
           micro_targets?: Json
           protein_g?: number
           updated_at?: string
@@ -494,6 +497,51 @@ export type Database = {
           raw?: Json | null
           status?: string
           user_id?: string
+        }
+        Relationships: []
+      }
+      planned_meals: {
+        Row: {
+          id: string
+          user_id: string
+          entry_date: string
+          meal_type: string
+          saved_meal_id: string | null
+          name: string
+          items: Json
+          state: string
+          logged_entry_ids: string[]
+          eaten_at: string | null
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          user_id: string
+          entry_date: string
+          meal_type: string
+          saved_meal_id?: string | null
+          name: string
+          items: Json
+          state?: string
+          logged_entry_ids?: string[]
+          eaten_at?: string | null
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          user_id?: string
+          entry_date?: string
+          meal_type?: string
+          saved_meal_id?: string | null
+          name?: string
+          items?: Json
+          state?: string
+          logged_entry_ids?: string[]
+          eaten_at?: string | null
+          created_at?: string
+          updated_at?: string
         }
         Relationships: []
       }
@@ -973,6 +1021,23 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      create_recipe_atomic: {
+        Args: { p_name: string; p_servings: number; p_notes: string | null; p_ingredients: Json }
+        Returns: Database["public"]["Tables"]["recipes"]["Row"]
+      }
+      plan_saved_meal: {
+        Args: { p_saved_meal_id: string; p_entry_date: string; p_meal_type: string }
+        Returns: Database["public"]["Tables"]["planned_meals"]["Row"]
+      }
+      consume_planned_meal: {
+        Args: { p_plan_id: string }
+        Returns: Json
+      }
+      replace_recipe: {
+        Args: { p_recipe_id: string; p_name: string; p_servings: number; p_notes: string | null; p_ingredients: Json }
+        Returns: boolean
+      }
+
       admin_change_entitlement: {
         Args: {
           p_action: string

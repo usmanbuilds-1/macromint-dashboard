@@ -5,6 +5,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { JourneyIntro } from "@/components/app/JourneyIntro";
 import { useSession } from "@/context/Session";
+import { WeeklyGoalSchedule } from "./WeeklyGoalSchedule";
 import { backend, bumpData } from "@/lib/backend";
 import { computeGoals, sanitizeGoalEdit } from "@/lib/nutrition/targets";
 import { ACTIVITY_DESCRIPTIONS, ACTIVITY_FACTORS, GOAL_DELTA_KCAL } from "@/lib/nutrition/constants";
@@ -104,6 +105,8 @@ export function Goals() {
           {dirty && <span className="text-xs text-warning">Unsaved changes</span>}
         </div>
       </section>
+
+      <WeeklyGoalSchedule goals={goals} onSaved={refresh} />
 
       <section className="mm-journey-edit-section mm-journey-recalculation" aria-label="Recalculate">
         <h2 className="mm-journey-section-title">Need a different starting point?</h2>
