@@ -5,8 +5,8 @@ import { foodToLoggable, offToLoggable, type LoggableFood } from "./FoodLogProvi
 import { recipeDraftNutrition, validateRecipeDraft, type RecipeDraft, type RecipeDraftIngredient } from "@/lib/nutrition/recipe-draft";
 import { formatNumber } from "@/lib/utils";
 
-export function RecipeBuilder({ template, onSaved, onCancel }: {
-  template?: RecipeDraft | null; onSaved: () => void; onCancel: () => void;
+export function RecipeBuilder({ template, sourceIngredients, onSaved, onCancel }: {
+  template?: RecipeDraft | null; sourceIngredients?: string[]; onSaved: () => void; onCancel: () => void;
 }) {
   const [draft, setDraft] = useState<RecipeDraft>(template ?? { name:"", servings:2, notes:"", ingredients:[] });
   const [query, setQuery] = useState("");
@@ -63,6 +63,23 @@ export function RecipeBuilder({ template, onSaved, onCancel }: {
           <input maxLength={2000} value={draft.notes} onChange={(event)=>setDraft({...draft,notes:event.target.value})} placeholder="Oil, preparation, batch size…" />
         </label>
       </div>
+      {!!sourceIngredients?.length && (
+        <details className="mm-feature-disclosure" open>
+          <summary className="mm-feature-disclosure-trigger">Ingredients from the recipe page</summary>
+          <p className="mm-feature-muted">Choose a match for each ingredient and correct its weight in grams. No nutrition was imported automatically.</p>
+          <ul className="mm-recipe-imported-list">
+            {sourceIngredients.map((line,index) => (
+              <li key={index}>
+                <span>{line}</span>
+                <button type="button" onClick={() => {
+                  const name=line.replace(/^\s*\d+(?:[.,]\d+)?\s*(?:g|grams?|kg|ml|cups?|tbsp|tsp|pcs|pieces?)?\s*/i,"").slice(0,80);
+                  setQuery(name);setResults([]);
+                }}>Find</button>
+              </li>
+            ))}
+          </ul>
+        </details>
+      )}
       <form className="mm-recipe-find" onSubmit={(event) => {event.preventDefault();void lookup();}}>
         <input aria-label="Find ingredient" value={query} onChange={(event)=>{setQuery(event.target.value);setResults([]);}}
           placeholder="Search an ingredient" maxLength={160}/>
