@@ -253,7 +253,7 @@ END $$;
 CREATE OR REPLACE FUNCTION public.create_recipe_atomic(
   p_name text, p_servings numeric, p_notes text, p_ingredients jsonb
 ) RETURNS public.recipes LANGUAGE plpgsql VOLATILE SECURITY INVOKER
-SET search_path = pg_catalog, public AS $
+SET search_path = pg_catalog, public AS $$
 DECLARE r public.recipes%ROWTYPE;
 BEGIN
   IF auth.uid() IS NULL OR NOT public.has_access(auth.uid()) THEN
@@ -264,7 +264,7 @@ BEGIN
   PERFORM public.replace_recipe(r.id,p_name,p_servings,p_notes,p_ingredients);
   SELECT * INTO r FROM public.recipes WHERE id=r.id AND user_id=auth.uid();
   RETURN r;
-END $;
+END $$;
 
 REVOKE ALL ON FUNCTION public.plan_saved_meal(uuid,date,text),
   public.consume_planned_meal(uuid),
