@@ -300,6 +300,23 @@ try {
   await page.getByRole("tab", { name: "Favorites" }).waitFor();
   await page.getByRole("tab", { name: "Saved meals" }).click();
   await page.getByText("Nothing saved yet").waitFor();
+  await page.getByRole("tab", { name: "Recipes" }).click();
+  await page.getByRole("heading", { name: "Recipes", exact: true }).waitFor();
+  assert.equal(await page.locator(".mm-recipe-library input[type='url']").count(), 0,
+    "Recipe imports must never require or accept website URLs");
+  await page.locator(".mm-recipe-import summary").click();
+  await page.getByRole("textbox", { name: "Ingredient list" }).fill("200 g Banana\\n1 tbsp oil".replace("\\n","\n"));
+  await page.getByRole("button", { name: "Review ingredients" }).click();
+  await page.getByRole("heading", { name: "Build a recipe" }).waitFor();
+  assert.equal(await page.locator(".mm-recipe-imported-list li").count(), 2,
+    "Pasted ingredient lines must become individually reviewable foods");
+  assert.equal(await page.getByRole("button", { name: "Save recipe" }).isDisabled(), true,
+    "Recipe import cannot save unreviewed ingredient lines");
+  await page.locator(".mm-recipe-imported-list li").first().getByRole("button", { name: "Find" }).click();
+  assert.equal(await page.getByRole("textbox", { name: "Find ingredient" }).inputValue(), "Banana",
+    "Pasted ingredient should prefill search, not create guessed nutrition");
+  await screenshotCompact("recipe-paste-review");
+  await page.getByRole("button", { name: "Cancel", exact: true }).click();
   await page.getByRole("tab", { name: "Search", exact: true }).click();
   await page.getByText("Scan a photo", { exact: true }).waitFor();
   await page.locator(".mm-journey-food-options").waitFor();
