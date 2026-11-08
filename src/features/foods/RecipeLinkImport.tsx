@@ -3,6 +3,8 @@ import { toast } from "sonner";
 import { getSupabase,IS_SUPABASE_CONFIGURED } from "@/lib/supabase";
 import { extractRecipeFromHtml, type ImportableRecipe } from "../../../supabase/functions/recipe-import/schema-recipe";
 
+const URL_IMPORT_AVAILABLE = import.meta.env.VITE_RECIPE_URL_IMPORT_ENABLED === "true";
+
 export function RecipeLinkImport({ onImported }: {
   onImported:(recipe:ImportableRecipe & {source?:string})=>void;
 }) {
@@ -38,9 +40,9 @@ export function RecipeLinkImport({ onImported }: {
       <div className="mm-feature-body">
         <p className="mm-feature-muted">
           Imports ingredient names only. Review every food and gram amount before saving.
-          Only approved recipe sites are supported; no nutrition numbers are guessed.
+          No nutrition numbers are guessed. Every ingredient must be matched manually.
         </p>
-        <form className="grid gap-2 sm:grid-cols-[1fr_auto]" onSubmit={(e)=>{e.preventDefault();void fromUrl();}}>
+        {URL_IMPORT_AVAILABLE && <form className="grid gap-2 sm:grid-cols-[1fr_auto]" onSubmit={(e)=>{e.preventDefault();void fromUrl();}}>
           <label className="mm-feature-field">Recipe URL
             <input type="url" maxLength={500} autoComplete="off" inputMode="url"
               placeholder="https://www.bbcgoodfood.com/recipes/…"
@@ -49,7 +51,8 @@ export function RecipeLinkImport({ onImported }: {
           <button type="submit" className="mm-recipe-save self-end" disabled={busy||!url.trim()}>
             {busy?"Importing…":"Import link"}
           </button>
-        </form>
+        </form>}
+        {!URL_IMPORT_AVAILABLE && <p className="mm-feature-muted">Direct link importing is unavailable until the recipe server has been approved. You can still paste recipe JSON-LD locally.</p>}
         <details className="border-t pt-2">
           <summary className="min-h-11 cursor-pointer text-sm font-semibold">Or paste recipe JSON-LD</summary>
           <p className="mm-feature-muted">A safe fallback when a site blocks automated imports. No server fetch is needed.</p>
