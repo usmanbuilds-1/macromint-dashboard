@@ -7,6 +7,7 @@ import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "
 import { LIMITS, validateNumeric } from "@/lib/validation/limits";
 import { backend, bumpData } from "@/lib/backend";
 import { useMobileDialogViewport } from "@/hooks/useMobileDialogViewport";
+import { NutritionLabelImport } from "./NutritionLabelImport";
 
 const MACRO_INPUTS = [
   { key: "kcal", label: "Calories (kcal)" },
@@ -89,6 +90,18 @@ export function CustomFoodDialog({ open, onClose, onCreated }: { open: boolean; 
           <DialogTitle>New custom food</DialogTitle>
         </DialogHeader>
         <div className="grid gap-3">
+          <NutritionLabelImport onReview={(result) => {
+            if (!result.per100g) return;
+            if (result.name) setName(result.name);
+            if (result.brand) setBrand(result.brand);
+            const data = result.per100g;
+            setValues(Object.fromEntries(
+              ["kcal","protein","carbs","fat","fiber","sugar","sodium"].map((key) => [
+                key, typeof data[key] === "number" ? String(data[key]) : "",
+              ]),
+            ));
+            toast.info("Review the detected numbers and serving basis before creating this food.");
+          }} />
           <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
             <div className="grid gap-1.5">
               <Label htmlFor="cf-name">Name</Label>
