@@ -93,9 +93,9 @@ assert.match(recipeLibrary, /RecipeTextImport/,
   "Recipe import must be plain pasted text only");
 assert.doesNotMatch(recipeLibrary, /RecipeLinkImport|RecipeURLImport/,
   "The URL importer must not be reachable from the recipe library");
-assert.doesNotMatch(textImporter, /fetch\\(|functions\\.invoke|https?:\\/\\//,
+assert.ok(!["fetch(", ".invoke(", "http://", "https://"].some((token) => textImporter.includes(token)),
   "Text ingredient parsing must be local without HTTP requests");
-assert.doesNotMatch(oldRecipeFunction, /fetch\\(|createClient|SUPABASE_SERVICE_ROLE_KEY/,
+assert.ok(!["fetch(", "createClient", "SUPABASE_SERVICE_ROLE_KEY"].some((token) => oldRecipeFunction.includes(token)),
   "Retired recipe URL endpoint must never fetch webpages or use service tokens");
 assert.match(oldRecipeFunction, /410/,
   "Old deployed clients must receive 410 Gone until the URL endpoint is undeployed");
