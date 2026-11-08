@@ -4,13 +4,13 @@ export interface ImportableRecipe {
 }
 const HOSTS=new Set(["www.bbcgoodfood.com","www.allrecipes.com","www.seriouseats.com"]);
 export function allowedRecipeUrl(input:string):string|null {
-  if(typeof input!=="string"||input.length>500||input.includes("\\")||/[\x00-\x1f]/.test(input)) return null;
+  if(typeof input!=="string"||input.length>500||input.includes("\\")||[...input].some((ch)=>ch.charCodeAt(0)<32)) return null;
   try {
     const raw=new URL(input);
     if(raw.protocol!=="https:"||!HOSTS.has(raw.hostname)||raw.username||raw.password||
        (raw.port!==""&&raw.port!=="443")||raw.pathname.length>300) return null;
     const path=decodeURIComponent(raw.pathname);
-    if(!/^\/[a-zA-Z0-9/_%.\-]*$/.test(path)||path.includes("..")||path.includes("//"))return null;
+    if(!/^\/[a-zA-Z0-9/_%.-]*$/.test(path)||path.includes("..")||path.includes("//"))return null;
     // Deliberately discard query params, fragments and all user-supplied headers.
     return "https://"+raw.hostname+raw.pathname;
   } catch {return null;}
