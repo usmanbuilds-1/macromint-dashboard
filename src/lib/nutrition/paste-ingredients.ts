@@ -27,7 +27,12 @@ export function parsePastedIngredients(text: string): PastedIngredient[] {
     let gramsHint: number | null = null;
     const gram = GRAM_PREFIX.exec(line);
     if (gram) {
-      const numeric = Number((gram[1] ?? "").replace(",", "."));
+      // "1,500" is ambiguous (decimal comma versus thousands separator).
+      // Refuse it rather than suggesting the wrong mass.
+      if ((gram[1] ?? "").includes(",")) {
+        throw new RangeError("Use a period for decimals and no thousands separator in gram amounts.");
+      }
+      const numeric = Number(gram[1]);
       const factor = gram[2]?.toLowerCase() === "kg" ? 1_000 : 1;
       gramsHint = numeric * factor;
       if (!Number.isFinite(gramsHint) || gramsHint < 0.1 || gramsHint > 10_000)
