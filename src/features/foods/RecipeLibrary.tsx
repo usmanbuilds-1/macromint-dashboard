@@ -5,6 +5,7 @@ import { useAsyncData } from "@/hooks/useData";
 import { todayStr } from "@/lib/nutrition/datetime";
 import { suggestedMealNow } from "@/lib/nutrition/meal-slot";
 import { RecipeBuilder } from "./RecipeBuilder";
+import { RecipeLinkImport } from "./RecipeLinkImport";
 import type { RecipeDraft } from "@/lib/nutrition/recipe-draft";
 import type { Recipe } from "@/types";
 
@@ -12,6 +13,7 @@ export function RecipeLibrary({ active }: { active: boolean }) {
   const list = useAsyncData(() => backend.getRecipes(), [], "recipes", active);
   const [creating, setCreating] = useState(false);
   const [template, setTemplate] = useState<RecipeDraft | null>(null);
+  const [sourceIngredients,setSourceIngredients] = useState<string[]>([]);
   const [expanded, setExpanded] = useState<string | null>(null);
   const [amount, setAmount] = useState(1);
   const [busy, setBusy] = useState<string | null>(null);
@@ -41,16 +43,23 @@ export function RecipeLibrary({ active }: { active: boolean }) {
       ingredients:ingredients.data.map((item) => ({
         key:crypto.randomUUID(), foodId:item.foodId, name:item.name,grams:item.grams,per100g:item.per100g,
       })),
-    });setCreating(true);setRevising(false);
+    });setSourceIngredients([]);setCreating(true);setRevising(false);
   };
-  if (creating) return <RecipeBuilder template={template} onCancel={()=>{setCreating(false);setTemplate(null);}}
-    onSaved={()=>{setCreating(false);setTemplate(null);list.reload();}}/>;
+  if (creating) return <RecipeBuilder template={template} sourceIngredients={sourceIngredients}
+    onCancel={()=>{setCreating(false);setTemplate(null);setSourceIngredients([]);}}
+    onSaved={()=>{setCreating(false);setTemplate(null);setSourceIngredients([]);list.reload();}}/>;
   return (
     <section className="mm-recipe-library" aria-label="Your recipes">
       <div className="mm-recipe-heading">
         <div><h2>Recipes</h2><p>Build once. Log the same home-cooked meal again.</p></div>
-        <button type="button" className="mm-recipe-add" onClick={()=>{setTemplate(null);setCreating(true);}}>New recipe</button>
+        <button type="button" className="mm-recipe-add" onClick={()=>{setTemplate(null);setSourceIngredients([]);setCreating(true);}}>New recipe</button>
       </div>
+      <RecipeLinkImport onImported={(recipe) => {
+        setTemplate({name:recipe.name,servings:recipe.servings??2,
+          notes:recipe.source?`Source: ${recipe.source}`:"",ingredients:[]});
+        setSourceIngredients(recipe.ingredients);
+        setCreating(true);
+      }} />
       {list.error && <p role="alert">Could not load recipes. <button type="button" onClick={list.reload}>Retry</button></p>}
       {list.loading&&!list.data&&<p role="status">Loading recipes…</p>}
       {!list.loading&&!list.data?.length&&!list.error&&<p className="mm-feature-muted">Your first recipe will appear here after you save it.</p>}
