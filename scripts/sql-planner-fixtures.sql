@@ -3,7 +3,7 @@
 CREATE OR REPLACE FUNCTION public.set_updated_at() RETURNS trigger
 LANGUAGE plpgsql AS $sql$ BEGIN NEW.updated_at=now(); RETURN NEW; END $sql$;
 
-CREATE OR REPLACE FUNCTION public.has_access(uid uuid) RETURNS boolean
+CREATE OR REPLACE FUNCTION public.has_access(uid uuid DEFAULT auth.uid()) RETURNS boolean
 LANGUAGE sql STABLE AS $sql$
   SELECT uid IS NOT NULL AND uid=auth.uid();
 $sql$;
