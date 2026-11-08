@@ -20,6 +20,7 @@ import type {
   Profile,
   Recipe,
   RecipeIngredient,
+  PlannedMeal,
   ScanResult,
   SavedMeal,
   UserPreferences,
@@ -145,6 +146,12 @@ export interface Backend {
   deleteSavedMeal(id: string): Promise<void>;
   logSavedMeal(id: string, entryDate: string, mealType: MealType): Promise<void>;
 
+  // Future plans are independent from consumed food and require explicit commit.
+  getPlannedMeals(startDate: string, endDate: string): Promise<PlannedMeal[]>;
+  planSavedMeal(savedMealId: string, entryDate: string, mealType: MealType): Promise<PlannedMeal>;
+  markPlannedMealEaten(id: string): Promise<{ alreadyLogged: boolean; entryIds: string[] }>;
+  removePlannedMeal(id: string): Promise<void>;
+
   // Diary
   getDiary(entryDate: string): Promise<DiaryEntry[]>;
   /** One bounded read for progress charts instead of 7–30 HTTP requests. */
@@ -156,6 +163,7 @@ export interface Backend {
 
   // Recipes
   getRecipes(): Promise<Recipe[]>;
+  updateRecipe(recipeId: string, input: RecipeInput): Promise<void>;
   getRecipeIngredients(recipeId: string): Promise<RecipeIngredient[]>;
   createRecipe(input: RecipeInput): Promise<Recipe>;
   deleteRecipe(id: string): Promise<void>;

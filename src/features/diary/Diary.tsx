@@ -6,6 +6,8 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { useSession } from "@/context/Session";
 import { visibleDailyGoals } from "@/lib/nutrition/visible-goals";
+import { goalForLocalDate } from "@/lib/nutrition/day-targets";
+import { DiaryPlanner } from "./DiaryPlanner";
 import { backend, bumpData } from "@/lib/backend";
 import { useAsyncData } from "@/hooks/useData";
 import { dailyTotals } from "@/lib/nutrition/math";
@@ -22,8 +24,8 @@ import { favoriteCandidateFromEntry, toggleFavoriteCandidate } from "@/features/
 
 export function Diary() {
   const { goals } = useSession();
-  const activeGoals = visibleDailyGoals(goals);
   const [date, setDate] = useState(todayStr());
+  const activeGoals = goalForLocalDate(visibleDailyGoals(goals), date);
   const [editEntry, setEditEntry] = useState<DiaryEntry | null>(null);
   const [openRow, setOpenRow] = useState<string | null>(null);
   const foodLog = useFoodLog();
@@ -263,6 +265,8 @@ export function Diary() {
       })}
 
 
+
+      <DiaryPlanner date={date} />
 
       {editEntry && (
         <ServingConfigDialog

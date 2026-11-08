@@ -1,5 +1,6 @@
 import { beforeEach, describe, expect, it } from "vitest";
 import { demoBackend as backend } from "@/lib/backend/demo-backend";
+import { addDaysStr, todayStr } from "@/lib/nutrition/datetime";
 
 const DAY = "2026-11-04";
 const FIRST = "isolation-first@example.test";
@@ -106,6 +107,71 @@ describe("demo backend isolation mirrors the production RLS intent", () => {
     expect((await backend.getAllFoods!()).some((food) => food.id === first.food.id)).toBe(false);
     expect((await backend.getRecipes()).some((r) => r.id === first.recipe.id)).toBe(false);
     expect((await backend.getSavedMeals()).some((meal) => meal.id === first.meal.id)).toBe(false);
+  });
+});
+
+describe("planned food and recipe edits are safe in demo accounts", () => {
+  it("keeps a plan outside the diary and makes repeated consume idempotent", async () => {
+    const first = await createPrivateData();
+    const countBefore = (await backend.getDiary(DAY)).length;
+    const plan = await backend.planSavedMeal(first.meal.id, DAY, "dinner");
+    expect(plan.state).toBe("planned");
+    expect(await backend.getPlannedMeals(DAY, DAY)).toHaveLength(1);
+    expect((await backend.getDiary(DAY)).length).toBe(countBefore);
+    const firstLog = await backend.markPlannedMealEaten(plan.id);
+    expect(firstLog.alreadyLogged).toBe(false);
+    expect(firstLog.entryIds).toHaveLength(first.meal.items.length);
+    const retry = await backend.markPlannedMealEaten(plan.id);
+    expect(retry).toEqual({alreadyLogged:true,entryIds:firstLog.entryIds});
+    expect((await backend.getDiary(DAY)).length).toBe(countBefore+first.meal.items.length);
+    await expect(backend.removePlannedMeal(plan.id)).rejects.toThrow();
+  });
+
+  it("prevents cross-account plan reads and mutations by UUID", async () => {
+    const first = await createPrivateData();
+    const plan = await backend.planSavedMeal(first.meal.id,DAY,"lunch");
+    await backend.signOut();
+    await login(SECOND);
+    expect(await backend.getPlannedMeals(DAY,DAY)).toHaveLength(0);
+    await expect(backend.markPlannedMealEaten(plan.id)).rejects.toThrow();
+    await expect(backend.removePlannedMeal(plan.id)).rejects.toThrow();
+    await expect(backend.planSavedMeal(first.meal.id,DAY,"dinner")).rejects.toThrow();
+    await backend.signOut();
+    await backend.signIn(FIRST,"demo only");
+    expect((await backend.getPlannedMeals(DAY,DAY))[0]?.state).toBe("planned");
+  });
+
+  it("updates a recipe atomically and retains old entries after editing", async () => {
+    const first = await createPrivateData();
+    const oldKcal = (await backend.getDiary(DAY))[0]?.nutrients.kcal;
+    await backend.updateRecipe(first.recipe.id,{
+      name:"Sesame v2",servings:2,
+      ingredients:[{name:"Sesame",grams:150,per100g:{kcal:220,fat:20},foodId:first.food.id}],
+    });
+    expect((await backend.getRecipeIngredients(first.recipe.id))[0]?.grams).toBe(150);
+    await expect(backend.updateRecipe(first.recipe.id,{
+      name:"Invalid",servings:2,
+      ingredients:[{name:"Sesame",grams:Infinity,per100g:{kcal:220}}],
+    })).rejects.toThrow();
+    expect((await backend.getRecipeIngredients(first.recipe.id))[0]?.grams).toBe(150);
+    expect((await backend.getDiary(DAY))[0]?.nutrients.kcal).toBe(oldKcal);
+  });
+
+  it("can schedule a future date without logging it prematurely", async () => {
+    const first=await createPrivateData();
+    const upcoming=addDaysStr(todayStr(),10);
+    const plan=await backend.planSavedMeal(first.meal.id,upcoming,"dinner");
+    expect((await backend.getPlannedMeals(upcoming,upcoming))[0]?.state).toBe("planned");
+    await expect(backend.markPlannedMealEaten(plan.id)).rejects.toThrow(/future date/);
+    expect((await backend.getPlannedMeals(upcoming,upcoming))[0]?.state).toBe("planned");
+  });
+
+  it("cleans up planned meals on account deletion", async () => {
+    const first=await createPrivateData();
+    await backend.planSavedMeal(first.meal.id,DAY,"lunch");
+    await backend.deleteAccount();
+    await login(FIRST);
+    expect(await backend.getPlannedMeals(DAY,DAY)).toHaveLength(0);
   });
 });
 
