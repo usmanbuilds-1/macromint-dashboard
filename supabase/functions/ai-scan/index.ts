@@ -20,6 +20,7 @@
 
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.58.0";
 import { json, errorResponse, preflight, CORS_HEADERS, readJsonObject } from "../_shared/http.ts";
+import { LABEL_SYSTEM_PROMPT, parseNutritionLabel } from "./nutrition-label.ts";
 
 const GEMINI_MODELS = Array.from(new Set([
   ...(Deno.env.get("GEMINI_MODELS") ?? "").split(",").map((s) => s.trim()).filter(Boolean),
@@ -110,7 +111,7 @@ function parseItems(raw: unknown): { items: ModelItem[]; notes: string } {
 
 // ── Vision providers ──────────────────────────────────────────────────────
 
-async function callGemini(apiKey: string, mime: string, b64: string, userPrompt: string): Promise<string> {
+async function callGemini(apiKey: string, mime: string, b64: string, userPrompt: string, systemPrompt = SYSTEM_PROMPT): Promise<string> {
   let lastError: unknown = null;
   for (const model of GEMINI_MODELS) {
     try {
@@ -122,7 +123,7 @@ async function callGemini(apiKey: string, mime: string, b64: string, userPrompt:
           // Keep provider secrets out of the URL/query string and proxy logs.
           headers: { "Content-Type": "application/json", "x-goog-api-key": apiKey },
           body: JSON.stringify({
-            system_instruction: { parts: [{ text: SYSTEM_PROMPT }] },
+            system_instruction: { parts: [{ text: systemPrompt }] },
             contents: [
               {
                 role: "user",
@@ -149,7 +150,7 @@ async function callGemini(apiKey: string, mime: string, b64: string, userPrompt:
   throw lastError ?? new Error("All Gemini models failed");
 }
 
-async function callOpenAI(apiKey: string, mime: string, b64: string, userPrompt: string, lovable = false): Promise<string> {
+async function callOpenAI(apiKey: string, mime: string, b64: string, userPrompt: string, lovable = false, systemPrompt = SYSTEM_PROMPT): Promise<string> {
   const res = await fetch(lovable ? "https://ai.gateway.lovable.dev/v1/chat/completions" : "https://api.openai.com/v1/chat/completions", {
     method: "POST",
     signal: AbortSignal.timeout(15000),
@@ -159,7 +160,7 @@ async function callOpenAI(apiKey: string, mime: string, b64: string, userPrompt:
       temperature: 0.2,
       response_format: { type: "json_object" },
       messages: [
-        { role: "system", content: SYSTEM_PROMPT },
+        { role: "system", content: systemPrompt },
         {
           role: "user",
           content: [
@@ -331,6 +332,10 @@ Deno.serve(async (req) => {
   // Input validation.
   const body = await readJsonObject(req, 4_100_000);
   if (!body) return errorResponse("BAD_REQUEST", "Invalid or oversized scan request", 400);
+  if (body.mode !== undefined && body.mode !== "nutrition_label") {
+    return errorResponse("BAD_REQUEST", "Unsupported scan mode", 400);
+  }
+  const labelMode = body.mode === "nutrition_label";
   const image = body.image ?? "";
   if (
     typeof image !== "string" ||
@@ -377,22 +382,37 @@ Deno.serve(async (req) => {
   const startedAt = Date.now();
   let text: string;
   try {
-    const userPrompt = hints
-      ? `User notes about this meal: "${hints}". Identify items.`
+    const userPrompt = labelMode ? "Read the visible nutrition facts; return only the values stated on the packaging."
+      : hints ? `User notes about this meal: "${hints}". Identify items.`
       : "Identify the items in this photo.";
+    const systemPrompt = labelMode ? LABEL_SYSTEM_PROMPT : SYSTEM_PROMPT;
     const geminiKey = Deno.env.get("GEMINI_API_KEY");
     const openaiKey = Deno.env.get("OPENAI_API_KEY");
     const lovableKey = Deno.env.get("LOVABLE_API_KEY");
     // Gemini-only by default to avoid silently charging Lovable/OpenAI.
     // Switching provider requires an explicit backend secret selection.
     const provider = Deno.env.get("AI_VISION_PROVIDER") ?? "gemini";
-    if (provider === "gemini" && geminiKey) text = await callGemini(geminiKey, mime, b64, userPrompt);
-    else if (provider === "lovable" && lovableKey) text = await callOpenAI(lovableKey, mime, b64, userPrompt, true);
-    else if (provider === "openai" && openaiKey) text = await callOpenAI(openaiKey, mime, b64, userPrompt);
+    if (provider === "gemini" && geminiKey) text = await callGemini(geminiKey, mime, b64, userPrompt, systemPrompt);
+    else if (provider === "lovable" && lovableKey) text = await callOpenAI(lovableKey, mime, b64, userPrompt, true, systemPrompt);
+    else if (provider === "openai" && openaiKey) text = await callOpenAI(openaiKey, mime, b64, userPrompt, false, systemPrompt);
     else return errorResponse("AI_NOT_CONFIGURED", "Configured vision provider is unavailable", 503);
   } catch {
     // Never leak raw provider errors or internal account/quota details.
     return errorResponse("AI_FAILED", "Food analysis is temporarily unavailable", 502);
+  }
+
+  if (labelMode) {
+    const label = parseNutritionLabel(extractJson(text));
+    if (!label) return errorResponse("LABEL_UNREADABLE",
+      "A readable nutrition panel was not found. Enter values manually.", 422);
+    // No label photo or recognized text is persisted. Existing quota and
+    // user identity were validated before the provider call.
+    await serviceRole.from("scan_events").insert({
+      user_id: user.id, provider: Deno.env.get("AI_VISION_PROVIDER") ?? "gemini",
+      item_count: 0, grounded_count: 0, overall_confidence: "low",
+      latency_ms: Date.now() - startedAt,
+    });
+    return json({ mode: "nutrition_label", ...label });
   }
 
   const parsed = parseItems(extractJson(text));
