@@ -35,7 +35,7 @@
 ## Release C: Optional automation integrations
 - [ ] Voice dictation: opt-in, show browser/third-party privacy warning, no auto-submit, validate transcript and show item-by-item review; incompatible browsers fall back to typed natural language.
 - [ ] Nutrition label extraction: behind the existing server-side scan quota and a new schema-validated response type. Require verification of serving size, per-serving vs per-100g, and sodium/salt units; show image only transiently and do not persist without consent.
-- [ ] Recipe URL import: secure server-side fetch only after allowlist / DNS rebinding / private-IP / redirect / size / timeout / MIME / HTML sanitizer protections. Never fetch arbitrary user URLs directly from Edge with an unchecked `fetch(url)`. Alternatively accept user-pasted schema.org Recipe JSON for local-only preview.
+- [x] Local ingredient text import: accept a plain pasted list with review of each database match, no website fetching, and no inferred nutrients.
 - [ ] External API keys must live server-side; validate quotas/costs and return graceful provider-unavailable errors. No user account data in AI prompts unless essential and disclosed.
 - [ ] Test cancellation, denial, offline/slow-network, unsupported APIs, malicious input, and rate limits.
 
@@ -69,3 +69,11 @@ A merged UI does **not** prove production deployment. Schema migrations, server 
 
 ## Measurement
 First persisted log / new eligible accounts; median and p90 time-to-first-log; day-1/day-7 **logging** retention; repeat-log use; food search no-match rate; recipe create-to-relog rate; and provider error rate. Only collect cross-user aggregates with explicit privacy review and owner-only access. No dark-pattern reminders or fabricated engagement claims.
+
+
+## November 8: URL import explicitly retired
+The product no longer imports recipes from external URLs or accepts recipe JSON-LD.
+Paste ingredient lines directly into Foods → Recipes. All food matches and grams
+are reviewed by the user. See `docs/RECIPE_IMPORT_SECURITY_GATE_20261108.md`
+for deployment requirements to remove the retired server fetch endpoint. Historical
+feature plans above are superseded by this decision.

@@ -5,7 +5,8 @@ import { useAsyncData } from "@/hooks/useData";
 import { todayStr } from "@/lib/nutrition/datetime";
 import { suggestedMealNow } from "@/lib/nutrition/meal-slot";
 import { RecipeBuilder } from "./RecipeBuilder";
-import { RecipeLinkImport } from "./RecipeLinkImport";
+import { RecipeTextImport } from "./RecipeTextImport";
+import type { PastedIngredient } from "@/lib/nutrition/paste-ingredients";
 import type { RecipeDraft } from "@/lib/nutrition/recipe-draft";
 import type { Recipe } from "@/types";
 
@@ -13,7 +14,7 @@ export function RecipeLibrary({ active }: { active: boolean }) {
   const list = useAsyncData(() => backend.getRecipes(), [], "recipes", active);
   const [creating, setCreating] = useState(false);
   const [template, setTemplate] = useState<RecipeDraft | null>(null);
-  const [sourceIngredients,setSourceIngredients] = useState<string[]>([]);
+  const [sourceIngredients,setSourceIngredients] = useState<PastedIngredient[]>([]);
   const [expanded, setExpanded] = useState<string | null>(null);
   const [amount, setAmount] = useState(1);
   const [busy, setBusy] = useState<string | null>(null);
@@ -54,10 +55,9 @@ export function RecipeLibrary({ active }: { active: boolean }) {
         <div><h2>Recipes</h2><p>Build once. Log the same home-cooked meal again.</p></div>
         <button type="button" className="mm-recipe-add" onClick={()=>{setTemplate(null);setSourceIngredients([]);setCreating(true);}}>New recipe</button>
       </div>
-      <RecipeLinkImport onImported={(recipe) => {
-        setTemplate({name:recipe.name,servings:recipe.servings??2,
-          notes:recipe.source?`Source: ${recipe.source}`:"",ingredients:[]});
-        setSourceIngredients(recipe.ingredients);
+      <RecipeTextImport onImported={(ingredients) => {
+        setTemplate({name:"",servings:2,notes:"",ingredients:[]});
+        setSourceIngredients(ingredients);
         setCreating(true);
       }} />
       {list.error && <p role="alert">Could not load recipes. <button type="button" onClick={list.reload}>Retry</button></p>}

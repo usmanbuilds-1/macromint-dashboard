@@ -4,15 +4,20 @@ import { backend, bumpData } from "@/lib/backend";
 import { foodToLoggable, offToLoggable, type LoggableFood } from "./FoodLogProvider";
 import { recipeDraftNutrition, validateRecipeDraft, type RecipeDraft, type RecipeDraftIngredient } from "@/lib/nutrition/recipe-draft";
 import { formatNumber } from "@/lib/utils";
+import type { PastedIngredient } from "@/lib/nutrition/paste-ingredients";
 
 export function RecipeBuilder({ template, sourceIngredients, onSaved, onCancel }: {
-  template?: RecipeDraft | null; sourceIngredients?: string[]; onSaved: () => void; onCancel: () => void;
+  template?: RecipeDraft | null; sourceIngredients?: PastedIngredient[]; onSaved: () => void; onCancel: () => void;
 }) {
   const [draft, setDraft] = useState<RecipeDraft>(template ?? { name:"", servings:2, notes:"", ingredients:[] });
   const [query, setQuery] = useState("");
   const [results, setResults] = useState<LoggableFood[]>([]);
   const [searching, setSearching] = useState(false);
   const [saving, setSaving] = useState(false);
+  const [activeSource, setActiveSource] = useState<number | null>(null);
+  const [sourceStatus, setSourceStatus] = useState<Record<number, "added" | "skipped">>({});
+  const [sourceAssignments, setSourceAssignments] = useState<Record<number, string>>({});
+  const remaining = sourceIngredients?.filter((_, index) => !sourceStatus[index]).length ?? 0;
   const info = useMemo(() => recipeDraftNutrition(draft), [draft]);
   const lookup = async () => {
     if (query.trim().length < 2 || searching) return;
@@ -27,16 +32,25 @@ export function RecipeBuilder({ template, sourceIngredients, onSaved, onCancel }
     if (draft.ingredients.length >= 30) { toast.error("Recipes support at most 30 ingredients."); return; }
     const ingredient: RecipeDraftIngredient = {
       key: crypto.randomUUID(), foodId: food.foodId, name: food.name,
-      grams: food.servingGrams > 0 ? food.servingGrams : 100, per100g: food.per100g,
+      // Unmeasured pasted quantities must be entered in grams by the user.
+      grams: activeSource === null
+        ? (food.servingGrams > 0 ? food.servingGrams : 0)
+        : (sourceIngredients?.[activeSource]?.gramsHint ?? 0),
+      per100g: food.per100g,
     };
     setDraft((current) => ({ ...current, ingredients: [...current.ingredients, ingredient] }));
+    if (activeSource !== null) {
+      setSourceStatus((current) => ({...current, [activeSource]: "added"}));
+      setSourceAssignments((current)=>({...current,[activeSource]:ingredient.key}));
+    }
+    setActiveSource(null);
     setQuery(""); setResults([]);
   };
   const changeIngredient = (key: string, grams: number) =>
     setDraft((current) => ({ ...current, ingredients: current.ingredients.map((ingredient) =>
       ingredient.key === key ? { ...ingredient, grams } : ingredient) }));
   const submit = async () => {
-    const error = validateRecipeDraft(draft);
+    const error = remaining ? "Match or skip the remaining imported ingredients." : validateRecipeDraft(draft);
     if (error || saving) { if (error) toast.error(error); return; }
     setSaving(true);
     try {
@@ -64,21 +78,38 @@ export function RecipeBuilder({ template, sourceIngredients, onSaved, onCancel }
         </label>
       </div>
       {!!sourceIngredients?.length && (
-        <details className="mm-feature-disclosure" open>
-          <summary className="mm-feature-disclosure-trigger">Ingredients from the recipe page</summary>
-          <p className="mm-feature-muted">Choose a match for each ingredient and correct its weight in grams. No nutrition was imported automatically.</p>
+        <section className="mm-feature-disclosure" aria-label="Pasted ingredients to match">
+          <h4 className="text-sm font-semibold">Match your pasted ingredients</h4>
+          <p className="mm-feature-muted">
+            {remaining} remaining. Find each food in the database, or deliberately skip it.
+            Only written gram weights are suggested. All quantities are editable before saving.
+          </p>
           <ul className="mm-recipe-imported-list">
-            {sourceIngredients.map((line,index) => (
-              <li key={index}>
-                <span>{line}</span>
-                <button type="button" onClick={() => {
-                  const name=line.replace(/^\s*\d+(?:[.,]\d+)?\s*(?:g|grams?|kg|ml|cups?|tbsp|tsp|pcs|pieces?)?\s*/i,"").slice(0,80);
-                  setQuery(name);setResults([]);
-                }}>Find</button>
+            {sourceIngredients.map((item,index) => (
+              <li key={index} className="flex flex-wrap items-center gap-2 border-b py-2">
+                <span className="min-w-0 flex-1 text-sm">{item.label}</span>
+                {sourceStatus[index]
+                  ? <span className="text-xs text-muted-foreground">
+                      {sourceStatus[index] === "added" ? "Added" : "Skipped"}
+                    </span>
+                  : <>
+                      <button type="button" className="min-h-11 px-2 text-sm font-semibold underline"
+                        onClick={() => {
+                          setActiveSource(index);setQuery(item.searchTerm);setResults([]);
+                        }}>Find</button>
+                      <button type="button" className="min-h-11 px-2 text-xs text-muted-foreground underline"
+                        onClick={() => {
+                          setSourceStatus((prev)=>({...prev,[index]:"skipped"}));
+                          if(activeSource === index){setActiveSource(null);setQuery("");setResults([]);}
+                        }}>Skip</button>
+                    </>}
               </li>
             ))}
           </ul>
-        </details>
+          {activeSource !== null && <p role="status" className="mm-feature-muted">
+            Looking for {sourceIngredients[activeSource]?.label}. Select a database match below.
+          </p>}
+        </section>
       )}
       <form className="mm-recipe-find" onSubmit={(event) => {event.preventDefault();void lookup();}}>
         <input aria-label="Find ingredient" value={query} onChange={(event)=>{setQuery(event.target.value);setResults([]);}}
@@ -97,7 +128,14 @@ export function RecipeBuilder({ template, sourceIngredients, onSaved, onCancel }
           <span>{item.name}</span>
           <label><input type="number" aria-label={`Grams of ${item.name}`} value={item.grams} min={0.1} max={10000} step="any"
             onChange={(event)=>changeIngredient(item.key,Number(event.target.value))} inputMode="decimal"/> g</label>
-          <button type="button" aria-label={`Remove ${item.name}`} onClick={()=>setDraft((prev)=>({...prev,ingredients:prev.ingredients.filter((v)=>v.key!==item.key)}))}>Remove</button>
+          <button type="button" aria-label={`Remove ${item.name}`} onClick={()=>{
+            setDraft((prev)=>({...prev,ingredients:prev.ingredients.filter((v)=>v.key!==item.key)}));
+            const sourceIndex=Object.entries(sourceAssignments).find(([,key])=>key===item.key)?.[0];
+            if(sourceIndex!==undefined){
+              setSourceStatus((prev)=>{const next={...prev};delete next[Number(sourceIndex)];return next;});
+              setSourceAssignments((prev)=>{const next={...prev};delete next[Number(sourceIndex)];return next;});
+            }
+          }}>Remove</button>
         </div>)}
       </div>}
       <div className="mm-recipe-estimate" role="status">
@@ -105,7 +143,7 @@ export function RecipeBuilder({ template, sourceIngredients, onSaved, onCancel }
         <strong>{info.perServingKnownEnergy===null?"—":formatNumber(info.perServingKnownEnergy)} kcal <small>known per serving</small></strong>
         {!info.completeEnergy && draft.ingredients.length>0 && <p>Incomplete energy data. This is a known minimum, not the full recipe calories.</p>}
       </div>
-      <button type="button" className="mm-recipe-save" onClick={()=>{void submit();}} disabled={saving||Boolean(validateRecipeDraft(draft))}>
+      <button type="button" className="mm-recipe-save" onClick={()=>{void submit();}} disabled={saving||remaining>0||Boolean(validateRecipeDraft(draft))}>
         {saving?"Saving recipe…":"Save recipe"}
       </button>
     </section>

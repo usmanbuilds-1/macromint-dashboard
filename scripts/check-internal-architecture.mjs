@@ -86,6 +86,20 @@ assert.match(settingsPage, /<JourneyIntro/);
 assert.match(shell, /journey-foundations\.css/);
 assert.match(shell, /journey-tracking\.css/);
 assert.match(shell, /journey-account\.css/);
+const textImporter = readFileSync("src/features/foods/RecipeTextImport.tsx", "utf8");
+const recipeLibrary = readFileSync("src/features/foods/RecipeLibrary.tsx", "utf8");
+const oldRecipeFunction = readFileSync("supabase/functions/recipe-import/index.ts", "utf8");
+assert.match(recipeLibrary, /RecipeTextImport/,
+  "Recipe import must be plain pasted text only");
+assert.doesNotMatch(recipeLibrary, /RecipeLinkImport|RecipeURLImport/,
+  "The URL importer must not be reachable from the recipe library");
+assert.doesNotMatch(textImporter, /fetch\\(|functions\\.invoke|https?:\\/\\//,
+  "Text ingredient parsing must be local without HTTP requests");
+assert.doesNotMatch(oldRecipeFunction, /fetch\\(|createClient|SUPABASE_SERVICE_ROLE_KEY/,
+  "Retired recipe URL endpoint must never fetch webpages or use service tokens");
+assert.match(oldRecipeFunction, /410/,
+  "Old deployed clients must receive 410 Gone until the URL endpoint is undeployed");
+
 console.log("PASS: modular editorial journeys stay scoped and actionable");
 console.log("PASS: Today instant content, no animation delay, account-scoped prefetch");
 console.log("PASS: tab data caching, no weekly N+1 reads, and atomic saved-meal batch");
