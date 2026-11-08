@@ -3,7 +3,7 @@ import { toast } from "sonner";
 import { getSupabase,IS_SUPABASE_CONFIGURED } from "@/lib/supabase";
 import { extractRecipeFromHtml, type ImportableRecipe } from "../../../supabase/functions/recipe-import/schema-recipe";
 
-const URL_IMPORT_AVAILABLE = import.meta.env.VITE_RECIPE_URL_IMPORT_ENABLED === "true";
+const URL_IMPORT_AVAILABLE = import.meta.env["VITE_RECIPE_URL_IMPORT_ENABLED"] === "true";
 
 export function RecipeLinkImport({ onImported }: {
   onImported:(recipe:ImportableRecipe & {source?:string})=>void;
