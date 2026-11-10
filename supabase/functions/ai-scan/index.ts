@@ -29,6 +29,8 @@ import {
 const GEMINI_MODELS = Array.from(new Set([
   ...(Deno.env.get("GEMINI_MODELS") ?? "").split(",").map((s) => s.trim()).filter(Boolean),
   "gemini-2.5-flash",
+  "gemini-3.1-flash-lite",
+  "gemini-2.5-flash-lite",
 ])).filter((model) => /^[a-zA-Z0-9._-]{1,80}$/.test(model)).slice(0, 3);
 const OPENAI_MODEL = Deno.env.get("AI_MODEL") ?? "gpt-4o-mini";
 const MAX_IMAGE_BYTES = 3_000_000;
@@ -399,14 +401,11 @@ Deno.serve(async (req) => {
       : "Identify the items in this photo.";
     const systemPrompt = labelMode ? LABEL_SYSTEM_PROMPT : SYSTEM_PROMPT;
     const geminiKey = Deno.env.get("GEMINI_API_KEY");
-    const openaiKey = Deno.env.get("OPENAI_API_KEY");
-    const lovableKey = Deno.env.get("LOVABLE_API_KEY");
-    // Gemini-only by default to avoid silently charging Lovable/OpenAI.
-    // Switching provider requires an explicit backend secret selection.
-    if (provider === "gemini" && geminiKey) text = await callGemini(geminiKey, mime, b64, userPrompt, systemPrompt);
-    else if (provider === "lovable" && lovableKey) text = await callOpenAI(lovableKey, mime, b64, userPrompt, true, systemPrompt);
-    else if (provider === "openai" && openaiKey) text = await callOpenAI(openaiKey, mime, b64, userPrompt, false, systemPrompt);
-    else return errorResponse("AI_NOT_CONFIGURED", "Configured vision provider is unavailable", 503);
+    // Scans are restricted to the owner's Google AI Studio key.
+    if (provider !== "gemini" || !geminiKey) {
+      return errorResponse("AI_NOT_CONFIGURED", "Gemini vision provider is unavailable", 503);
+    }
+    text = await callGemini(geminiKey, mime, b64, userPrompt, systemPrompt);
   } catch (error) {
     // Log ONLY a safe error category/status. Never print provider error
     // bodies, image data, notes, auth headers, or API credentials.
