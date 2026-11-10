@@ -7,6 +7,8 @@
 
 import { getSupabase, IS_SUPABASE_CONFIGURED } from "@/lib/supabase";
 import type { ScanResult } from "@/types";
+import { friendlyScanError, scanErrorCodeFromHttp, hasScanResponse } from "./errors";
+export { friendlyScanError } from "./errors";
 
 export class ScanError extends Error {
   code: string;
@@ -25,21 +27,6 @@ export interface ScanResponse {
   grounding?: "client" | "server";
 }
 
-export function friendlyScanError(code: string): string {
-  switch (code) {
-    case "AI_NOT_CONFIGURED":
-      return "AI scanning is not configured on the server yet. Set GEMINI_API_KEY or OPENAI_API_KEY in your Edge Function secrets (see docs/AI-SCANNING.md).";
-    case "NO_ACCESS":
-      return "Active access is required to use AI scanning.";
-    case "RATE_LIMIT":
-      return "Scan limit reached. Please try again later.";
-    case "INVALID_IMAGE":
-      return "That image could not be processed. Try a clearer JPEG or PNG.";
-    default:
-      return "The vision service could not analyse this photo. Please try again.";
-  }
-}
-
 export async function scanImage(dataUrl: string, hints: string): Promise<ScanResponse> {
   const explicit = import.meta.env["VITE_SCAN_ENDPOINT"];
 
@@ -48,19 +35,24 @@ export async function scanImage(dataUrl: string, hints: string): Promise<ScanRes
       body: { image: dataUrl, hints },
     });
     if (error) {
-      let code = "AI_FAILED";
-      try {
-        const ctx = (error as { context?: Response }).context;
-        if (ctx) {
-          const bodyErr = await ctx.clone().json();
-          if (bodyErr?.error) code = bodyErr.error;
-        }
-      } catch {
-        // non-JSON error body
+      const context = (error as { context?: Response }).context;
+      let reported: unknown = null;
+      if (context && typeof context.clone === "function") {
+        try {
+          const json = await context.clone().json();
+          reported = json && typeof json === "object" ? (json as { error?: unknown }).error : null;
+        } catch { /* A gateway or deployment error may not be JSON. */ }
       }
+      const code = context
+        ? scanErrorCodeFromHttp(reported, context.status)
+        : "SCAN_NETWORK";
       throw new ScanError(code, friendlyScanError(code));
     }
-    if (data?.error) throw new ScanError(data.error, friendlyScanError(data.error));
+    if (data?.error) {
+      const code = scanErrorCodeFromHttp(data.error, null);
+      throw new ScanError(code, friendlyScanError(code));
+    }
+    if (!hasScanResponse(data)) throw new ScanError("SCAN_BAD_RESPONSE", friendlyScanError("SCAN_BAD_RESPONSE"));
     return data as ScanResponse;
   }
 
@@ -69,12 +61,15 @@ export async function scanImage(dataUrl: string, hints: string): Promise<ScanRes
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ image: dataUrl, hints }),
+  }).catch(() => {
+    throw new ScanError("SCAN_NETWORK", friendlyScanError("SCAN_NETWORK"));
   });
   const payload = (await res.json().catch(() => null)) as (ScanResponse & { error?: string; message?: string }) | null;
   if (!res.ok || payload?.error) {
-    const code = payload?.error ?? "AI_FAILED";
+    const code = scanErrorCodeFromHttp(payload?.error, res.status);
     throw new ScanError(code, friendlyScanError(code));
   }
+  if (!hasScanResponse(payload)) throw new ScanError("SCAN_BAD_RESPONSE", friendlyScanError("SCAN_BAD_RESPONSE"));
   return payload as ScanResponse;
 }
 

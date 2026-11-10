@@ -226,6 +226,28 @@ try {
   assert.equal(await images.nth(1).getAttribute("capture"), null,
     "Existing-image input must not force camera capture");
   await screenshotEverySize("photo-choices");
+  // Simulate an exhausted provider without sending any photo to an external API.
+  // The user should see an actionable failure and retain manual food entry.
+  await page.route("**/api/ai-scan", async (route) => {
+    await route.fulfill({ status: 429, contentType: "application/json",
+      body: JSON.stringify({error: "VISION_QUOTA", message: "Safe, bounded failure"}) });
+  });
+  const imageDataUrl = await page.evaluate(() => {
+    const canvas = document.createElement("canvas");
+    canvas.width = 24; canvas.height = 24;
+    const context = canvas.getContext("2d");
+    if (!context) throw new Error("Canvas unavailable in smoke test");
+    context.fillStyle = "#ba973b"; context.fillRect(0, 0, 24, 24);
+    return canvas.toDataURL("image/jpeg", 0.8);
+  });
+  await images.nth(1).setInputFiles({
+    name: "synthetic-meal.jpg", mimeType: "image/jpeg",
+    buffer: Buffer.from(imageDataUrl.split(",")[1], "base64"),
+  });
+  await page.getByRole("alert").getByText(/AI photo provider has reached its usage limit/i).waitFor();
+  await page.getByRole("button", { name: "Search or enter a meal instead" }).waitFor();
+  await page.unroute("**/api/ai-scan");
+  await screenshotCompact("photo-provider-quota-failure");
   // A photo user must be able to switch to text without closing everything
   // and losing the selected meal/date.
   await page.getByRole("button", { name: "Search or enter a meal instead" }).click();
