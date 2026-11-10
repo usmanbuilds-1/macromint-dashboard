@@ -21,6 +21,10 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.58.0";
 import { json, errorResponse, preflight, CORS_HEADERS, readJsonObject } from "../_shared/http.ts";
 import { LABEL_SYSTEM_PROMPT, parseNutritionLabel } from "./nutrition-label.ts";
+import {
+  VisionProviderFailure, classifyVisionHttpStatus, classifyVisionException,
+  safeGeminiReason, publicVisionMessage,
+} from "./provider-errors.ts";
 
 const GEMINI_MODELS = Array.from(new Set([
   ...(Deno.env.get("GEMINI_MODELS") ?? "").split(",").map((s) => s.trim()).filter(Boolean),
@@ -112,7 +116,7 @@ function parseItems(raw: unknown): { items: ModelItem[]; notes: string } {
 // ── Vision providers ──────────────────────────────────────────────────────
 
 async function callGemini(apiKey: string, mime: string, b64: string, userPrompt: string, systemPrompt = SYSTEM_PROMPT): Promise<string> {
-  let lastError: unknown = null;
+  let lastError: VisionProviderFailure | null = null;
   for (const model of GEMINI_MODELS) {
     try {
       const res = await fetch(
@@ -135,19 +139,24 @@ async function callGemini(apiKey: string, mime: string, b64: string, userPrompt:
         },
       );
       if (!res.ok) {
-        lastError = new Error(`Gemini ${model} HTTP ${res.status}`);
-        if ([429, 404, 500, 503].includes(res.status)) continue;
-        throw lastError;
+        let reason: string | null = null;
+        if (res.status === 400) {
+          try { reason = safeGeminiReason(await res.json()); } catch { /* status alone is enough */ }
+        }
+        throw classifyVisionHttpStatus("gemini", res.status, reason);
       }
       const data = await res.json();
       const text = data?.candidates?.[0]?.content?.parts?.[0]?.text ?? "";
       if (text) return text;
-      lastError = new Error(`Gemini ${model} returned no text`);
+      lastError = new VisionProviderFailure("VISION_EMPTY", 422, "gemini", 200);
     } catch (e) {
-      lastError = e;
+      lastError = classifyVisionException("gemini", e);
+      // Bad credentials or invalid request payload cannot be fixed by
+      // switching the model. Only transient errors and missing models fall back.
+      if (["VISION_CONFIG", "VISION_REJECTED"].includes(lastError.code)) break;
     }
   }
-  throw lastError ?? new Error("All Gemini models failed");
+  throw lastError ?? new VisionProviderFailure("VISION_EMPTY", 422, "gemini", null);
 }
 
 async function callOpenAI(apiKey: string, mime: string, b64: string, userPrompt: string, lovable = false, systemPrompt = SYSTEM_PROMPT): Promise<string> {
@@ -171,9 +180,11 @@ async function callOpenAI(apiKey: string, mime: string, b64: string, userPrompt:
       ],
     }),
   });
-  if (!res.ok) throw new Error(`OpenAI HTTP ${res.status}`);
+  if (!res.ok) throw classifyVisionHttpStatus(lovable ? "lovable" : "openai", res.status);
   const data = await res.json();
-  return data?.choices?.[0]?.message?.content ?? "";
+  const text = data?.choices?.[0]?.message?.content ?? "";
+  if (!text) throw new VisionProviderFailure("VISION_EMPTY", 422, lovable ? "lovable" : "openai", 200);
+  return text;
 }
 
 // ── Grounding: database match + Open Food Facts fallback ─────────────────
@@ -380,6 +391,7 @@ Deno.serve(async (req) => {
   const hints = typeof body.hints === "string" ? body.hints.slice(0, 300) : "";
 
   const startedAt = Date.now();
+  const provider = Deno.env.get("AI_VISION_PROVIDER") ?? "gemini";
   let text: string;
   try {
     const userPrompt = labelMode ? "Read the visible nutrition facts; return only the values stated on the packaging."
@@ -391,14 +403,20 @@ Deno.serve(async (req) => {
     const lovableKey = Deno.env.get("LOVABLE_API_KEY");
     // Gemini-only by default to avoid silently charging Lovable/OpenAI.
     // Switching provider requires an explicit backend secret selection.
-    const provider = Deno.env.get("AI_VISION_PROVIDER") ?? "gemini";
     if (provider === "gemini" && geminiKey) text = await callGemini(geminiKey, mime, b64, userPrompt, systemPrompt);
     else if (provider === "lovable" && lovableKey) text = await callOpenAI(lovableKey, mime, b64, userPrompt, true, systemPrompt);
     else if (provider === "openai" && openaiKey) text = await callOpenAI(openaiKey, mime, b64, userPrompt, false, systemPrompt);
     else return errorResponse("AI_NOT_CONFIGURED", "Configured vision provider is unavailable", 503);
-  } catch {
-    // Never leak raw provider errors or internal account/quota details.
-    return errorResponse("AI_FAILED", "Food analysis is temporarily unavailable", 502);
+  } catch (error) {
+    // Log ONLY a safe error category/status. Never print provider error
+    // bodies, image data, notes, auth headers, or API credentials.
+    const safeProvider = provider === "openai" || provider === "lovable" ? provider : "gemini";
+    const failure = classifyVisionException(safeProvider, error);
+    console.error("ai-scan vision provider failure", {
+      provider: safeProvider, code: failure.code, providerStatus: failure.providerStatus,
+      elapsedMs: Date.now() - startedAt,
+    });
+    return errorResponse(failure.code, publicVisionMessage(failure.code), failure.httpStatus);
   }
 
   if (labelMode) {
@@ -415,7 +433,11 @@ Deno.serve(async (req) => {
     return json({ mode: "nutrition_label", ...label });
   }
 
-  const parsed = parseItems(extractJson(text));
+  const rawModelResult = extractJson(text);
+  if (!rawModelResult) {
+    return errorResponse("VISION_EMPTY", publicVisionMessage("VISION_EMPTY"), 422);
+  }
+  const parsed = parseItems(rawModelResult);
 
   // Ground against the verified database.
   const { data: dbFoods } = await serviceRole
