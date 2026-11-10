@@ -47,7 +47,7 @@ export async function createRecipeAtomic(input:RecipeInput):Promise<Recipe> {
   validateRecipe(input);
   const {data,error}=await getSupabase().rpc("create_recipe_atomic",{
     p_name:input.name.trim(),p_servings:input.servings,
-    p_notes:input.notes??null,p_ingredients:input.ingredients as unknown as Json,
+    p_notes:(input.notes??null) as string,p_ingredients:input.ingredients as unknown as Json,
   });
   if(error||!data) throw new BackendError("DB",
     "Could not create recipe. No incomplete recipe was saved.");
@@ -57,7 +57,7 @@ export async function replaceRecipeAtomic(id:string,input:RecipeInput):Promise<v
   validateRecipe(input);
   const {data,error}=await getSupabase().rpc("replace_recipe",{
     p_recipe_id:id,p_name:input.name.trim(),p_servings:input.servings,
-    p_notes:input.notes??null,p_ingredients:input.ingredients as unknown as Json,
+    p_notes:(input.notes??null) as string,p_ingredients:input.ingredients as unknown as Json,
   });
   if(error||!data) throw new BackendError("DB",
     "Could not update recipe. The previous version was preserved.");
