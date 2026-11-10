@@ -423,11 +423,11 @@ export type Database = {
         Row: {
           calorie_target: number
           carbs_g: number
+          day_targets: Json
           fat_g: number
           fiber_g: number
           manually_adjusted: boolean
           method: string
-          day_targets: Json
           micro_targets: Json
           protein_g: number
           updated_at: string
@@ -437,11 +437,11 @@ export type Database = {
         Insert: {
           calorie_target: number
           carbs_g: number
+          day_targets?: Json
           fat_g: number
           fiber_g?: number
           manually_adjusted?: boolean
           method?: string
-          day_targets?: Json
           micro_targets?: Json
           protein_g: number
           updated_at?: string
@@ -451,11 +451,11 @@ export type Database = {
         Update: {
           calorie_target?: number
           carbs_g?: number
+          day_targets?: Json
           fat_g?: number
           fiber_g?: number
           manually_adjusted?: boolean
           method?: string
-          day_targets?: Json
           micro_targets?: Json
           protein_g?: number
           updated_at?: string
@@ -502,48 +502,56 @@ export type Database = {
       }
       planned_meals: {
         Row: {
-          id: string
-          user_id: string
-          entry_date: string
-          meal_type: string
-          saved_meal_id: string | null
-          name: string
-          items: Json
-          state: string
-          logged_entry_ids: string[]
-          eaten_at: string | null
           created_at: string
+          eaten_at: string | null
+          entry_date: string
+          id: string
+          items: Json
+          logged_entry_ids: string[]
+          meal_type: string
+          name: string
+          saved_meal_id: string | null
+          state: string
           updated_at: string
+          user_id: string
         }
         Insert: {
-          id?: string
-          user_id: string
-          entry_date: string
-          meal_type: string
-          saved_meal_id?: string | null
-          name: string
-          items: Json
-          state?: string
-          logged_entry_ids?: string[]
-          eaten_at?: string | null
           created_at?: string
+          eaten_at?: string | null
+          entry_date: string
+          id?: string
+          items: Json
+          logged_entry_ids?: string[]
+          meal_type: string
+          name: string
+          saved_meal_id?: string | null
+          state?: string
           updated_at?: string
+          user_id: string
         }
         Update: {
-          id?: string
-          user_id?: string
-          entry_date?: string
-          meal_type?: string
-          saved_meal_id?: string | null
-          name?: string
-          items?: Json
-          state?: string
-          logged_entry_ids?: string[]
-          eaten_at?: string | null
           created_at?: string
+          eaten_at?: string | null
+          entry_date?: string
+          id?: string
+          items?: Json
+          logged_entry_ids?: string[]
+          meal_type?: string
+          name?: string
+          saved_meal_id?: string | null
+          state?: string
           updated_at?: string
+          user_id?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "planned_meals_saved_meal_id_fkey"
+            columns: ["saved_meal_id"]
+            isOneToOne: false
+            referencedRelation: "saved_meals"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       profiles: {
         Row: {
@@ -1021,23 +1029,6 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      create_recipe_atomic: {
-        Args: { p_name: string; p_servings: number; p_notes: string | null; p_ingredients: Json }
-        Returns: Database["public"]["Tables"]["recipes"]["Row"]
-      }
-      plan_saved_meal: {
-        Args: { p_saved_meal_id: string; p_entry_date: string; p_meal_type: string }
-        Returns: Database["public"]["Tables"]["planned_meals"]["Row"]
-      }
-      consume_planned_meal: {
-        Args: { p_plan_id: string }
-        Returns: Json
-      }
-      replace_recipe: {
-        Args: { p_recipe_id: string; p_name: string; p_servings: number; p_notes: string | null; p_ingredients: Json }
-        Returns: boolean
-      }
-
       admin_change_entitlement: {
         Args: {
           p_action: string
@@ -1093,6 +1084,7 @@ export type Database = {
       }
       check_access: { Args: never; Returns: boolean }
       consume_ai_scan_budget: { Args: { p_user_id: string }; Returns: string }
+      consume_planned_meal: { Args: { p_plan_id: string }; Returns: Json }
       consume_username_auth_budget: {
         Args: {
           p_key_hash: string
@@ -1105,6 +1097,28 @@ export type Database = {
       consume_username_recovery_code: {
         Args: { p_code_hash: string; p_user_id: string }
         Returns: boolean
+      }
+      create_recipe_atomic: {
+        Args: {
+          p_ingredients: Json
+          p_name: string
+          p_notes: string
+          p_servings: number
+        }
+        Returns: {
+          created_at: string
+          id: string
+          name: string
+          notes: string | null
+          servings: number
+          user_id: string
+        }
+        SetofOptions: {
+          from: "*"
+          to: "recipes"
+          isOneToOne: true
+          isSetofReturn: false
+        }
       }
       get_public_app_settings: { Args: never; Returns: Json }
       has_access: { Args: { uid?: string }; Returns: boolean }
@@ -1143,8 +1157,46 @@ export type Database = {
           isSetofReturn: true
         }
       }
+      plan_saved_meal: {
+        Args: {
+          p_entry_date: string
+          p_meal_type: string
+          p_saved_meal_id: string
+        }
+        Returns: {
+          created_at: string
+          eaten_at: string | null
+          entry_date: string
+          id: string
+          items: Json
+          logged_entry_ids: string[]
+          meal_type: string
+          name: string
+          saved_meal_id: string | null
+          state: string
+          updated_at: string
+          user_id: string
+        }
+        SetofOptions: {
+          from: "*"
+          to: "planned_meals"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
+      replace_recipe: {
+        Args: {
+          p_ingredients: Json
+          p_name: string
+          p_notes: string
+          p_recipe_id: string
+          p_servings: number
+        }
+        Returns: boolean
+      }
       show_limit: { Args: never; Returns: number }
       show_trgm: { Args: { "": string }; Returns: string[] }
+      valid_goal_day_targets: { Args: { p: Json }; Returns: boolean }
     }
     Enums: {
       [_ in never]: never
