@@ -56,7 +56,7 @@ Deno.serve(async (req) => {
       const { data, error } = await sb.from(table).select(fields)
         .eq(column, id).order(order).range(index*step, index*step+step-1);
       if (error || !data) throw new Error("Export collection unavailable");
-      rows.push(...(data as Record<string, unknown>[]));
+      rows.push(...(data as unknown as Record<string, unknown>[]));
       if (data.length < step) return rows;
     }
     throw new Error("Export exceeds supported page limit; contact support");
