@@ -402,10 +402,11 @@ Deno.serve(async (req) => {
     const systemPrompt = labelMode ? LABEL_SYSTEM_PROMPT : SYSTEM_PROMPT;
     const geminiKey = Deno.env.get("GEMINI_API_KEY");
     // Scans are restricted to the owner's Google AI Studio key.
-    if (provider !== "gemini" || !geminiKey) {
+    if (provider === "gemini" && geminiKey) {
+      text = await callGemini(geminiKey, mime, b64, userPrompt, systemPrompt);
+    } else {
       return errorResponse("AI_NOT_CONFIGURED", "Gemini vision provider is unavailable", 503);
     }
-    text = await callGemini(geminiKey, mime, b64, userPrompt, systemPrompt);
   } catch (error) {
     // Log ONLY a safe error category/status. Never print provider error
     // bodies, image data, notes, auth headers, or API credentials.
